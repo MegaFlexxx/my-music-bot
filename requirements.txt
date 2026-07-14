@@ -1,5 +1,5 @@
 aiogram==3.13.1
-yandex-music-fixed
+yandex-music-fixed-api
 mutagen==1.47.0
 aiohttp==3.10.5
 requests==2.32.3
