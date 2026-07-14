@@ -10,7 +10,7 @@ from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
 
-# --- ЗАПЛАТКА ДЛЯ API ---
+# --- 1. ЗАПЛАТКА ДЛЯ API ---
 import yandex_music
 if hasattr(yandex_music, 'Product'):
     original_init = yandex_music.Product.__init__
@@ -19,8 +19,8 @@ if hasattr(yandex_music, 'Product'):
         original_init(self, *args, **kwargs)
     yandex_music.Product.__init__ = patched_init
 
-# --- НАСТРОЙКИ ---
-TELEGRAM_TOKEN = "8971955986:AAHYy4W3fQEiTE9k-FbZmkfCidOdX0hDBbE" 
+# --- 2. НАСТРОЙКИ ---
+TELEGRAM_TOKEN = "8971955986:AAGnslgWHWBv8SS4yjH7tw-Bnmzs104Plus" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 logging.basicConfig(level=logging.INFO)
@@ -42,14 +42,16 @@ async def download_and_send(message: types.Message, track_id: str):
             async with session.get(best_info.get_direct_link()) as resp:
                 with open(file_name, 'wb') as f: f.write(await resp.read())
         
-        # Скачивание обложки
+        # Скачивание и КОНВЕРТАЦИЯ обложки
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_url = "https:" + cover_url if not cover_url.startswith("http") else cover_url
             try:
                 img_data = requests.get(full_url, timeout=5).content
                 with open(cover_name, 'wb') as f: f.write(img_data)
-                Image.open(cover_name).convert('RGB').save(cover_name, "JPEG")
+                # Исправление: принудительная конвертация в RGB для корректных тегов
+                with Image.open(cover_name) as img:
+                    img.convert('RGB').save(cover_name, "JPEG")
             except: 
                 if os.path.exists(cover_name): os.remove(cover_name)
         
@@ -71,10 +73,22 @@ async def download_and_send(message: types.Message, track_id: str):
     except Exception as e:
         await status_msg.edit_text(f"💥 Ошибка: {str(e)}")
 
-# Обработчик поиска
+# --- 3. ОБРАБОТЧИКИ ---
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("Привет! Пришли название песни или ссылку на Яндекс.Музыку.")
+
 @dp.message(F.text)
 async def handle_search(message: types.Message):
     if message.text.startswith("/"): return
+    
+    # Обработка ссылки
+    if "music.yandex.ru" in message.text and "/track/" in message.text:
+        track_id = message.text.split("/track/")[1].split("?")[0]
+        await download_and_send(message, track_id)
+        return
+
+    # Поиск по тексту
     search_result = yandex_client.search(message.text, type_='track')
     if search_result.tracks:
         track = search_result.tracks.results[0]
@@ -87,7 +101,8 @@ async def handle_search(message: types.Message):
 
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(callback: types.CallbackQuery):
+    await callback.answer()
     await download_and_send(callback.message, callback.data.split("_")[1])
 
 if __name__ == "__main__":
-    asyncio.run(dp.start_polling(bot))
+    dp.run_polling(bot)
