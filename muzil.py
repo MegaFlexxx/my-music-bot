@@ -54,7 +54,6 @@ async def cmd_help(message: types.Message):
         "Также я понимаю прямые ссылки на треки Яндекс Музыки!\n"
         "Если совсем все плохо, пиши в поддержку: @serhf_bot_helper"
     )
-    # disable_web_page_preview=True убирает попытки Telegram создать превью для ссылки
     await message.answer(help_text, parse_mode="Markdown", disable_web_page_preview=True)
 
 @dp.message(Command("status"))
@@ -122,7 +121,9 @@ async def download_and_send(message: types.Message, track_id: str):
         
         cover_url = track.get_cover_url('400x400')
         if cover_url:
-            with open(cover_name, 'wb') as f: f.write(requests.get("https:" + cover_url).content)
+            # Исправленная логика загрузки обложки
+            full_url = cover_url if cover_url.startswith("http") else "https:" + cover_url
+            with open(cover_name, 'wb') as f: f.write(requests.get(full_url).content)
         
         audio = MP3(file_name, ID3=ID3)
         audio.tags.add(TIT2(encoding=3, text=title))
