@@ -1,5 +1,5 @@
 aiogram==3.13.1
-https://github.com/Yg0R203/yandex-music-fixed-api/archive/refs/heads/master.zip
+https://github.com/Yg0R203/yandex-music-fixed-api/archive/refs/heads/main.zip
 mutagen==1.47.0
 aiohttp==3.10.5
 requests==2.32.3
