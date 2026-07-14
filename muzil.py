@@ -14,7 +14,7 @@ from mutagen.id3 import ID3, APIC, TIT2, TPE1
 # =================== НАСТРОЙКИ ===================
 TELEGRAM_TOKEN = "8971955986:AAE8L7Lab3mxnpGAwRwTyGkMpPatRUiJhs0"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
-CHANNEL_ID = -1001745381023 # Твой ID канала
+CHANNEL_ID = -1001745381023 # ID канала
 # =================================================
 
 # --- ЗАПЛАТКА ДЛЯ YANDEX MUSIC ---
@@ -44,13 +44,12 @@ async def is_subscribed(user_id: int):
 async def cmd_start(message: types.Message):
     await message.answer("👋 Привет! Я твой музыкальный бот. Просто напиши название песни для поиска.")
 
-@dp.message(Command("help"))
-async def cmd_help(message: types.Message):
-    await message.answer("🛠 Используй бота для поиска музыки. Нужно быть подписанным на канал!")
-
-@dp.message(Command("status"))
-async def cmd_status(message: types.Message):
-    await message.answer("✅ Бот онлайн!")
+@dp.callback_query(F.data == "check_sub")
+async def check_sub_callback(callback: types.CallbackQuery):
+    if await is_subscribed(callback.from_user.id):
+        await callback.message.edit_text("✅ Спасибо за подписку! Теперь ты можешь искать музыку. Просто напиши название трека.")
+    else:
+        await callback.answer("❌ Ты еще не подписался. Пожалуйста, подпишись и попробуй снова.", show_alert=True)
 
 # --- ОСНОВНОЙ ОБРАБОТЧИК ---
 @dp.message(F.text & ~F.text.startswith("/"))
@@ -58,9 +57,10 @@ async def handle_search(message: types.Message):
     # Проверка подписки
     if not await is_subscribed(message.from_user.id):
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📢 Подписаться на канал", url="https://t.me/shkibidi_gang")]
+            [InlineKeyboardButton(text="📢 Подписаться на канал", url="https://t.me/shkibidi_gang")],
+            [InlineKeyboardButton(text="✅ Я подписался", callback_data="check_sub")]
         ])
-        await message.answer("⚠️ Для использования бота нужно подписаться на наш канал!", reply_markup=kb)
+        await message.answer("⚠️ Для использования бота нужно подписаться на канал:", reply_markup=kb)
         return
 
     text = message.text.strip()
@@ -84,9 +84,8 @@ async def handle_search(message: types.Message):
 
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(callback: types.CallbackQuery):
-    track_id = callback.data.split("_")[1]
     await callback.answer("Начинаю загрузку...")
-    await download_and_send(callback.message, track_id)
+    await download_and_send(callback.message, callback.data.split("_")[1])
 
 # --- ФУНКЦИЯ СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str):
@@ -121,7 +120,7 @@ async def download_and_send(message: types.Message, track_id: str):
         if os.path.exists(cover_name): os.remove(cover_name)
         await status_msg.delete()
     except Exception as e:
-        await status_msg.edit_text("💥 Ошибка.")
+        await status_msg.edit_text(f"💥 Ошибка: {e}")
 
 async def main():
     await dp.start_polling(bot)
