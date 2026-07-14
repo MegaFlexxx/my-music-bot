@@ -14,7 +14,7 @@ from mutagen.id3 import ID3, APIC, TIT2, TPE1
 # =================== НАСТРОЙКИ ===================
 TELEGRAM_TOKEN = "8971955986:AAE8L7Lab3mxnpGAwRwTyGkMpPatRUiJhs0"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
-CHANNEL_ID = -1001745381023 # ID канала
+CHANNEL_ID = -1001745381023 
 # =================================================
 
 # --- ЗАПЛАТКА ДЛЯ YANDEX MUSIC ---
@@ -42,7 +42,23 @@ async def is_subscribed(user_id: int):
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("👋 Привет! Я твой музыкальный бот. Просто напиши название песни для поиска.")
+    await message.answer("👋 Привет! Я твой музыкальный бот, а мой создатель очень красивый парень. Используй меню команд или просто напиши название песни для поиска.")
+
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
+    help_text = (
+        "🛠 **Как пользоваться ботом:**\n\n"
+        "1. Просто напиши название трека или исполнителя.\n"
+        "2. Я найду лучший результат.\n"
+        "3. Нажми кнопку «📥 Скачать» под сообщением.\n\n"
+        "Также я понимаю прямые ссылки на треки Яндекс Музыки! "
+        "Если совсем все плохо пиши в поддержку - @serhf_bot_helper"
+    )
+    await message.answer(help_text, parse_mode="Markdown")
+
+@dp.message(Command("status"))
+async def cmd_status(message: types.Message):
+    await message.answer("✅ Бот онлайн!")
 
 @dp.callback_query(F.data == "check_sub")
 async def check_sub_callback(callback: types.CallbackQuery):
@@ -54,7 +70,6 @@ async def check_sub_callback(callback: types.CallbackQuery):
 # --- ОСНОВНОЙ ОБРАБОТЧИК ---
 @dp.message(F.text & ~F.text.startswith("/"))
 async def handle_search(message: types.Message):
-    # Проверка подписки
     if not await is_subscribed(message.from_user.id):
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📢 Подписаться на канал", url="https://t.me/shkibidi_gang")],
