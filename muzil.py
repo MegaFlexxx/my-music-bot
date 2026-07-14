@@ -5,6 +5,16 @@ import os
 os.environ["no_proxy"] = "*"
 os.environ["NO_PROXY"] = "*"
 
+# --- ЗАПЛАТКА ДЛЯ ОБХОДА ОШИБКИ ЯНДЕКСА ---
+import yandex_music
+if hasattr(yandex_music, 'Product'):
+    original_init = yandex_music.Product.__init__
+    def patched_init(self, *args, **kwargs):
+        kwargs.setdefault('common_period_duration', None)
+        original_init(self, *args, **kwargs)
+    yandex_music.Product.__init__ = patched_init
+# ------------------------------------------
+
 import re
 import logging
 import asyncio
@@ -12,7 +22,7 @@ import aiohttp
 import requests
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from yandex_music_fixed import Client
+from yandex_music import Client  # ИСПОЛЬЗУЕМ СТАНДАРТНЫЙ ИМПОРТ
 
 # Импортируем mutagen для вшивания обложки и тегов в MP3
 from mutagen.mp3 import MP3
