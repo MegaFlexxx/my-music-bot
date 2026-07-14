@@ -8,18 +8,6 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from yandex_music import Client
-
-# =================== ЗАПЛАТКА ДЛЯ YANDEX MUSIC ===================
-import yandex_music
-if hasattr(yandex_music, 'Product'):
-    original_init = yandex_music.Product.__init__
-    def patched_init(self, *args, **kwargs):
-        # Принудительно добавляем недостающий аргумент, если его нет
-        kwargs.setdefault('common_period_duration', None)
-        original_init(self, *args, **kwargs)
-    yandex_music.Product.__init__ = patched_init
-# =================================================================
-
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1, error
 
@@ -28,16 +16,43 @@ TELEGRAM_TOKEN = "8971955986:AAE8L7Lab3mxnpGAwRwTyGkMpPatRUiJhs0"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 # =================================================
 
+# --- ЗАПЛАТКА ДЛЯ YANDEX MUSIC ---
+import yandex_music
+if hasattr(yandex_music, 'Product'):
+    original_init = yandex_music.Product.__init__
+    def patched_init(self, *args, **kwargs):
+        kwargs.setdefault('common_period_duration', None)
+        original_init(self, *args, **kwargs)
+    yandex_music.Product.__init__ = patched_init
+# ---------------------------------
+
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# ... (далее идет весь твой остальной код с Inline-кнопками, который мы обсуждали) ...
+# --- КОМАНДЫ ---
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("👋 Привет! Я твой музыкальный бот, а мой создатель очень красивый парень . Используй меню команд или просто напиши название песни для поиска.")
 
-@dp.message(F.text)
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
+    await message.answer(
+        "🛠 **Как пользоваться ботом:**\n\n"
+        "1. Просто напиши название трека или исполнителя.\n"
+        "2. Я найду лучший результат.\n"
+        "3. Нажми кнопку «📥 Скачать» под сообщением.\n\n"
+        "Также я понимаю прямые ссылки на треки Яндекс Музыки!"
+    )
+
+@dp.message(Command("status"))
+async def cmd_status(message: types.Message):
+    await message.answer("✅ Бот онлайн и готов к работе!")
+
+# --- ОСНОВНОЙ ОБРАБОТЧИК ПОИСКА ---
+@dp.message(F.text & ~F.text.startswith("/"))
 async def handle_search(message: types.Message):
-    # (оставь здесь всю логику обработки текста/ссылок как в предыдущем варианте)
     text = message.text.strip()
     track_re = re.compile(r"track/(\d+)")
     match = track_re.search(text)
@@ -65,6 +80,7 @@ async def callback_download(callback: types.CallbackQuery):
     await callback.answer("Начинаю загрузку...")
     await download_and_send(callback.message, track_id, is_callback=True)
 
+# --- ФУНКЦИЯ СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str, is_callback=False):
     status_msg = await message.answer("📥 Готовлю файл...")
     try:
