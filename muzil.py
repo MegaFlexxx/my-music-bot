@@ -9,7 +9,7 @@ from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
 
-# --- ЗАПЛАТКА ---
+# --- 1. ЗАПЛАТКА ДЛЯ API ЯНДЕКСА ---
 import yandex_music
 if hasattr(yandex_music, 'Product'):
     original_init = yandex_music.Product.__init__
@@ -18,7 +18,8 @@ if hasattr(yandex_music, 'Product'):
         original_init(self, *args, **kwargs)
     yandex_music.Product.__init__ = patched_init
 
-TELEGRAM_TOKEN = "8971955986:AAFbd4yJSPuTOL3Qw3eODdvTaGCvNMtM5us" # ОБЯЗАТЕЛЬНО ОБНОВИ ПОСЛЕ REVOKE
+# --- 2. НАСТРОЙКИ ---
+TELEGRAM_TOKEN = "8971955986:AAE4aDE7kSTDkaL6Zb_xqcQeF87zQsJA8OI"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 logging.basicConfig(level=logging.INFO)
@@ -33,14 +34,14 @@ async def download_and_send(message: types.Message, track_id: str):
         file_name = f"{track_id}.mp3"
         cover_name = f"{track_id}.jpg"
         
-        # Скачивание
+        # Скачивание аудио
         info = track.get_download_info()
         best_info = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0]
         async with aiohttp.ClientSession() as session:
             async with session.get(best_info.get_direct_link()) as resp:
                 with open(file_name, 'wb') as f: f.write(await resp.read())
         
-        # Обложка
+        # Скачивание обложки
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_url = "https:" + cover_url if not cover_url.startswith("http") else cover_url
@@ -51,14 +52,18 @@ async def download_and_send(message: types.Message, track_id: str):
             except: 
                 if os.path.exists(cover_name): os.remove(cover_name)
         
-        # Теги (безопасная запись)
+        # --- 3. ЗАЩИТА ОТ NoneType (ТЕГИ) ---
         audio = MP3(file_name, ID3=ID3)
-        if audio.tags is None: audio.add_tags(ID3=ID3)
+        if audio.tags is None:
+            audio.add_tags(ID3=ID3)
+            
         audio.tags.add(TIT2(encoding=3, text=track.title))
         audio.tags.add(TPE1(encoding=3, text=", ".join([a.name for a in track.artists])))
+        
         if os.path.exists(cover_name):
             with open(cover_name, 'rb') as img:
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, data=img.read()))
+        
         audio.save()
         
         await message.answer_audio(audio=types.FSInputFile(file_name))
@@ -73,8 +78,6 @@ async def download_and_send(message: types.Message, track_id: str):
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(callback: types.CallbackQuery):
     await download_and_send(callback.message, callback.data.split("_")[1])
-
-# Оставь обработчики команд здесь
 
 if __name__ == "__main__":
     asyncio.run(dp.start_polling(bot))
