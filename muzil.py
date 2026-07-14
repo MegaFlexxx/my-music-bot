@@ -51,10 +51,11 @@ async def cmd_help(message: types.Message):
         "1. Просто напиши название трека или исполнителя.\n"
         "2. Я найду лучший результат.\n"
         "3. Нажми кнопку «📥 Скачать» под сообщением.\n\n"
-        "Также я понимаю прямые ссылки на треки Яндекс Музыки! "
-        "Если совсем все плохо пиши в поддержку - @serhf_bot_helper"
+        "Также я понимаю прямые ссылки на треки Яндекс Музыки!\n"
+        "Если совсем все плохо, пиши в поддержку: @serhf_bot_helper"
     )
-    await message.answer(help_text, parse_mode="Markdown")
+    # disable_web_page_preview=True убирает попытки Telegram создать превью для ссылки
+    await message.answer(help_text, parse_mode="Markdown", disable_web_page_preview=True)
 
 @dp.message(Command("status"))
 async def cmd_status(message: types.Message):
