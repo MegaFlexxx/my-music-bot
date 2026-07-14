@@ -22,7 +22,7 @@ import aiohttp
 import requests
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from yandex_music import Client  # ИСПОЛЬЗУЕМ СТАНДАРТНЫЙ ИМПОРТ
+from yandex_music import Client  # Стандартный рабочий импорт
 
 # Импортируем mutagen для вшивания обложки и тегов в MP3
 from mutagen.mp3 import MP3
