@@ -10,7 +10,7 @@ from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
 
-# --- 1. ЗАПЛАТКА ДЛЯ API ---
+# --- 1. ЗАПЛАТКА ---
 import yandex_music
 if hasattr(yandex_music, 'Product'):
     original_init = yandex_music.Product.__init__
@@ -42,17 +42,19 @@ async def download_and_send(message: types.Message, track_id: str):
             async with session.get(best_info.get_direct_link()) as resp:
                 with open(file_name, 'wb') as f: f.write(await resp.read())
         
-        # Скачивание и КОНВЕРТАЦИЯ обложки
+        # Скачивание и ПРАВИЛЬНАЯ обработка обложки
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_url = "https:" + cover_url if not cover_url.startswith("http") else cover_url
             try:
                 img_data = requests.get(full_url, timeout=5).content
                 with open(cover_name, 'wb') as f: f.write(img_data)
-                # Исправление: принудительная конвертация в RGB для корректных тегов
+                # ПРИНУДИТЕЛЬНАЯ КОНВЕРТАЦИЯ В RGB И РЕСАЙЗ
                 with Image.open(cover_name) as img:
-                    img.convert('RGB').save(cover_name, "JPEG")
-            except: 
+                    img = img.convert('RGB').resize((400, 400))
+                    img.save(cover_name, "JPEG", quality=85)
+            except Exception as e:
+                logging.error(f"Ошибка с обложкой: {e}")
                 if os.path.exists(cover_name): os.remove(cover_name)
         
         # Теги
@@ -82,13 +84,13 @@ async def cmd_start(message: types.Message):
 async def handle_search(message: types.Message):
     if message.text.startswith("/"): return
     
-    # Обработка ссылки
+    # Ссылка
     if "music.yandex.ru" in message.text and "/track/" in message.text:
         track_id = message.text.split("/track/")[1].split("?")[0]
         await download_and_send(message, track_id)
         return
 
-    # Поиск по тексту
+    # Поиск
     search_result = yandex_client.search(message.text, type_='track')
     if search_result.tracks:
         track = search_result.tracks.results[0]
