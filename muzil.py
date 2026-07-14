@@ -11,7 +11,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
 from aiohttp import web
 
-# --- 1. ЗАПЛАТКА ---
+# --- 1. ЗАПЛАТКА ДЛЯ API ---
 import yandex_music
 if hasattr(yandex_music, 'Product'):
     original_init = yandex_music.Product.__init__
@@ -66,14 +66,16 @@ async def download_and_send(message: types.Message, track_id: str):
             except: 
                 if os.path.exists(cover_name): os.remove(cover_name)
         
+        # --- СТРОГАЯ ЗАПИСЬ ТЕГОВ ---
         audio = MP3(file_name, ID3=ID3)
         if audio.tags is None: audio.add_tags(ID3=ID3)
+        audio.tags.delall('APIC'); audio.tags.delall('TIT2'); audio.tags.delall('TPE1')
         audio.tags.add(TIT2(encoding=3, text=track.title))
         audio.tags.add(TPE1(encoding=3, text=", ".join([a.name for a in track.artists])))
         if os.path.exists(cover_name):
             with open(cover_name, 'rb') as img:
-                audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, data=img.read()))
-        audio.save()
+                audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
+        audio.save(v2_version=3)
         
         await message.answer_audio(audio=types.FSInputFile(file_name))
         for f in [file_name, cover_name]: 
