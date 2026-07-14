@@ -31,7 +31,6 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ПРОВЕРКА ПОДПИСКИ ---
 async def is_subscribed(user_id: int):
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
@@ -39,7 +38,6 @@ async def is_subscribed(user_id: int):
     except:
         return False
 
-# --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("👋 Привет! Я твой музыкальный бот, а мой создатель очень красивый парень. Используй меню команд или просто напиши название песни для поиска.")
@@ -67,7 +65,6 @@ async def check_sub_callback(callback: types.CallbackQuery):
     else:
         await callback.answer("❌ Ты еще не подписался. Пожалуйста, подпишись и попробуй снова.", show_alert=True)
 
-# --- ОСНОВНОЙ ОБРАБОТЧИК ---
 @dp.message(F.text & ~F.text.startswith("/"))
 async def handle_search(message: types.Message):
     if not await is_subscribed(message.from_user.id):
@@ -102,7 +99,6 @@ async def callback_download(callback: types.CallbackQuery):
     await callback.answer("Начинаю загрузку...")
     await download_and_send(callback.message, callback.data.split("_")[1])
 
-# --- ФУНКЦИЯ СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str):
     status_msg = await message.answer("📥 Готовлю файл...")
     try:
@@ -121,19 +117,30 @@ async def download_and_send(message: types.Message, track_id: str):
         
         cover_url = track.get_cover_url('400x400')
         if cover_url:
-            # Исправленная логика формирования URL обложки
             full_url = cover_url if cover_url.startswith("http") else "https:" + cover_url
-            with open(cover_name, 'wb') as f: f.write(requests.get(full_url).content)
+            try:
+                img_data = requests.get(full_url).content
+                with open(cover_name, 'wb') as f: f.write(img_data)
+            except:
+                pass
         
-        audio = MP3(file_name, ID3=ID3)
-        audio.tags.add(TIT2(encoding=3, text=title))
-        audio.tags.add(TPE1(encoding=3, text=artists))
-        if os.path.exists(cover_name):
-            with open(cover_name, 'rb') as img: audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, data=img.read()))
-        audio.save()
+        # Безопасное добавление тегов
+        try:
+            audio = MP3(file_name, ID3=ID3)
+            if audio.tags is None:
+                audio.add_tags(ID3=ID3)
+            audio.tags.add(TIT2(encoding=3, text=title))
+            audio.tags.add(TPE1(encoding=3, text=artists))
+            if os.path.exists(cover_name):
+                with open(cover_name, 'rb') as img: 
+                    audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, data=img.read()))
+            audio.save()
+        except Exception as e:
+            logging.error(f"Ошибка тегов: {e}")
         
         await message.answer_audio(audio=types.FSInputFile(file_name), title=title, performer=artists)
-        os.remove(file_name)
+        
+        if os.path.exists(file_name): os.remove(file_name)
         if os.path.exists(cover_name): os.remove(cover_name)
         await status_msg.delete()
     except Exception as e:
