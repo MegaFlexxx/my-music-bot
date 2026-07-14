@@ -12,7 +12,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
 
 # =================== НАСТРОЙКИ ===================
-TELEGRAM_TOKEN = "8971955986:AAEvlzmAGlg335gdkVmK8b39vmUBAx7Y5fU"
+TELEGRAM_TOKEN = "8971955986:AAHcJC4WSRqp0aMzBmt0lZjVk1VRMOzNl-g"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 CHANNEL_ID = -1001745381023 
 # =================================================
@@ -51,10 +51,10 @@ async def cmd_help(message: types.Message):
         "1. Просто напиши название трека или исполнителя.\n"
         "2. Я найду лучший результат.\n"
         "3. Нажми кнопку «📥 Скачать» под сообщением.\n\n"
-        "Также я понимаю прямые ссылки на треки Яндекс Музыки! "
-        "Если совсем все плохо пиши в поддержку - @serhf_bot_helper"
+        "Также я понимаю прямые ссылки на треки Яндекс Музыки!\n"
+        "Если совсем все плохо, пиши в поддержку: @serhf_bot_helper"
     )
-    await message.answer(help_text, parse_mode="Markdown")
+    await message.answer(help_text, parse_mode="Markdown", disable_web_page_preview=True)
 
 @dp.message(Command("status"))
 async def cmd_status(message: types.Message):
@@ -121,7 +121,9 @@ async def download_and_send(message: types.Message, track_id: str):
         
         cover_url = track.get_cover_url('400x400')
         if cover_url:
-            with open(cover_name, 'wb') as f: f.write(requests.get("https:" + cover_url).content)
+            # Исправленная логика формирования URL обложки
+            full_url = cover_url if cover_url.startswith("http") else "https:" + cover_url
+            with open(cover_name, 'wb') as f: f.write(requests.get(full_url).content)
         
         audio = MP3(file_name, ID3=ID3)
         audio.tags.add(TIT2(encoding=3, text=title))
