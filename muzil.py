@@ -12,7 +12,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
 
 # =================== НАСТРОЙКИ ===================
-TELEGRAM_TOKEN = "8971955986:AAE8L7Lab3mxnpGAwRwTyGkMpPatRUiJhs0"
+TELEGRAM_TOKEN = "8971955986:AAEvlzmAGlg335gdkVmK8b39vmUBAx7Y5fU"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 CHANNEL_ID = -1001745381023 
 # =================================================
