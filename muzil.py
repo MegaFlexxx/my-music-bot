@@ -1,8 +1,6 @@
-import os
-import logging
 import sys
 
-# --- ПАТЧ API ---
+# --- 1. ПАТЧ (ОДИН РАЗ, ДО ВСЕГО) ---
 def apply_patch():
     try:
         import yandex_music
@@ -12,13 +10,25 @@ def apply_patch():
                 kwargs.setdefault('common_period_duration', None)
                 original_init(self, *args, **kwargs)
             yandex_music.Product.__init__ = patched_init
-    except: pass
+    except ImportError: pass
+
 apply_patch()
 
-import asyncio, aiohttp, requests
+# --- 2. ИМПОРТЫ ---
+import os
+import logging
+import asyncio
+import aiohttp
+import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
+from yandex_music import Client
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, APIC, TIT2, TPE1
+from aiohttp import web
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TPE1
