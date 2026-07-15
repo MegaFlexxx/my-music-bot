@@ -1,13 +1,4 @@
-import sys
 import os
-import asyncio
-import sqlite3
-import requests
-from PIL import Image
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
-from aiogram.types import BotCommand
-from yandex_music import Cimport os
 import asyncio
 import requests
 import asyncpg
@@ -20,14 +11,14 @@ from aiohttp import web
 # --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
-# Замени PASSWORD на свой реальный пароль от базы данных!
+# Твой пароль вставлен верно, оставь его как есть
 DATABASE_URL = "postgresql://postgres.plqrkoszdqnxaghcshik:Fortnite_123@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ФУНКЦИИ БАЗЫ ДАННЫХ (Supabase) ---
+# --- ФУНКЦИИ БАЗЫ ДАННЫХ ---
 async def add_to_history(user_id, title, artist):
     try:
         conn = await asyncpg.connect(DATABASE_URL)
@@ -50,11 +41,7 @@ async def get_history(user_id):
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound. Теперь моя память в облаке и не пропадет!")
-
-@dp.message(Command("help"))
-async def help_command(m: types.Message):
-    await m.answer("🤖 **Skibidi_sound**\n\n🔍 Кидай название трека или ссылку.\n🕒 /history — Твоя история скачиваний.")
+    await m.answer("Привет! Я Skibidi_sound. Моя память теперь в облаке!")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
@@ -67,7 +54,6 @@ async def show_history(m: types.Message):
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
-    # Пример простой обработки поиска
     res = yandex_client.search(m.text, type_='track')
     if res.tracks:
         track = res.tracks.results[0]
@@ -79,10 +65,8 @@ async def handle_search(m: types.Message):
 
 # --- ЗАПУСК ---
 async def main():
-    # Установка команд бота (чтобы меню работало)
     await bot.set_my_commands([
         BotCommand(command="start", description="Запуск"),
-        BotCommand(command="help", description="Помощь"),
         BotCommand(command="history", description="История")
     ])
     await dp.start_polling(bot)
