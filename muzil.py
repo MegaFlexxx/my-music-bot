@@ -1,5 +1,4 @@
 import asyncio
-import asyncpg
 import os
 import re
 from aiogram import Bot, Dispatcher, types, F
@@ -10,26 +9,17 @@ from yandex_music import Client
 # --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGSj6V48pH9xz2S5sAIGVj96N52M2pcgPg" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
-DATABASE_URL = "postgresql://postgres.plqrkoszdqnxaghcshik:Fortnite_123@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
-# --- ФУНКЦИИ ---
-async def add_to_db(user_id, title, track_id="0"):
-    try:
-        conn = await asyncpg.connect(DATABASE_URL)
-        await conn.execute("INSERT INTO subscriptions1 (user_id, artist_name, artist_id) VALUES ($1, $2, $3)", 
-                           user_id, title, str(track_id))
-        await conn.close()
-    except Exception: pass
-
-# --- ОСНОВНОЙ ОБРАБОТЧИК ---
+# --- ОБРАБОТЧИК ---
 @dp.message(F.text & ~F.text.startswith('/'))
 async def auto_handle(m: types.Message):
-    # Отправляем сообщение-статус
+    # Отправляем сообщение-статус один раз
     status_msg = await m.answer("🔍 Ищу...")
+    
     try:
         query = m.text.strip()
         track_id_match = re.search(r'track/(\d+)', query)
@@ -43,40 +33,38 @@ async def auto_handle(m: types.Message):
                 track = res.tracks.results[0]
         
         if not track:
-            await status_msg.edit_text("❌ Ничего не нашел.")
-            return
+            return await status_msg.edit_text("❌ Ничего не нашел.")
 
-        # Имена временных файлов
-        audio_name = f"track_{track.id}.mp3"
-        cover_name = f"cover_{track.id}.jpg"
+        # Уникальные имена для предотвращения коллизий
+        audio_name = f"{track.id}.mp3"
+        cover_name = f"{track.id}.jpg"
         
         # Скачивание
         track.download(audio_name)
         if track.cover_uri:
             track.download_cover(cover_name, size='200x200')
             
-        # Отправка аудио
+        # ОТПРАВКА ОДИН РАЗ
         await m.answer_audio(
             audio=FSInputFile(audio_name),
-            caption=f"✅ Нашел: {track.title} — {', '.join([a.name for a in track.artists])}\nБот Skibidi_sound рекомендует!",
+            caption=f"✅ {track.title} — {', '.join([a.name for a in track.artists])}",
             title=track.title,
             performer=', '.join([a.name for a in track.artists]),
             thumbnail=FSInputFile(cover_name) if os.path.exists(cover_name) else None
         )
         
-        # Запись в БД и удаление статуса
-        await add_to_db(m.from_user.id, f"{track.title} — {track.artists[0].name}", track.id)
+        # Удаляем "Ищу..." и временные файлы
         await status_msg.delete()
-        
-        # Очистка файлов
         if os.path.exists(audio_name): os.remove(audio_name)
         if os.path.exists(cover_name): os.remove(cover_name)
         
     except Exception as e:
-        await status_msg.edit_text(f"Ошибка: {e}")
+        await status_msg.edit_text(f"❌ Ошибка: {str(e)}")
 
 # --- ЗАПУСК ---
 async def main():
+    # Очистка очереди сообщений перед запуском (убирает старые "зависшие" команды)
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
