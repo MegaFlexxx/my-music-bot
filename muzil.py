@@ -11,12 +11,13 @@ from aiohttp import web
 # --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
-# Твой пароль вставлен верно, оставь его как есть
+# Твой пароль вставлен верно
 DATABASE_URL = "postgresql://postgres.plqrkoszdqnxaghcshik:Fortnite_123@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
-yandex_client = Client(YANDEX_TOKEN).init()
+# Убрали .init(), чтобы не было ошибки при запуске
+yandex_client = Client(YANDEX_TOKEN)
 
 # --- ФУНКЦИИ БАЗЫ ДАННЫХ ---
 async def add_to_history(user_id, title, artist):
