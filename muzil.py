@@ -1,6 +1,5 @@
 import sys
 import os
-import logging
 import asyncio
 import requests
 from PIL import Image
@@ -31,45 +30,44 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# Получаем данные о треке для красивого имени
-        track_info = track.title
-        artist_info = ", ".join([artist.name for artist in track.artists])
-
-        # Отправка с Thumb и метаданными
-        thumb = types.FSInputFile(c_name) if os.path.exists(c_name) else None
-        
-        await message.answer_audio(
-            audio=types.FSInputFile(f_name), 
-            thumbnail=thumb,
-            title=track_info,        # Название песни
-            performer=artist_info     # Имя исполнителя
-        )
+# --- 3. ЛОГИКА СКАЧИВАНИЯ ---
+async def download_and_send(message: types.Message, track_id: str):
+    msg = await message.answer("📥...")
+    try:
+        track = yandex_client.tracks([track_id])[0]
+        f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
         
         # Скачивание файла
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
         with open(f_name, 'wb') as f: f.write(requests.get(link, timeout=15).content)
         
-        # Скачивание обложки (Исправлено)
+        # Скачивание и вшивание обложки
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_cover_url = cover_url if cover_url.startswith('http') else "https:" + cover_url
             with open(c_name, 'wb') as f: 
                 f.write(requests.get(full_cover_url, timeout=10).content)
             
-            # Обработка картинки
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
             
-            # Вшиваем теги
             audio = MP3(f_name, ID3=ID3)
             if audio.tags is None: audio.add_tags(ID3=ID3)
             with open(c_name, 'rb') as img:
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
 
-        # Отправка
+        # Подготовка данных для отправки
+        track_title = track.title
+        artist_name = ", ".join([a.name for a in track.artists])
         thumb = types.FSInputFile(c_name) if os.path.exists(c_name) else None
-        await message.answer_audio(audio=types.FSInputFile(f_name), thumbnail=thumb)
+        
+        await message.answer_audio(
+            audio=types.FSInputFile(f_name), 
+            thumbnail=thumb,
+            title=track_title,
+            performer=artist_name
+        )
         
         for f in [f_name, c_name]: 
             if os.path.exists(f): os.remove(f)
@@ -79,7 +77,7 @@ yandex_client = Client(YANDEX_TOKEN).init()
 
 # --- 4. ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
-async def start(m: types.Message): await m.answer("Привет! Пришли название или ссылку.")
+async def start(m: types.Message): await m.answer("Привет! Пришли название трека.")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
