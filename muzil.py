@@ -1,11 +1,13 @@
 import asyncio
 import os
 import re
+from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import FSInputFile
 from yandex_music import Client
 
+# --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGSj6V48pH9xz2S5sAIGVj96N52M2pcgPg" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
@@ -13,15 +15,18 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
+# --- ВЕБ-СЕРВЕР ДЛЯ RENDER ---
+async def handle(request):
+    return web.Response(text="Bot is running")
+
+# --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def start_handler(m: types.Message):
-    await m.answer("Привет! Пришли название трека, я пришлю его аудиофайлом.")
+    await m.answer("Привет! Пришли название трека или ссылку.")
 
 @dp.message(F.text & ~F.text.startswith('/'))
 async def auto_handle(m: types.Message):
-    # Одно сообщение для статуса
     status_msg = await m.answer("🔍 Ищу...")
-    
     try:
         query = m.text.strip()
         track_id_match = re.search(r'track/(\d+)', query)
@@ -39,31 +44,31 @@ async def auto_handle(m: types.Message):
             return
 
         audio_name = f"{track.id}.mp3"
-        cover_name = f"{track.id}.jpg"
-        
         track.download(audio_name)
-        if track.cover_uri:
-            track.download_cover(cover_name, size='200x200')
-            
-        # Отправляем аудио ОДИН РАЗ
+        
         await m.answer_audio(
             audio=FSInputFile(audio_name),
-            caption=f"✅ {track.title} — {', '.join([a.name for a in track.artists])}",
+            caption=f"✅ {track.title}",
             title=track.title,
-            performer=', '.join([a.name for a in track.artists]),
-            thumbnail=FSInputFile(cover_name) if os.path.exists(cover_name) else None
+            performer=', '.join([a.name for a in track.artists])
         )
         
         await status_msg.delete()
-        
         if os.path.exists(audio_name): os.remove(audio_name)
-        if os.path.exists(cover_name): os.remove(cover_name)
-        
     except Exception as e:
         await status_msg.edit_text(f"❌ Ошибка: {str(e)}")
 
+# --- ЗАПУСК ---
 async def main():
-    # Очистка очереди критична для предотвращения дублей при перезапуске
+    # Запуск веб-сервера
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8080)
+    await site.start()
+    
+    # Запуск бота
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
