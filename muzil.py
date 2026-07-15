@@ -92,7 +92,7 @@ async def download_and_send(message: types.Message, track_id: str):
 
 # --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
-async def start(m: types.Message): await m.answer("Привет! Я Skibidi_sound. Используй /help для справки.")
+async def start(m: types.Message): await m.answer("Привет! Я Skibidi_sound. Просто скинь мне ссылку или название трека и я все найду.")
 
 @dp.message(Command("help"))
 async def help_command(m: types.Message):
