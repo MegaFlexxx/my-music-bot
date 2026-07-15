@@ -1,6 +1,7 @@
 import sys
 import os
 import asyncio
+import sqlite3
 import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
@@ -10,7 +11,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 
-# --- ПАТЧ YANDEX MUSIC ---
+# --- 1. ПАТЧ ---
 def apply_patch():
     try:
         import yandex_music
@@ -23,7 +24,25 @@ def apply_patch():
     except ImportError: pass
 apply_patch()
 
-# --- КОНФИГУРАЦИЯ ---
+# --- 2. БАЗА ДАННЫХ ---
+def init_db():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS history 
+                      (user_id INTEGER, title TEXT, artist TEXT)''')
+    conn.commit()
+    conn.close()
+
+def add_to_history(user_id, title, artist):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO history VALUES (?, ?, ?)", (user_id, title, artist))
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- 3. КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
@@ -31,12 +50,14 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ЛОГИКА СКАЧИВАНИЯ ---
+# --- 4. ЛОГИКА ---
 async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥...")
     try:
         track = yandex_client.tracks([track_id])[0]
         f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
+        
+        add_to_history(message.from_user.id, track.title, ", ".join([a.name for a in track.artists]))
         
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
@@ -45,10 +66,8 @@ async def download_and_send(message: types.Message, track_id: str):
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_cover_url = cover_url if cover_url.startswith('http') else "https:" + cover_url
-            with open(c_name, 'wb') as f: 
-                f.write(requests.get(full_cover_url, timeout=10).content)
+            with open(c_name, 'wb') as f: f.write(requests.get(full_cover_url, timeout=10).content)
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
-            
             audio = MP3(f_name, ID3=ID3)
             if audio.tags is None: audio.add_tags(ID3=ID3)
             with open(c_name, 'rb') as img:
@@ -67,22 +86,20 @@ async def download_and_send(message: types.Message, track_id: str):
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
-# --- ВЕБ-СЕРВЕР ДЛЯ UPTIME ROBOT ---
-async def handle(request):
-    return web.Response(text="Бот активен")
-
-async def start_web_server():
-    app = web.Application()
-    app.add_routes([web.get('/', handle)])
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080)))
-    await site.start()
-
-# --- ОБРАБОТЧИКИ ---
+# --- 5. ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Я — Skibidi_sound. Отправь название трека, исполнителя или ссылку, а я найду музыку за считанные секунды.")
+    await m.answer("Я — Skibidi_sound. Пиши название трека, а по команде /history увидишь свои последние скачивания.")
+
+@dp.message(Command("history"))
+async def show_history(m: types.Message):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT title, artist FROM history WHERE user_id = ? ORDER BY rowid DESC LIMIT 5", (m.from_user.id,))
+    rows = cursor.fetchall()
+    conn.close()
+    if not rows: await m.answer("История пуста.")
+    else: await m.answer("🕒 Последние треки:\n" + "\n".join([f"- {r[0]} ({r[1]})" for r in rows]))
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
@@ -100,8 +117,16 @@ async def callback_download(c: types.CallbackQuery):
     await c.answer()
     await download_and_send(c.message, c.data.split("_")[1])
 
+# --- 6. ЗАПУСК ---
+async def handle(request): return web.Response(text="OK")
+
 async def main():
-    await start_web_server()
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080)))
+    await site.start()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
