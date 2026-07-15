@@ -77,7 +77,15 @@ async def download_and_send(message: types.Message, track_id: str):
 
 # --- 4. ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
-async def start(m: types.Message): await m.answer("Привет! Пришли название трека.")
+async def start(m: types.Message): await m.answer("📞 — Алло?
+
+— Ты знаешь, что будешь слушать сегодня?
+
+Нет? Тогда ты пришёл по адресу.
+
+Я — Skibidi_sound. Отправь название трека, исполнителя или ссылку, а я найду музыку за считанные секунды.
+
+🎧 Не бойся нажимать кнопки. Бойся остаться без любимых треков.")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
