@@ -59,9 +59,13 @@ async def download_and_send(message: types.Message, track_id: str):
         
         add_to_history(message.from_user.id, track.title, ", ".join([a.name for a in track.artists]))
         
-        # Генерация описания
-        genre = track.genres[0] if track.genres else "музыка"
-        caption = f"🎵 *{track.title}*\n👤 Исполнитель: {', '.join([a.name for a in track.artists])}\n🏷 Жанр: {genre.capitalize()}\n\n*Бот Skibidi_sound рекомендует!*"
+        # Безопасная генерация описания
+        if hasattr(track, 'genres') and track.genres:
+            genre = track.genres[0].capitalize()
+        else:
+            genre = "Неизвестный жанр"
+            
+        caption = f"🎵 *{track.title}*\n👤 Исполнитель: {', '.join([a.name for a in track.artists])}\n🏷 Жанр: {genre}\n\n*Бот Skibidi_sound рекомендует!*"
         
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
