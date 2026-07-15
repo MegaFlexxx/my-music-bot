@@ -10,7 +10,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 
-# --- 1. ПАТЧ ---
+# --- ПАТЧ YANDEX MUSIC ---
 def apply_patch():
     try:
         import yandex_music
@@ -23,7 +23,7 @@ def apply_patch():
     except ImportError: pass
 apply_patch()
 
-# --- 2. КОНФИГУРАЦИЯ ---
+# --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
@@ -31,7 +31,7 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- 3. ЛОГИКА СКАЧИВАНИЯ ---
+# --- ЛОГИКА СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥...")
     try:
@@ -55,10 +55,9 @@ async def download_and_send(message: types.Message, track_id: str):
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
 
-        thumb = types.FSInputFile(c_name) if os.path.exists(c_name) else None
         await message.answer_audio(
             audio=types.FSInputFile(f_name), 
-            thumbnail=thumb,
+            thumbnail=types.FSInputFile(c_name) if os.path.exists(c_name) else None,
             title=track.title,
             performer=", ".join([a.name for a in track.artists])
         )
@@ -68,7 +67,7 @@ async def download_and_send(message: types.Message, track_id: str):
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
-# --- 4. WEB-СЕРВЕР ДЛЯ UPTIME ROBOT ---
+# --- ВЕБ-СЕРВЕР ДЛЯ UPTIME ROBOT ---
 async def handle(request):
     return web.Response(text="Бот активен")
 
@@ -80,13 +79,30 @@ async def start_web_server():
     site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080)))
     await site.start()
 
-# --- 5. ОБРАБОТЧИКИ И ЗАПУСК ---
+# --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
-async def start(m: types.Message): await m.answer("Я — Skibidi_sound. Отправь название трека, исполнителя или ссылку, а я найду музыку за считанные секунды.")
+async def start(m: types.Message): 
+    await m.answer("Я — Skibidi_sound. Отправь название трека, исполнителя или ссылку, а я найду музыку за считанные секунды.")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
     else:
-        res = yandex_client.search(m.text
+        res = yandex_client.search(m.text, type_='track')
+        if res.tracks:
+            track = res.tracks.results[0]
+            await m.answer(f"✅ Нашел: {track.title} — {track.artists[0].name}", 
+                           reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать", callback_data=f"down_{track.id}")]]))
+
+@dp.callback_query(F.data.startswith("down_"))
+async def callback_download(c: types.CallbackQuery):
+    await c.answer()
+    await download_and_send(c.message, c.data.split("_")[1])
+
+async def main():
+    await start_web_server()
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
