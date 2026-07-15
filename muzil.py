@@ -6,6 +6,7 @@ import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
+from aiogram.types import BotCommand
 from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
@@ -59,7 +60,6 @@ async def download_and_send(message: types.Message, track_id: str):
         
         add_to_history(message.from_user.id, track.title, ", ".join([a.name for a in track.artists]))
         
-        # Безопасная генерация описания
         if hasattr(track, 'genres') and track.genres:
             genre = track.genres[0].capitalize()
         else:
@@ -99,7 +99,19 @@ async def download_and_send(message: types.Message, track_id: str):
 # --- 5. ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Я — Skibidi_sound. Пиши название трека, а по команде /history увидишь свои последние скачивания.")
+    await m.answer("Привет! Я Skibidi_sound. Используй /help, чтобы узнать, что я умею.")
+
+@dp.message(Command("help"))
+async def help_command(m: types.Message):
+    text = (
+        "🤖 **Skibidi_sound — Твой музыкальный помощник**\n\n"
+        "🔍 *Поиск*: Напиши название трека или исполнителя.\n"
+        "📥 *Скачивание*: Нажми кнопку 'Скачать', чтобы получить файл.\n"
+        "🔗 *Ссылки*: Присылай ссылку на трек Яндекс Музыки напрямую.\n"
+        "🕒 /history — Показать 5 последних скачанных треков.\n"
+        "ℹ️ /help — Показать это меню."
+    )
+    await m.answer(text, parse_mode="Markdown")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
@@ -128,9 +140,18 @@ async def callback_download(c: types.CallbackQuery):
     await download_and_send(c.message, c.data.split("_")[1])
 
 # --- 6. ЗАПУСК ---
+async def set_commands():
+    commands = [
+        BotCommand(command="start", description="Запустить бота"),
+        BotCommand(command="help", description="Помощь"),
+        BotCommand(command="history", description="История скачиваний")
+    ]
+    await bot.set_my_commands(commands)
+
 async def handle(request): return web.Response(text="OK")
 
 async def main():
+    await set_commands() # Установка меню команд
     app = web.Application()
     app.router.add_get('/', handle)
     runner = web.AppRunner(app)
@@ -140,4 +161,4 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main())           
