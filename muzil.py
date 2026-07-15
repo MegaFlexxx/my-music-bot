@@ -16,20 +16,20 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
-# --- ФУНКЦИИ БД ---
+# --- ФУНКЦИИ ---
 async def add_to_db(user_id, title, track_id="0"):
     try:
         conn = await asyncpg.connect(DATABASE_URL)
         await conn.execute("INSERT INTO subscriptions1 (user_id, artist_name, artist_id) VALUES ($1, $2, $3)", 
                            user_id, title, str(track_id))
         await conn.close()
-    except Exception as e:
-        print(f"Ошибка БД: {e}")
+    except Exception: pass
 
-# --- ОБРАБОТЧИК ---
+# --- ОСНОВНОЙ ОБРАБОТЧИК ---
 @dp.message(F.text & ~F.text.startswith('/'))
 async def auto_handle(m: types.Message):
-    msg = await m.answer("🔍 Ищу и готовлю файл...")
+    # Отправляем сообщение-статус
+    status_msg = await m.answer("🔍 Ищу...")
     try:
         query = m.text.strip()
         track_id_match = re.search(r'track/(\d+)', query)
@@ -43,18 +43,19 @@ async def auto_handle(m: types.Message):
                 track = res.tracks.results[0]
         
         if not track:
-            return await msg.edit_text("❌ Ничего не нашел.")
-        
-        # Подготовка файлов
-        audio_name = f"{track.id}.mp3"
-        cover_name = f"{track.id}.jpg"
+            await status_msg.edit_text("❌ Ничего не нашел.")
+            return
+
+        # Имена временных файлов
+        audio_name = f"track_{track.id}.mp3"
+        cover_name = f"cover_{track.id}.jpg"
         
         # Скачивание
         track.download(audio_name)
         if track.cover_uri:
             track.download_cover(cover_name, size='200x200')
             
-        # Отправка аудио с метаданными
+        # Отправка аудио
         await m.answer_audio(
             audio=FSInputFile(audio_name),
             caption=f"✅ Нашел: {track.title} — {', '.join([a.name for a in track.artists])}\nБот Skibidi_sound рекомендует!",
@@ -63,19 +64,18 @@ async def auto_handle(m: types.Message):
             thumbnail=FSInputFile(cover_name) if os.path.exists(cover_name) else None
         )
         
-        # Запись в БД и удаление
+        # Запись в БД и удаление статуса
         await add_to_db(m.from_user.id, f"{track.title} — {track.artists[0].name}", track.id)
-        os.remove(audio_name)
+        await status_msg.delete()
+        
+        # Очистка файлов
+        if os.path.exists(audio_name): os.remove(audio_name)
         if os.path.exists(cover_name): os.remove(cover_name)
-        await msg.delete()
         
     except Exception as e:
-        await msg.edit_text(f"Ошибка: {e}")
+        await status_msg.edit_text(f"Ошибка: {e}")
 
-# --- КОМАНДЫ ---
-@dp.message(Command("start"))
-async def start(m: types.Message): await m.answer("Привет! Пришли название или ссылку.")
-
+# --- ЗАПУСК ---
 async def main():
     await dp.start_polling(bot)
 
