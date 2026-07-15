@@ -13,7 +13,9 @@ DATABASE_URL = "postgresql://postgres.plqrkoszdqnxaghcshik:Fortnite_123@aws-0-eu
 
 bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
-yandex_client = Client(YANDEX_TOKEN).init()
+
+# Инициализируем клиент БЕЗ .init(), чтобы избежать ошибки с объектом Product
+yandex_client = Client(YANDEX_TOKEN)
 
 # --- ФУНКЦИИ БД ---
 async def add_to_db(user_id, artist_name, artist_id="0"):
@@ -30,18 +32,18 @@ async def add_to_db(user_id, artist_name, artist_id="0"):
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound. Кидай название трека или ссылку для поиска.")
+    await m.answer("Привет! Я Skibidi_sound. Кидай название трека для поиска.")
 
 @dp.message(Command("subscribe"))
 async def subscribe(m: types.Message):
-    # Убираем команду из текста, чтобы остался только аргумент
+    # Убираем команду
     text = m.text.replace("/subscribe", "").strip()
     if not text:
         await m.answer("Напиши имя артиста: /subscribe [Имя]")
         return
     
     search = yandex_client.search(text, type_='artist')
-    if search.artists:
+    if search.artists and search.artists.results:
         artist = search.artists.results[0]
         await add_to_db(m.from_user.id, artist.name, artist.id)
         await m.answer(f"✅ Ты подписан на уведомления от {artist.name}!")
@@ -50,23 +52,21 @@ async def subscribe(m: types.Message):
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
-    # Код получения истории...
-    await m.answer("🕒 История (пока в разработке)")
+    await m.answer("🕒 История пока в доработке.")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
-    # ЭТОТ ФИЛЬТР ВАЖЕН:
-    # Если сообщение начинается с /, бот вообще не заходит в эту функцию
+    # Если команда - выходим
     if m.text.startswith('/'):
         return
         
     msg = await m.answer("🔍 Ищу...")
-    
     try:
         res = yandex_client.search(m.text, type_='track')
         if res.tracks and res.tracks.results:
             track = res.tracks.results[0]
             artist_name = ", ".join([a.name for a in track.artists])
+            # Сохраняем в БД
             await add_to_db(m.from_user.id, track.title, track.id)
             await msg.edit_text(f"✅ Нашел: {track.title} — {artist_name}")
         else:
