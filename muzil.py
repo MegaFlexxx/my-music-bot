@@ -25,16 +25,17 @@ async def add_to_db(user_id, title, track_id="0"):
     except Exception as e:
         print(f"Ошибка БД: {e}")
 
-# --- АВТО-ОБРАБОТЧИК ---
+# --- ОБРАБОТЧИК ---
 @dp.message(F.text & ~F.text.startswith('/'))
 async def auto_handle(m: types.Message):
+    # Убираем лишние сообщения, чтобы не засорять чат
     msg = await m.answer("🔍 Ищу...")
     try:
         query = m.text.strip()
-        track_id = re.search(r'track/(\d+)', query)
+        track_id_match = re.search(r'track/(\d+)', query)
         track = None
-        if track_id:
-            track = yandex_client.tracks([track_id.group(1)])[0]
+        if track_id_match:
+            track = yandex_client.tracks([track_id_match.group(1)])[0]
         else:
             res = yandex_client.search(query, type_='track')
             if res.tracks and res.tracks.results:
@@ -43,15 +44,17 @@ async def auto_handle(m: types.Message):
         if track:
             name = f"{track.title} — {', '.join([a.name for a in track.artists])}"
             track_url = f"https://music.yandex.ru/album/{track.albums[0].id}/track/{track.id}"
-            await msg.delete() # Убираем "Ищу..."
             
-            # 1. Отправляем ссылку (Telegram сам сделает плашку)
+            # Удаляем сообщение "Ищу..."
+            await msg.delete()
+            
+            # 1. Отправляем ссылку, чтобы Telegram нарисовал карточку с обложкой
             await m.answer(track_url)
             
             # 2. Сохраняем в БД
             await add_to_db(m.from_user.id, name, track.id)
             
-            # 3. Наша кнопка
+            # 3. Отправляем кнопку отдельно
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="🎧 Слушать / Скачать на Яндексе", url=track_url)]
             ])
@@ -64,7 +67,7 @@ async def auto_handle(m: types.Message):
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Просто пришли мне название или ссылку, я найду трек.")
+    await m.answer("Привет! Пришли мне ссылку или название, я найду трек.")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
