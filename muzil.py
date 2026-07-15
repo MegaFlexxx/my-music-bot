@@ -1,12 +1,14 @@
 import asyncio
 import asyncpg
 import os
+import re
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import FSInputFile
 from yandex_music import Client
 
 # --- КОНФИГУРАЦИЯ ---
+# Замените на ваши реальные токены и URL базы данных
 TELEGRAM_TOKEN = "8632244991:AAFUepxkOy7nv_jVqgCD8cl4qceYc_fxoyA" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 DATABASE_URL = "postgresql://postgres.plqrkoszdqnxaghcshik:Fortnite_123@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
@@ -31,43 +33,71 @@ async def auto_handle(m: types.Message):
     msg = await m.answer("🔍 Ищу и готовлю файл...")
     try:
         query = m.text.strip()
-        res = yandex_client.search(query, type_='track')
         
-        if not res.tracks or not res.tracks.results:
+        # Регулярное выражение для поиска ID трека в ссылке
+        track_id_match = re.search(r'track/(\d+)', query)
+        
+        track = None
+        
+        if track_id_match:
+            # Если найдена ссылка, получаем трек по ID
+            track_id = track_id_match.group(1)
+            tracks_res = yandex_client.tracks([track_id])
+            if tracks_res:
+                track = tracks_res[0]
+        else:
+            # Иначе выполняем текстовый поиск
+            res = yandex_client.search(query, type_='track')
+            if res.tracks and res.tracks.results:
+                track = res.tracks.results[0]
+        
+        if not track:
             return await msg.edit_text("❌ Ничего не нашел.")
         
-        track = res.tracks.results[0]
-        file_name = f"{track.title}.mp3"
+        # Подготовка имен файлов
+        base_file_name = f"{track.title}_{track.artists[0].name}"
+        audio_file_name = f"{base_file_name}.mp3"
+        cover_file_name = f"{base_file_name}.jpg"
         
         # Скачиваем трек
-        track.download(file_name)
+        track.download(audio_file_name)
         
-        # Отправляем аудиофайл
-        audio = FSInputFile(file_name)
+        # Скачиваем обложку (если есть)
+        if track.cover_uri:
+            track.download_cover(cover_file_name)
+        
+        # Подготовка аудиофайла
+        audio = FSInputFile(audio_file_name)
+        
+        # Отправляем аудиофайл с обложкой
         await m.answer_audio(
             audio=audio, 
-            caption=f"✅ Нашел: {track.title} — {', '.join([a.name for a in track.artists])}\nБот Skibidi_sound рекомендует!"
+            caption=f"✅ Нашел: {track.title} — {', '.join([a.name for a in track.artists])}\nБот Skibidi_sound рекомендует!",
+            thumbnail=FSInputFile(cover_file_name) if track.cover_uri else None # Прикрепляем обложку
         )
         
-        # Запись в БД и удаление временного файла
+        # Запись в БД
         await add_to_db(m.from_user.id, f"{track.title} — {track.artists[0].name}", track.id)
-        os.remove(file_name)
+        
+        # Удаление временных файлов
+        os.remove(audio_file_name)
+        if track.cover_uri and os.path.exists(cover_file_name):
+            os.remove(cover_file_name)
+            
         await msg.delete()
         
     except Exception as e:
         await msg.edit_text(f"Ошибка при обработке: {e}")
+        # Очистка в случае ошибки
+        if 'audio_file_name' in locals() and os.path.exists(audio_file_name):
+            os.remove(audio_file_name)
+        if 'cover_file_name' in locals() and os.path.exists(cover_file_name):
+            os.remove(cover_file_name)
 
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Пришли название трека, и я пришлю его аудиофайлом.")
-
-@dp.message(Command("history"))
-async def show_history(m: types.Message):
-    conn = await asyncpg.connect(DATABASE_URL)
-    rows = await conn.fetch("SELECT artist_name FROM subscriptions1 WHERE user_id = $1 ORDER BY id DESC LIMIT 5", m.from_user.id)
-    await conn.close()
-    await m.answer("🕒 Последние:\n" + "\n".join([f"- {r['artist_name']}" for r in rows]) if rows else "История пуста.")
+    await m.answer("Привет! Пришли название трека или ссылку на него в Яндекс.Музыке, и я пришлю его аудиофайлом с обложкой.")
 
 async def main():
     await dp.start_polling(bot)
