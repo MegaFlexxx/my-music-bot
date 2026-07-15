@@ -8,10 +8,9 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from yandex_music import Client
 from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, APIC, TIT2, TPE1
-from aiohttp import web
+from mutagen.id3 import ID3, APIC
 
-# --- 1. ПАТЧ (ОДИН РАЗ, ДО ВСЕГО) ---
+# --- 1. ПАТЧ (ИСПРАВЛЕНИЕ ОШИБКИ YANDEX MUSIC) ---
 def apply_patch():
     try:
         import yandex_music
@@ -25,7 +24,7 @@ def apply_patch():
 apply_patch()
 
 # --- 2. КОНФИГУРАЦИЯ ---
-TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" # Вставь сюда свой НОВЫЙ токен из BotFather
+TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 bot = Bot(token=TELEGRAM_TOKEN)
@@ -39,22 +38,32 @@ async def download_and_send(message: types.Message, track_id: str):
         track = yandex_client.tracks([track_id])[0]
         f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
         
+        # Скачивание файла
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
         with open(f_name, 'wb') as f: f.write(requests.get(link, timeout=15).content)
         
+        # Скачивание обложки (Исправлено)
         cover_url = track.get_cover_url('400x400')
         if cover_url:
-            with open(c_name, 'wb') as f: f.write(requests.get("https:"+cover_url, timeout=10).content)
+            full_cover_url = cover_url if cover_url.startswith('http') else "https:" + cover_url
+            with open(c_name, 'wb') as f: 
+                f.write(requests.get(full_cover_url, timeout=10).content)
+            
+            # Обработка картинки
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
+            
+            # Вшиваем теги
             audio = MP3(f_name, ID3=ID3)
             if audio.tags is None: audio.add_tags(ID3=ID3)
             with open(c_name, 'rb') as img:
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
 
+        # Отправка
         thumb = types.FSInputFile(c_name) if os.path.exists(c_name) else None
         await message.answer_audio(audio=types.FSInputFile(f_name), thumbnail=thumb)
+        
         for f in [f_name, c_name]: 
             if os.path.exists(f): os.remove(f)
         await msg.delete()
@@ -63,7 +72,7 @@ async def download_and_send(message: types.Message, track_id: str):
 
 # --- 4. ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
-async def start(m: types.Message): await m.answer("Привет! Пришли ссылку или название.")
+async def start(m: types.Message): await m.answer("Привет! Пришли название или ссылку.")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
@@ -81,8 +90,5 @@ async def callback_download(c: types.CallbackQuery):
     await c.answer(); await download_and_send(c.message, c.data.split("_")[1])
 
 # --- 5. ЗАПУСК ---
-async def main():
-    await dp.start_polling(bot)
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(dp.start_polling(bot))
