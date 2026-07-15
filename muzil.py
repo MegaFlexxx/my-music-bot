@@ -14,10 +14,14 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
-# --- ОБРАБОТЧИК ---
+# --- 1. ОБРАБОТЧИК КОМАНД (они должны быть выше обработчика текста) ---
+@dp.message(Command("start"))
+async def start_handler(m: types.Message):
+    await m.answer("Привет! Пришли название трека или ссылку, и я пришлю его аудиофайлом с обложкой.")
+
+# --- 2. УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ТЕКСТА ---
 @dp.message(F.text & ~F.text.startswith('/'))
 async def auto_handle(m: types.Message):
-    # Отправляем сообщение-статус один раз
     status_msg = await m.answer("🔍 Ищу...")
     
     try:
@@ -35,16 +39,13 @@ async def auto_handle(m: types.Message):
         if not track:
             return await status_msg.edit_text("❌ Ничего не нашел.")
 
-        # Уникальные имена для предотвращения коллизий
         audio_name = f"{track.id}.mp3"
         cover_name = f"{track.id}.jpg"
         
-        # Скачивание
         track.download(audio_name)
         if track.cover_uri:
             track.download_cover(cover_name, size='200x200')
             
-        # ОТПРАВКА ОДИН РАЗ
         await m.answer_audio(
             audio=FSInputFile(audio_name),
             caption=f"✅ {track.title} — {', '.join([a.name for a in track.artists])}",
@@ -53,7 +54,6 @@ async def auto_handle(m: types.Message):
             thumbnail=FSInputFile(cover_name) if os.path.exists(cover_name) else None
         )
         
-        # Удаляем "Ищу..." и временные файлы
         await status_msg.delete()
         if os.path.exists(audio_name): os.remove(audio_name)
         if os.path.exists(cover_name): os.remove(cover_name)
@@ -63,7 +63,6 @@ async def auto_handle(m: types.Message):
 
 # --- ЗАПУСК ---
 async def main():
-    # Очистка очереди сообщений перед запуском (убирает старые "зависшие" команды)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
