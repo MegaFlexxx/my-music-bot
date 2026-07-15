@@ -31,12 +31,19 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- 3. ЛОГИКА СКАЧИВАНИЯ ---
-async def download_and_send(message: types.Message, track_id: str):
-    msg = await message.answer("📥...")
-    try:
-        track = yandex_client.tracks([track_id])[0]
-        f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
+# Получаем данные о треке для красивого имени
+        track_info = track.title
+        artist_info = ", ".join([artist.name for artist in track.artists])
+
+        # Отправка с Thumb и метаданными
+        thumb = types.FSInputFile(c_name) if os.path.exists(c_name) else None
+        
+        await message.answer_audio(
+            audio=types.FSInputFile(f_name), 
+            thumbnail=thumb,
+            title=track_info,        # Название песни
+            performer=artist_info     # Имя исполнителя
+        )
         
         # Скачивание файла
         info = track.get_download_info()
