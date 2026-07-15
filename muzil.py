@@ -12,7 +12,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 
-# --- 1. ПАТЧ ---
+# --- ПАТЧ ---
 def apply_patch():
     try:
         import yandex_music
@@ -25,25 +25,17 @@ def apply_patch():
     except ImportError: pass
 apply_patch()
 
-# --- 2. БАЗА ДАННЫХ ---
+# --- БАЗА ДАННЫХ ---
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS history 
-                      (user_id INTEGER, title TEXT, artist TEXT)''')
-    conn.commit()
-    conn.close()
-
-def add_to_history(user_id, title, artist):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO history VALUES (?, ?, ?)", (user_id, title, artist))
+    cursor.execute('''CREATE TABLE IF NOT EXISTS history (user_id INTEGER, title TEXT, artist TEXT)''')
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- 3. КОНФИГУРАЦИЯ ---
+# --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
@@ -51,20 +43,22 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- 4. ЛОГИКА ---
+# --- ФУНКЦИИ ---
+def add_to_history(user_id, title, artist):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO history VALUES (?, ?, ?)", (user_id, title, artist))
+    conn.commit()
+    conn.close()
+
 async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥...")
     try:
         track = yandex_client.tracks([track_id])[0]
         f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
-        
         add_to_history(message.from_user.id, track.title, ", ".join([a.name for a in track.artists]))
         
-        if hasattr(track, 'genres') and track.genres:
-            genre = track.genres[0].capitalize()
-        else:
-            genre = "Неизвестный жанр"
-            
+        genre = track.genres[0].capitalize() if hasattr(track, 'genres') and track.genres else "Неизвестный жанр"
         caption = f"🎵 *{track.title}*\n👤 Исполнитель: {', '.join([a.name for a in track.artists])}\n🏷 Жанр: {genre}\n\n*Бот Skibidi_sound рекомендует!*"
         
         info = track.get_download_info()
@@ -96,22 +90,13 @@ async def download_and_send(message: types.Message, track_id: str):
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
-# --- 5. ОБРАБОТЧИКИ ---
+# --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
-async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound. Используй /help, чтобы узнать, что я умею.")
+async def start(m: types.Message): await m.answer("Привет! Я Skibidi_sound. Используй /help для справки.")
 
 @dp.message(Command("help"))
 async def help_command(m: types.Message):
-    text = (
-        "🤖 **Skibidi_sound — Твой музыкальный помощник**\n\n"
-        "🔍 *Поиск*: Напиши название трека или исполнителя.\n"
-        "📥 *Скачивание*: Нажми кнопку 'Скачать', чтобы получить файл.\n"
-        "🔗 *Ссылки*: Присылай ссылку на трек Яндекс Музыки напрямую.\n"
-        "🕒 /history — Показать 5 последних скачанных треков.\n"
-        "ℹ️ /help — Показать это меню."
-    )
-    await m.answer(text, parse_mode="Markdown")
+    await m.answer("🤖 **Skibidi_sound**\n\n🔍 *Поиск*: Напиши название трека.\n📥 *Скачивание*: Нажми кнопку.\n🔗 *Ссылки*: Присылай ссылку на Яндекс Музыку.\n🕒 /history — История.\nℹ️ /help — Помощь.", parse_mode="Markdown")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
@@ -125,33 +110,26 @@ async def show_history(m: types.Message):
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
-    if "/track/" in m.text:
-        await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
+    if "/track/" in m.text: await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
     else:
         res = yandex_client.search(m.text, type_='track')
         if res.tracks:
             track = res.tracks.results[0]
-            await m.answer(f"✅ Нашел: {track.title} — {track.artists[0].name}", 
-                           reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать", callback_data=f"down_{track.id}")]]))
+            await m.answer(f"✅ Нашел: {track.title} — {track.artists[0].name}", reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать", callback_data=f"down_{track.id}")]]))
 
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(c: types.CallbackQuery):
     await c.answer()
     await download_and_send(c.message, c.data.split("_")[1])
 
-# --- 6. ЗАПУСК ---
+# --- ЗАПУСК ---
 async def set_commands():
-    commands = [
-        BotCommand(command="start", description="Запустить бота"),
-        BotCommand(command="help", description="Помощь"),
-        BotCommand(command="history", description="История скачиваний")
-    ]
-    await bot.set_my_commands(commands)
+    await bot.set_my_commands([BotCommand(command="start", description="Запуск"), BotCommand(command="help", description="Помощь"), BotCommand(command="history", description="История")])
 
 async def handle(request): return web.Response(text="OK")
 
 async def main():
-    await set_commands() # Установка меню команд
+    await set_commands()
     app = web.Application()
     app.router.add_get('/', handle)
     runner = web.AppRunner(app)
@@ -161,4 +139,4 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    asyncio.run(main())           
+    asyncio.run(main())
