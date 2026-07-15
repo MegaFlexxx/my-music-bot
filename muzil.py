@@ -6,7 +6,6 @@ from aiogram.filters import Command
 from aiogram.types import FSInputFile
 from yandex_music import Client
 
-# --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGSj6V48pH9xz2S5sAIGVj96N52M2pcgPg" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
@@ -14,14 +13,13 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
-# --- 1. ОБРАБОТЧИК КОМАНД (они должны быть выше обработчика текста) ---
 @dp.message(Command("start"))
 async def start_handler(m: types.Message):
-    await m.answer("Привет! Пришли название трека или ссылку, и я пришлю его аудиофайлом с обложкой.")
+    await m.answer("Привет! Пришли название трека, я пришлю его аудиофайлом.")
 
-# --- 2. УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ТЕКСТА ---
 @dp.message(F.text & ~F.text.startswith('/'))
 async def auto_handle(m: types.Message):
+    # Одно сообщение для статуса
     status_msg = await m.answer("🔍 Ищу...")
     
     try:
@@ -37,7 +35,8 @@ async def auto_handle(m: types.Message):
                 track = res.tracks.results[0]
         
         if not track:
-            return await status_msg.edit_text("❌ Ничего не нашел.")
+            await status_msg.edit_text("❌ Ничего не нашел.")
+            return
 
         audio_name = f"{track.id}.mp3"
         cover_name = f"{track.id}.jpg"
@@ -46,6 +45,7 @@ async def auto_handle(m: types.Message):
         if track.cover_uri:
             track.download_cover(cover_name, size='200x200')
             
+        # Отправляем аудио ОДИН РАЗ
         await m.answer_audio(
             audio=FSInputFile(audio_name),
             caption=f"✅ {track.title} — {', '.join([a.name for a in track.artists])}",
@@ -55,14 +55,15 @@ async def auto_handle(m: types.Message):
         )
         
         await status_msg.delete()
+        
         if os.path.exists(audio_name): os.remove(audio_name)
         if os.path.exists(cover_name): os.remove(cover_name)
         
     except Exception as e:
         await status_msg.edit_text(f"❌ Ошибка: {str(e)}")
 
-# --- ЗАПУСК ---
 async def main():
+    # Очистка очереди критична для предотвращения дублей при перезапуске
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
