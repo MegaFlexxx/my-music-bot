@@ -33,7 +33,7 @@ def extract_track_id(text):
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound.\n\nКоманды:\n/find [название или ссылка]\n/subscribe [имя артиста]\n/history")
+    await m.answer("Привет! Я Skibidi_sound.\n\nКоманды:\n/find [ссылка/название]\n/subscribe [артист]\n/subscriptions - список подписок\n/unsubscribe [артист]\n/history")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
@@ -57,6 +57,25 @@ async def subscribe(m: types.Message):
     else:
         await m.answer("Артист не найден.")
 
+@dp.message(Command("subscriptions"))
+async def show_subs(m: types.Message):
+    conn = await asyncpg.connect(DATABASE_URL)
+    subs = await conn.fetch("SELECT DISTINCT artist_name FROM subscriptions1 WHERE user_id = $1 AND artist_id != '0'", m.from_user.id)
+    await conn.close()
+    if not subs: await m.answer("У тебя пока нет подписок.")
+    else: await m.answer("Твои подписки:\n" + "\n".join([f"• {s['artist_name']}" for s in subs]))
+
+@dp.message(Command("unsubscribe"))
+async def unsubscribe(m: types.Message):
+    name = m.text.replace("/unsubscribe", "").strip()
+    if not name:
+        await m.answer("Укажи имя артиста: /unsubscribe [Имя]")
+        return
+    conn = await asyncpg.connect(DATABASE_URL)
+    result = await conn.execute("DELETE FROM subscriptions1 WHERE user_id = $1 AND artist_name = $2", m.from_user.id, name)
+    await conn.close()
+    await m.answer(f"✅ Готово." if result != 'DELETE 0' else "Артист не найден.")
+
 @dp.message(Command("find"))
 async def find_track(m: types.Message):
     query = m.text.replace("/find", "").strip()
@@ -79,10 +98,7 @@ async def find_track(m: types.Message):
             name = f"{track.title} — {', '.join([a.name for a in track.artists])}"
             track_url = f"https://music.yandex.ru/album/{track.albums[0].id}/track/{track.id}"
             await add_to_db(m.from_user.id, name, track.id)
-            
-            kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🎧 Слушать на Яндексе", url=track_url)]
-            ])
+            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🎧 Слушать на Яндексе", url=track_url)]])
             await msg.edit_text(f"✅ Нашел: {name}", reply_markup=kb)
         else:
             await msg.edit_text("❌ Ничего не нашел.")
@@ -91,9 +107,11 @@ async def find_track(m: types.Message):
 
 async def main():
     await bot.set_my_commands([
-        BotCommand(command="start", description="Запуск"),
+        BotCommand(command="start", description="Старт"),
         BotCommand(command="find", description="Найти трек"),
-        BotCommand(command="subscribe", description="Подписка"),
+        BotCommand(command="subscribe", description="Подписаться"),
+        BotCommand(command="subscriptions", description="Мои подписки"),
+        BotCommand(command="unsubscribe", description="Отписаться"),
         BotCommand(command="history", description="История")
     ])
     await dp.start_polling(bot)
