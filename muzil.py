@@ -1,12 +1,10 @@
 import os
 import asyncio
-import requests
 import asyncpg
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import BotCommand
 from yandex_music import Client
-from aiohttp import web
 
 # --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = "8632244991:AAGWwhTLEDM_nxFzbnmkWMGym3pNd3weS-M" 
@@ -17,11 +15,12 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
-# --- ФУНКЦИИ БАЗЫ ДАННЫХ ---
+# --- ФУНКЦИИ БД (работают с таблицей subscriptions1) ---
 async def add_to_history(user_id, title, artist):
     try:
         conn = await asyncpg.connect(DATABASE_URL)
-        await conn.execute("INSERT INTO subscriptions (user_id, artist_name, artist_id) VALUES ($1, $2, $3)", 
+        # Обрати внимание: имя таблицы здесь subscriptions1
+        await conn.execute("INSERT INTO subscriptions1 (user_id, artist_name, artist_id) VALUES ($1, $2, $3)", 
                            user_id, title, artist)
         await conn.close()
     except Exception as e:
@@ -30,56 +29,74 @@ async def add_to_history(user_id, title, artist):
 async def get_history(user_id):
     try:
         conn = await asyncpg.connect(DATABASE_URL)
-        rows = await conn.fetch("SELECT artist_name FROM subscriptions WHERE user_id = $1 ORDER BY id DESC LIMIT 5", user_id)
+        # Имя таблицы subscriptions1
+        rows = await conn.fetch("SELECT artist_name FROM subscriptions1 WHERE user_id = $1 ORDER BY id DESC LIMIT 5", user_id)
         await conn.close()
         return rows
     except Exception as e:
-        print(f"Ошибка БД: {e}")
         return []
+
+# --- ФОНОВАЯ ЗАДАЧА ---
+async def check_new_releases():
+    while True:
+        try:
+            print("Проверка новых релизов...")
+        except Exception as e:
+            print(f"Ошибка: {e}")
+        await asyncio.sleep(86400)
 
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound. Теперь я записываю в историю только найденную музыку!")
+    await m.answer("Привет! Я Skibidi_sound (версия с базой subscriptions1).")
+
+@dp.message(Command("subscribe"))
+async def subscribe(m: types.Message):
+    artist_name = m.text.replace("/subscribe ", "").strip()
+    if not artist_name or artist_name == "/subscribe":
+        await m.answer("Напиши имя артиста: /subscribe [Имя]")
+        return
+    
+    search = yandex_client.search(artist_name, type_='artist')
+    if search.artists:
+        artist = search.artists.results[0]
+        conn = await asyncpg.connect(DATABASE_URL)
+        await conn.execute("INSERT INTO subscriptions1 (user_id, artist_id, artist_name) VALUES ($1, $2, $3)",
+                           m.from_user.id, str(artist.id), artist.name)
+        await conn.close()
+        await m.answer(f"✅ Ты подписан на уведомления от {artist.name}!")
+    else:
+        await m.answer("Артист не найден.")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
     rows = await get_history(m.from_user.id)
-    if not rows: 
-        await m.answer("История пуста.")
+    if not rows: await m.answer("История пуста.")
     else: 
-        history_text = "\n".join([f"- {r['artist_name']}" for r in rows])
-        await m.answer(f"🕒 Последние найденные треки:\n{history_text}")
+        text = "\n".join([f"- {r['artist_name']}" for r in rows])
+        await m.answer(f"🕒 Последние:\n{text}")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
-    # Игнорируем команды, чтобы они не попадали в поиск
-    if m.text.startswith('/'):
-        return
-        
-    msg = await m.answer("🔍 Ищу трек...")
-    
+    if m.text.startswith('/'): return
+    msg = await m.answer("🔍 Ищу...")
     try:
         res = yandex_client.search(m.text, type_='track')
-        
-        if res.tracks and res.tracks.results:
+        if res.tracks:
             track = res.tracks.results[0]
             artist_name = ", ".join([a.name for a in track.artists])
-            
-            # Сохраняем в базу ТОЛЬКО при успешном нахождении трека
             await add_to_history(m.from_user.id, track.title, artist_name)
-            
-            await msg.edit_text(f"✅ Нашел: {track.title} — {artist_name}\n\nТеперь ты можешь скачать его!")
+            await msg.edit_text(f"✅ Нашел: {track.title} — {artist_name}")
         else:
-            await msg.edit_text("❌ Ничего не нашел по этому запросу.")
-            
+            await msg.edit_text("❌ Ничего не нашел.")
     except Exception as e:
-        await msg.edit_text(f"Ошибка при поиске: {e}")
+        await msg.edit_text(f"Ошибка: {e}")
 
-# --- ЗАПУСК ---
 async def main():
+    asyncio.create_task(check_new_releases())
     await bot.set_my_commands([
         BotCommand(command="start", description="Запуск"),
+        BotCommand(command="subscribe", description="Подписка"),
         BotCommand(command="history", description="История")
     ])
     await dp.start_polling(bot)
