@@ -25,70 +25,16 @@ async def add_to_db(user_id, title, track_id="0"):
     except Exception as e:
         print(f"Ошибка БД: {e}")
 
-# --- ВСПОМОГАТЕЛЬНЫЕ ---
-def extract_track_id(text):
-    match = re.search(r'track/(\d+)', text)
-    return match.group(1) if match else None
-
-# --- КОМАНДЫ ---
-@dp.message(Command("start"))
-async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound.\n\nКоманды:\n/find [ссылка/название]\n/subscribe [артист]\n/subscriptions - список подписок\n/unsubscribe [артист]\n/history")
-
-@dp.message(Command("history"))
-async def show_history(m: types.Message):
-    conn = await asyncpg.connect(DATABASE_URL)
-    rows = await conn.fetch("SELECT artist_name FROM subscriptions1 WHERE user_id = $1 ORDER BY id DESC LIMIT 5", m.from_user.id)
-    await conn.close()
-    if not rows: await m.answer("История пуста.")
-    else: await m.answer(f"🕒 Последние записи:\n" + "\n".join([f"- {r['artist_name']}" for r in rows]))
-
-@dp.message(Command("subscribe"))
-async def subscribe(m: types.Message):
-    text = m.text.replace("/subscribe", "").strip()
-    if not text:
-        await m.answer("Напиши имя артиста: /subscribe [Имя]")
-        return
-    search = yandex_client.search(text, type_='artist')
-    if search.artists and search.artists.results:
-        artist = search.artists.results[0]
-        await add_to_db(m.from_user.id, artist.name, artist.id)
-        await m.answer(f"✅ Ты подписан на {artist.name}!")
-    else:
-        await m.answer("Артист не найден.")
-
-@dp.message(Command("subscriptions"))
-async def show_subs(m: types.Message):
-    conn = await asyncpg.connect(DATABASE_URL)
-    subs = await conn.fetch("SELECT DISTINCT artist_name FROM subscriptions1 WHERE user_id = $1 AND artist_id != '0'", m.from_user.id)
-    await conn.close()
-    if not subs: await m.answer("У тебя пока нет подписок.")
-    else: await m.answer("Твои подписки:\n" + "\n".join([f"• {s['artist_name']}" for s in subs]))
-
-@dp.message(Command("unsubscribe"))
-async def unsubscribe(m: types.Message):
-    name = m.text.replace("/unsubscribe", "").strip()
-    if not name:
-        await m.answer("Укажи имя артиста: /unsubscribe [Имя]")
-        return
-    conn = await asyncpg.connect(DATABASE_URL)
-    result = await conn.execute("DELETE FROM subscriptions1 WHERE user_id = $1 AND artist_name = $2", m.from_user.id, name)
-    await conn.close()
-    await m.answer(f"✅ Готово." if result != 'DELETE 0' else "Артист не найден.")
-
-@dp.message(Command("find"))
-async def find_track(m: types.Message):
-    query = m.text.replace("/find", "").strip()
-    if not query:
-        await m.answer("Введите название или ссылку: /find [запрос]")
-        return
-    
+# --- АВТО-ОБРАБОТЧИК (Поиск и ссылки) ---
+@dp.message(F.text & ~F.text.startswith('/'))
+async def auto_handle(m: types.Message):
     msg = await m.answer("🔍 Ищу...")
     try:
-        track_id = extract_track_id(query)
+        query = m.text.strip()
+        track_id = re.search(r'track/(\d+)', query)
         track = None
         if track_id:
-            track = yandex_client.tracks([track_id])[0]
+            track = yandex_client.tracks([track_id.group(1)])[0]
         else:
             res = yandex_client.search(query, type_='track')
             if res.tracks and res.tracks.results:
@@ -98,22 +44,50 @@ async def find_track(m: types.Message):
             name = f"{track.title} — {', '.join([a.name for a in track.artists])}"
             track_url = f"https://music.yandex.ru/album/{track.albums[0].id}/track/{track.id}"
             await add_to_db(m.from_user.id, name, track.id)
-            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🎧 Слушать на Яндексе", url=track_url)]])
+            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🎧 Слушать", url=track_url)]])
             await msg.edit_text(f"✅ Нашел: {name}", reply_markup=kb)
         else:
             await msg.edit_text("❌ Ничего не нашел.")
     except Exception as e:
-        await msg.edit_text(f"Ошибка поиска: {e}")
+        await msg.edit_text(f"Ошибка: {e}")
+
+# --- КОМАНДЫ УПРАВЛЕНИЯ ---
+@dp.message(Command("start"))
+async def start(m: types.Message): 
+    await m.answer("Привет! Просто пришли мне название или ссылку, я найду трек.\n\nКоманды:\n/subscribe [имя] - подписка\n/subscriptions - список\n/unsubscribe [имя] - отписка\n/history - история")
+
+@dp.message(Command("history"))
+async def show_history(m: types.Message):
+    conn = await asyncpg.connect(DATABASE_URL)
+    rows = await conn.fetch("SELECT artist_name FROM subscriptions1 WHERE user_id = $1 ORDER BY id DESC LIMIT 5", m.from_user.id)
+    await conn.close()
+    await m.answer("🕒 Последние:\n" + "\n".join([f"- {r['artist_name']}" for r in rows]) if rows else "История пуста.")
+
+@dp.message(Command("subscribe"))
+async def subscribe(m: types.Message):
+    name = m.text.replace("/subscribe", "").strip()
+    if not name: return await m.answer("Укажи имя артиста.")
+    search = yandex_client.search(name, type_='artist')
+    if search.artists and search.artists.results:
+        await add_to_db(m.from_user.id, search.artists.results[0].name, search.artists.results[0].id)
+        await m.answer(f"✅ Подписан на {search.artists.results[0].name}")
+
+@dp.message(Command("subscriptions"))
+async def show_subs(m: types.Message):
+    conn = await asyncpg.connect(DATABASE_URL)
+    subs = await conn.fetch("SELECT DISTINCT artist_name FROM subscriptions1 WHERE user_id = $1 AND artist_id != '0'", m.from_user.id)
+    await conn.close()
+    await m.answer("Твои подписки:\n" + "\n".join([f"• {s['artist_name']}" for s in subs]) if subs else "Нет подписок.")
+
+@dp.message(Command("unsubscribe"))
+async def unsubscribe(m: types.Message):
+    name = m.text.replace("/unsubscribe", "").strip()
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute("DELETE FROM subscriptions1 WHERE user_id = $1 AND artist_name = $2", m.from_user.id, name)
+    await conn.close()
+    await m.answer("✅ Готово.")
 
 async def main():
-    await bot.set_my_commands([
-        BotCommand(command="start", description="Старт"),
-        BotCommand(command="find", description="Найти трек"),
-        BotCommand(command="subscribe", description="Подписаться"),
-        BotCommand(command="subscriptions", description="Мои подписки"),
-        BotCommand(command="unsubscribe", description="Отписаться"),
-        BotCommand(command="history", description="История")
-    ])
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
