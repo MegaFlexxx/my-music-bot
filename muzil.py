@@ -3,7 +3,7 @@ import asyncpg
 import re
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, InlineKeyboardMarkup, InlineKeyboardButton
 from yandex_music import Client
 
 # --- КОНФИГУРАЦИЯ ---
@@ -19,10 +19,8 @@ yandex_client = Client(YANDEX_TOKEN)
 async def add_to_db(user_id, title, track_id="0"):
     try:
         conn = await asyncpg.connect(DATABASE_URL)
-        await conn.execute(
-            "INSERT INTO subscriptions1 (user_id, artist_name, artist_id) VALUES ($1, $2, $3)", 
-            user_id, title, str(track_id)
-        )
+        await conn.execute("INSERT INTO subscriptions1 (user_id, artist_name, artist_id) VALUES ($1, $2, $3)", 
+                           user_id, title, str(track_id))
         await conn.close()
     except Exception as e:
         print(f"Ошибка БД: {e}")
@@ -35,7 +33,7 @@ def extract_track_id(text):
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound. Доступные команды:\n/find [название или ссылка]\n/subscribe [имя артиста]\n/history")
+    await m.answer("Привет! Я Skibidi_sound.\n\nКоманды:\n/find [название или ссылка]\n/subscribe [имя артиста]\n/history")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
@@ -43,7 +41,7 @@ async def show_history(m: types.Message):
     rows = await conn.fetch("SELECT artist_name FROM subscriptions1 WHERE user_id = $1 ORDER BY id DESC LIMIT 5", m.from_user.id)
     await conn.close()
     if not rows: await m.answer("История пуста.")
-    else: await m.answer(f"🕒 Последние:\n" + "\n".join([f"- {r['artist_name']}" for r in rows]))
+    else: await m.answer(f"🕒 Последние записи:\n" + "\n".join([f"- {r['artist_name']}" for r in rows]))
 
 @dp.message(Command("subscribe"))
 async def subscribe(m: types.Message):
@@ -79,8 +77,13 @@ async def find_track(m: types.Message):
         
         if track:
             name = f"{track.title} — {', '.join([a.name for a in track.artists])}"
+            track_url = f"https://music.yandex.ru/album/{track.albums[0].id}/track/{track.id}"
             await add_to_db(m.from_user.id, name, track.id)
-            await msg.edit_text(f"✅ Нашел: {name}")
+            
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🎧 Слушать на Яндексе", url=track_url)]
+            ])
+            await msg.edit_text(f"✅ Нашел: {name}", reply_markup=kb)
         else:
             await msg.edit_text("❌ Ничего не нашел.")
     except Exception as e:
@@ -89,7 +92,7 @@ async def find_track(m: types.Message):
 async def main():
     await bot.set_my_commands([
         BotCommand(command="start", description="Запуск"),
-        BotCommand(command="find", description="Найти"),
+        BotCommand(command="find", description="Найти трек"),
         BotCommand(command="subscribe", description="Подписка"),
         BotCommand(command="history", description="История")
     ])
