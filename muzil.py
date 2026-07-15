@@ -44,17 +44,21 @@ async def auto_handle(m: types.Message):
             name = f"{track.title} — {', '.join([a.name for a in track.artists])}"
             track_url = f"https://music.yandex.ru/album/{track.albums[0].id}/track/{track.id}"
             await add_to_db(m.from_user.id, name, track.id)
-            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🎧 Слушать", url=track_url)]])
+            
+            # Обновленная кнопка
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🎧 Слушать / Скачать на Яндексе", url=track_url)]
+            ])
             await msg.edit_text(f"✅ Нашел: {name}", reply_markup=kb)
         else:
             await msg.edit_text("❌ Ничего не нашел.")
     except Exception as e:
         await msg.edit_text(f"Ошибка: {e}")
 
-# --- КОМАНДЫ УПРАВЛЕНИЯ ---
+# --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Просто пришли мне название или ссылку, я найду трек.\n\nКоманды:\n/subscribe [имя] - подписка\n/subscriptions - список\n/unsubscribe [имя] - отписка\n/history - история")
+    await m.answer("Привет! Просто пришли мне название или ссылку, и я найду трек.")
 
 @dp.message(Command("history"))
 async def show_history(m: types.Message):
