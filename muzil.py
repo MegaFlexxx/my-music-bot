@@ -14,7 +14,7 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN)
 
-# --- ФУНКЦИИ БД ---
+# --- ФУНКЦИИ БД (работают с таблицей subscriptions1) ---
 async def add_to_db(user_id, artist_name, artist_id="0"):
     conn = await asyncpg.connect(DATABASE_URL)
     await conn.execute(
@@ -23,32 +23,41 @@ async def add_to_db(user_id, artist_name, artist_id="0"):
     )
     await conn.close()
 
+async def get_history_from_db(user_id):
+    conn = await asyncpg.connect(DATABASE_URL)
+    rows = await conn.fetch(
+        "SELECT artist_name FROM subscriptions1 WHERE user_id = $1 ORDER BY id DESC LIMIT 5", 
+        user_id
+    )
+    await conn.close()
+    return rows
+
 # --- ФОНОВАЯ ЗАДАЧА (Мониторинг) ---
 async def check_new_releases():
-    print("Фоновый мониторинг запущен...")
     while True:
         try:
             conn = await asyncpg.connect(DATABASE_URL)
             subs = await conn.fetch("SELECT DISTINCT user_id, artist_id, artist_name FROM subscriptions1 WHERE artist_id != '0'")
             await conn.close()
-
             for sub in subs:
-                # Получаем последний трек артиста
-                artist_tracks = yandex_client.artists_tracks(sub['artist_id'], page_size=1)
-                if artist_tracks.tracks:
-                    track = artist_tracks.tracks[0]
-                    # Здесь можно добавить проверку: если трек новый (сравнить с БД), шлем уведомление
-                    print(f"Проверка: {sub['artist_name']} -> {track.title}")
-            
+                # Фоновая проверка релизов
+                pass
         except Exception as e:
             print(f"Ошибка мониторинга: {e}")
-        
-        await asyncio.sleep(3600) # Проверка каждый час
+        await asyncio.sleep(3600)
 
 # --- КОМАНДЫ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Привет! Я Skibidi_sound. Я слежу за релизами твоих любимых артистов.")
+    await m.answer("Привет! Я Skibidi_sound.\nИспользуй /find [название] для поиска,\n/subscribe [имя] для подписки,\n/history для истории.")
+
+@dp.message(Command("history"))
+async def show_history(m: types.Message):
+    rows = await get_history_from_db(m.from_user.id)
+    if not rows: await m.answer("История пуста.")
+    else: 
+        text = "\n".join([f"- {r['artist_name']}" for r in rows])
+        await m.answer(f"🕒 Последние записи:\n{text}")
 
 @dp.message(Command("subscribe"))
 async def subscribe(m: types.Message):
@@ -56,25 +65,27 @@ async def subscribe(m: types.Message):
     if not text:
         await m.answer("Напиши имя артиста: /subscribe [Имя]")
         return
-    
     search = yandex_client.search(text, type_='artist')
     if search.artists and search.artists.results:
         artist = search.artists.results[0]
         await add_to_db(m.from_user.id, artist.name, artist.id)
-        await m.answer(f"✅ Ты подписан на уведомления от {artist.name}!")
+        await m.answer(f"✅ Ты подписан на {artist.name}!")
     else:
         await m.answer("Артист не найден.")
 
-@dp.message(F.text)
-async def handle_search(m: types.Message):
-    if m.text.startswith('/'): return
+@dp.message(Command("find"))
+async def find_track(m: types.Message):
+    query = m.text.replace("/find", "").strip()
+    if not query:
+        await m.answer("Введите название: /find [название]")
+        return
     msg = await m.answer("🔍 Ищу...")
     try:
-        res = yandex_client.search(m.text, type_='track')
+        res = yandex_client.search(query, type_='track')
         if res.tracks and res.tracks.results:
             track = res.tracks.results[0]
             artist_name = ", ".join([a.name for a in track.artists])
-            await add_to_db(m.from_user.id, track.title)
+            await add_to_db(m.from_user.id, track.title, track.id)
             await msg.edit_text(f"✅ Нашел: {track.title} — {artist_name}")
         else:
             await msg.edit_text("❌ Ничего не нашел.")
@@ -82,12 +93,12 @@ async def handle_search(m: types.Message):
         await msg.edit_text(f"Ошибка: {e}")
 
 async def main():
-    # Запуск фоновой задачи
     asyncio.create_task(check_new_releases())
-    
     await bot.set_my_commands([
         BotCommand(command="start", description="Запуск"),
-        BotCommand(command="subscribe", description="Подписка")
+        BotCommand(command="find", description="Найти трек"),
+        BotCommand(command="subscribe", description="Подписаться"),
+        BotCommand(command="history", description="История")
     ])
     await dp.start_polling(bot)
 
