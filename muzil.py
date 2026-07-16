@@ -163,13 +163,13 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ОБРАБОТЧИК ТЕКСТА ---
+# --- ОБРАБОТЧИК ТЕКСТА (для обычных сообщений) ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
-    print(f"🔍 Ищу: {m.text}")
+    print(f"🔍 Ищу из чата: {m.text}")
     
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
@@ -184,7 +184,7 @@ async def search_command(m: types.Message):
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА ---
+# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (web_app_data) ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
     try:
@@ -198,6 +198,7 @@ async def handle_web_app_data(message: types.Message):
             if not query:
                 return
             
+            # Ищем в Яндекс.Музыке
             res = yandex_client.search(query, type_='track')
             if res.tracks:
                 track = res.tracks.results[0]
