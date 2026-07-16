@@ -26,8 +26,13 @@ def apply_patch():
 apply_patch()
 
 # --- КОНФИГУРАЦИЯ ---
-TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo" 
+TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
+
+# --- ПРОВЕРКА ТОКЕНА ---
+if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "ВАШ_ТОКЕН":
+    print("❌ Токен бота не установлен! Добавь TELEGRAM_TOKEN в код.")
+    sys.exit(1)
 
 session = AiohttpSession()
 bot = Bot(token=TELEGRAM_TOKEN, session=session)
@@ -149,12 +154,14 @@ async def set_commands():
     commands = [
         BotCommand(command="лосяра", description="🦌 ЗОВИ ЛОСЯРУ!"),
     ]
-    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
-    print("✅ Меню команд установлено!")
+    try:
+        await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+        print("✅ Меню команд установлено!")
+    except Exception as e:
+        print(f"⚠️ Не удалось установить меню: {e}")
 
 # --- ОБРАБОТЧИКИ ---
 
-# 1. КОМАНДА /ЛОСЯРА
 @dp.message(Command("лосяра"))
 async def losyara_command(m: types.Message):
     await m.answer(
@@ -165,7 +172,6 @@ async def losyara_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# 2. ВСЁ ОСТАЛЬНОЕ (поиск)
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
@@ -208,8 +214,21 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
-    await set_commands()
-    await asyncio.gather(start_web_server(), dp.start_polling(bot))
+    print("🚀 Запускаем бота...")
+    try:
+        await set_commands()
+    except Exception as e:
+        print(f"⚠️ Ошибка при установке меню: {e}")
+    
+    await asyncio.gather(
+        start_web_server(),
+        dp.start_polling(bot)
+    )
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("👋 Бот остановлен")
+    except Exception as e:
+        print(f"❌ Критическая ошибка: {e}")
