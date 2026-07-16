@@ -2,6 +2,7 @@ import sys
 import os
 import asyncio
 import requests
+import pydanticы
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
