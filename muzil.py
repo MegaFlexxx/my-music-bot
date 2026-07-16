@@ -158,7 +158,16 @@ async def set_commands():
 async def start_command(m: types.Message):
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
-        "🔥 Отправь название трека или исполнителя, и я найду музыку за считанные секунды!",
+        "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
+        "🎮 Или открой полноценный плеер!",
+        reply_markup=types.InlineKeyboardMarkup(
+            inline_keyboard=[[
+                types.InlineKeyboardButton(
+                    text="🎵 Открыть плеер",
+                    web_app=types.WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
+                )
+            ]]
+        ),
         parse_mode="Markdown"
     )
 
