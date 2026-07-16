@@ -5,7 +5,7 @@ import asyncio
 import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandStart  # <-- ДОБАВИЛ CommandStart
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
@@ -266,10 +266,10 @@ async def set_commands():
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
-# --- ОБРАБОТЧИКИ (ПРАВИЛЬНЫЙ ПОРЯДОК) ---
+# --- ОБРАБОТЧИКИ ---
 
-# 1. Команда /start
-@dp.message(Command("start"))
+# 1. /start — через CommandStart (самый надёжный способ)
+@dp.message(CommandStart())
 async def start_command(m: types.Message):
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
@@ -281,7 +281,7 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# 2. Команда /stats
+# 2. /stats
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     user_id_str = str(m.from_user.id)
@@ -320,7 +320,7 @@ async def stats_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# 3. Команда /top
+# 3. /top
 @dp.message(Command("top"))
 async def top_command(m: types.Message):
     top_users = get_top_users()
@@ -346,10 +346,10 @@ async def top_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# 4. Обработчик текстовых сообщений (поиск)
+# 4. Поиск треков (текстовые сообщения)
 @dp.message(F.text)
 async def search_command(m: types.Message):
-    # Пропускаем команды (начинаются с /)
+    # Пропускаем команды
     if m.text.startswith('/'):
         return
     
@@ -367,7 +367,7 @@ async def search_command(m: types.Message):
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# 5. Callback: скачать трек
+# 5. Callback: скачать
 @dp.callback_query(F.data.startswith("down_"))
 async def download_callback(c: types.CallbackQuery):
     await c.answer("🔽 Начинаю загрузку...")
@@ -394,7 +394,7 @@ async def nav_callback(c: types.CallbackQuery):
 async def ignore_callback(c: types.CallbackQuery):
     await c.answer()
 
-# --- ГЛАВНАЯ ФУНКЦИЯ ---
+# --- ГЛАВНАЯ ---
 async def main():
     await set_commands()
     await asyncio.gather(
