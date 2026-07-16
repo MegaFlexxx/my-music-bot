@@ -79,7 +79,7 @@ async def download_and_send(message: types.Message, track_id: str):
             f"🎵 {track.title}\n"
             f"👤 Исполнитель: {artists}\n"
             f"⏱ Длительность: {duration_str}\n"
-            f"💾 Размер: {size_str}\n\n"
+            f"📦 Размер: {size_str}\n\n"
             f"🚽 Бот Skibidi_sound рекомендует!"
         )
         
