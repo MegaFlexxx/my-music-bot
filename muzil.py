@@ -163,17 +163,22 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ТЕКСТОВЫЙ ПОИСК ---
+# --- ГЛАВНЫЙ ОБРАБОТЧИК ПОИСКА (ЛЮБОЙ ТЕКСТ) ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
+    # Пропускаем команды
     if m.text.startswith('/'):
         return
     
-    print(f"📩 Получено сообщение: {m.text}")
+    print(f"🔍 Ищу: {m.text}")
     
+    # Проверяем, есть ли ссылка на трек
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
-    else:
+        return
+    
+    # Обычный поиск в Яндекс.Музыке
+    try:
         res = yandex_client.search(m.text, type_='track')
         if res.tracks:
             user_id = m.from_user.id
@@ -182,6 +187,8 @@ async def search_command(m: types.Message):
             await show_track(m, user_id, 0)
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
+    except Exception as e:
+        await m.answer(f"❌ Ошибка при поиске: {str(e)}")
 
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
