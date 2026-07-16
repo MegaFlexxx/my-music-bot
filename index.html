@@ -235,6 +235,21 @@
         .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; }
         .empty-state h3 { color: #888; margin-bottom: 8px; }
         .empty-state p { font-size: 14px; }
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
         @media (max-width: 400px) {
             .album-art { width: 160px; height: 160px; font-size: 48px; }
             .controls { gap: 12px; }
@@ -245,6 +260,8 @@
 </head>
 <body>
     <div class="container" id="app">
+        <div class="toast" id="toast">✅ Отправлено в бот!</div>
+        
         <div class="header">
             <div class="logo">🎵 Skibidi Sound</div>
             <button class="close-btn" onclick="Telegram.WebApp.close()">✕</button>
@@ -315,11 +332,12 @@
         const state = {
             currentTrack: 0,
             isPlaying: false,
-            tracks: [],  // Пустой массив — никаких демо-треков!
+            tracks: [],
             progressInterval: null
         };
         
         // --- DOM ЭЛЕМЕНТЫ ---
+        const toast = document.getElementById('toast');
         const albumArt = document.getElementById('albumArt');
         const trackTitle = document.getElementById('trackTitle');
         const trackArtist = document.getElementById('trackArtist');
@@ -339,16 +357,32 @@
         const likeBtn = document.getElementById('likeBtn');
         const addBtn = document.getElementById('addBtn');
         
-        // --- ФУНКЦИЯ ОТПРАВКИ В БОТ ---
-        function sendToBot(data) {
-            if (tg) { tg.sendData(JSON.stringify(data)); }
-            console.log('📤 Отправлено в бот:', data);
+        // --- ТОСТ-УВЕДОМЛЕНИЕ ---
+        function showToast(text) {
+            toast.textContent = text;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
         }
         
-        // --- ПОКАЗ POPUP ---
-        function showPopup(title, message) {
-            if (tg) { tg.showPopup({ title: title, message: message, buttons: [{ type: 'ok' }] }); }
-            else { alert(title + '\n\n' + message); }
+        // --- ОТПРАВКА В ЧАТ (НОВЫЙ СПОСОБ!) ---
+        function sendToChat(text) {
+            if (tg) {
+                tg.sendData(JSON.stringify({ text: text }));
+                showToast('✅ Отправлено в бот!');
+            } else {
+                alert('📤 Отправка в бот: ' + text);
+            }
+            console.log('📤 Отправлено в чат:', text);
+        }
+        
+        // --- ФУНКЦИЯ ПОИСКА ---
+        function searchTrack(query) {
+            if (!query) {
+                alert('⚠️ Напиши название трека или исполнителя!');
+                return;
+            }
+            sendToChat(query);
+            searchInput.value = '';
         }
         
         // --- ЗАГРУЗКА ТРЕКА ---
@@ -369,18 +403,16 @@
             progressFill.style.width = '0%';
             currentTime.textContent = '0:00';
             document.querySelectorAll('.track-item').forEach((el, i) => el.classList.toggle('active', i === index));
-            sendToBot({ action: 'load', track: track.title, artist: track.artist, index: index });
         }
         
-        // --- ФУНКЦИЯ ВОСПРОИЗВЕДЕНИЯ ---
+        // --- ВОСПРОИЗВЕДЕНИЕ ---
         function togglePlay() {
             if (state.tracks.length === 0) {
-                showPopup('⚠️', 'Сначала найди трек через поиск!');
+                alert('⚠️ Сначала найди трек через поиск!');
                 return;
             }
             state.isPlaying = !state.isPlaying;
             playBtn.textContent = state.isPlaying ? '⏸️' : '▶️';
-            sendToBot({ action: state.isPlaying ? 'play' : 'pause' });
             if (state.isPlaying) {
                 if (state.progressInterval) clearInterval(state.progressInterval);
                 let progress = parseFloat(progressFill.style.width) || 0;
@@ -431,58 +463,51 @@
             if (tracks.length > 0) loadTrack(0);
         }
         
-        // --- ИЩЕМ ЧЕРЕЗ БОТА ---
-        function searchTrack(query) {
-            if (!query) { showPopup('⚠️', 'Напиши название трека или исполнителя!'); return; }
-            showPopup('🔍 Поиск', `Ищу "${query}" в Яндекс.Музыке...`);
-            sendToBot({ action: 'search', query: query });
-            searchInput.value = '';
-        }
-        
-        // --- ПРИНИМАЕМ ДАННЫЕ ОТ БОТА ---
-        window.handleTracks = function(tracks) {
-            renderTracks(tracks);
-        };
-        
         // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
         playBtn.addEventListener('click', function(e) { e.stopPropagation(); togglePlay(); });
         nextBtn.addEventListener('click', function(e) { e.stopPropagation(); nextTrack(); });
         prevBtn.addEventListener('click', function(e) { e.stopPropagation(); prevTrack(); });
-        shuffleBtn.addEventListener('click', function(e) { e.stopPropagation(); shuffleBtn.style.transform = 'rotate(45deg)'; shuffleBtn.style.opacity = shuffleBtn.style.opacity === '1' ? '0.7' : '1'; sendToBot({ action: 'shuffle' }); });
-        repeatBtn.addEventListener('click', function(e) { e.stopPropagation(); repeatBtn.style.color = repeatBtn.style.color === '#ff6b6b' ? '#fff' : '#ff6b6b'; sendToBot({ action: 'repeat' }); });
+        
+        shuffleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            shuffleBtn.style.transform = 'rotate(45deg)';
+            shuffleBtn.style.opacity = shuffleBtn.style.opacity === '1' ? '0.7' : '1';
+        });
+        
+        repeatBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            repeatBtn.style.color = repeatBtn.style.color === '#ff6b6b' ? '#fff' : '#ff6b6b';
+        });
         
         downloadBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             if (state.tracks.length === 0 || !state.tracks[state.currentTrack]) {
-                showPopup('⚠️', 'Сначала найди трек через поиск!');
+                alert('⚠️ Сначала найди трек через поиск!');
                 return;
             }
             const track = state.tracks[state.currentTrack];
-            sendToBot({ action: 'download', track: track.title, artist: track.artist });
-            showPopup('📥 Скачивание', `Трек "${track.title}" — ${track.artist} скоро будет отправлен!`);
+            sendToChat(`Скачать ${track.title} ${track.artist}`);
         });
         
         likeBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             if (state.tracks.length === 0 || !state.tracks[state.currentTrack]) {
-                showPopup('⚠️', 'Сначала найди трек!');
+                alert('⚠️ Сначала найди трек!');
                 return;
             }
             const track = state.tracks[state.currentTrack];
             likeBtn.textContent = likeBtn.textContent === '❤️' ? '❤️‍🔥' : '❤️';
-            sendToBot({ action: 'like', track: track.title });
-            showPopup('❤️ Лайк!', `Ты лайкнул "${track.title}"!`);
+            sendToChat(`Лайк ${track.title}`);
         });
         
         addBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             if (state.tracks.length === 0 || !state.tracks[state.currentTrack]) {
-                showPopup('⚠️', 'Сначала найди трек!');
+                alert('⚠️ Сначала найди трек!');
                 return;
             }
             const track = state.tracks[state.currentTrack];
-            sendToBot({ action: 'add_to_playlist', track: track.title });
-            showPopup('➕ Добавлено', `Трек "${track.title}" добавлен в плейлист!`);
+            sendToChat(`Добавить в плейлист ${track.title}`);
         });
         
         // --- ПОИСК ---
@@ -496,25 +521,29 @@
         document.getElementById('navPlayer').addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             this.classList.add('active');
-            showPopup('🎵 Плеер', 'Ты на главном экране плеера!');
         });
         document.getElementById('navPlaylists').addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             this.classList.add('active');
-            showPopup('📋 Плейлисты', 'Твои плейлисты будут здесь! 🚀');
+            sendToChat('Показать плейлисты');
         });
         document.getElementById('navFavorites').addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             this.classList.add('active');
-            showPopup('⭐ Избранное', 'Твои любимые треки будут здесь! ❤️');
+            sendToChat('Показать избранное');
         });
         document.getElementById('navProfile').addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             this.classList.add('active');
-            showPopup('👤 Профиль', 'Твоя статистика скоро появится! 📊');
+            sendToChat('Показать профиль');
         });
         
-        // --- ЗАГРУЗКА (ПУСТОЙ ЭКРАН) ---
+        // --- ПОЛУЧЕНИЕ СООБЩЕНИЙ ОТ БОТА ---
+        window.handleTracks = function(tracks) {
+            renderTracks(tracks);
+        };
+        
+        // --- ЗАГРУЗКА ---
         renderTracks([]);
         console.log('🎵 Skibidi Sound Player готов к поиску!');
     </script>
