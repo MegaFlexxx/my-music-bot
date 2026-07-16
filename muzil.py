@@ -182,39 +182,41 @@ async def search_command(m: types.Message):
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (WEB APP DATA) ---
+# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
     """Обрабатывает данные, отправленные из Mini App"""
     try:
         data = json.loads(message.web_app_data.data)
         action = data.get('action')
+        query = data.get('query')
         
-        print(f"📩 Получено из плеера: {data}")  # Лог для отладки
+        print(f"📩 Получено из плеера: {data}")  # Лог в консоль Render
         
-        if action == 'search':
-            query = data.get('query')
-            if query:
-                # Ищем трек в Яндекс.Музыке
-                res = yandex_client.search(query, type_='track')
-                if res.tracks:
-                    track = res.tracks.results[0]
-                    await message.answer(
-                        f"✅ **Нашёл для тебя!**\n\n"
-                        f"🎵 **{track.title}** — {track.artists[0].name}\n"
-                        f"👇 Нажми кнопку, чтобы скачать",
-                        reply_markup=types.InlineKeyboardMarkup(
-                            inline_keyboard=[[
-                                types.InlineKeyboardButton(
-                                    text="📥 Скачать трек",
-                                    callback_data=f"down_{track.id}"
-                                )
-                            ]]
-                        ),
-                        parse_mode="Markdown"
-                    )
-                else:
-                    await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
+        if action == 'search' and query:
+            # Ищем в Яндекс.Музыке
+            res = yandex_client.search(query, type_='track')
+            if res.tracks:
+                track = res.tracks.results[0]
+                artists = ", ".join([a.name for a in track.artists])
+                
+                # Отправляем результат в чат
+                await message.answer(
+                    f"✅ **Нашёл для тебя!**\n\n"
+                    f"🎵 **{track.title}** — {artists}\n"
+                    f"👇 Нажми кнопку, чтобы скачать",
+                    reply_markup=types.InlineKeyboardMarkup(
+                        inline_keyboard=[[
+                            types.InlineKeyboardButton(
+                                text="📥 Скачать трек",
+                                callback_data=f"down_{track.id}"
+                            )
+                        ]]
+                    ),
+                    parse_mode="Markdown"
+                )
+            else:
+                await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
         
         elif action == 'download':
             track = data.get('track')
@@ -233,24 +235,18 @@ async def handle_web_app_data(message: types.Message):
         elif action == 'add_to_playlist':
             track = data.get('track')
             await message.answer(f"➕ Трек **{track}** добавлен в плейлист!")
-        
-        elif action == 'load':
-            track = data.get('track')
-            artist = data.get('artist')
-            print(f"🎵 Загружен трек: {track} — {artist}")
             
     except Exception as e:
-        await message.answer(f"❌ Ошибка: {str(e)}")
         print(f"❌ Ошибка обработки web_app_data: {e}")
+        await message.answer(f"❌ Ошибка: {str(e)}")
 
-# --- CALLBACK: СКАЧИВАНИЕ ---
+# --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
 async def download_callback(c: types.CallbackQuery):
     await c.answer("🔄 Скачиваю...")
     track_id = c.data.replace("down_", "")
     await download_and_send(c.message, track_id)
 
-# --- CALLBACK: НАВИГАЦИЯ ---
 @dp.callback_query(F.data.startswith("nav_"))
 async def nav_callback(c: types.CallbackQuery):
     parts = c.data.split("_")
@@ -270,7 +266,6 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
-    # Кнопка плеера всегда внизу
     await bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(
             text="🎵 Плеер",
