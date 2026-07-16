@@ -163,7 +163,7 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ГЛАВНЫЙ ПОИСК (ЛЮБОЙ ТЕКСТ) ---
+# --- ОБРАБОТЧИК ТЕКСТА ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
@@ -183,6 +183,58 @@ async def search_command(m: types.Message):
         await show_track(m, user_id, 0)
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
+
+# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА ---
+@dp.message(F.web_app_data)
+async def handle_web_app_data(message: types.Message):
+    try:
+        data = json.loads(message.web_app_data.data)
+        action = data.get('action')
+        
+        print(f"📩 Из плеера: {action} {data}")
+        
+        if action == 'search':
+            query = data.get('query')
+            if not query:
+                return
+            
+            res = yandex_client.search(query, type_='track')
+            if res.tracks:
+                track = res.tracks.results[0]
+                artists = ", ".join([a.name for a in track.artists])
+                await message.answer(
+                    f"✅ **Нашёл для тебя!**\n\n"
+                    f"🎵 **{track.title}** — {artists}\n"
+                    f"👇 Нажми кнопку, чтобы скачать",
+                    reply_markup=types.InlineKeyboardMarkup(
+                        inline_keyboard=[[
+                            types.InlineKeyboardButton(
+                                text="📥 Скачать трек",
+                                callback_data=f"down_{track.id}"
+                            )
+                        ]]
+                    ),
+                    parse_mode="Markdown"
+                )
+            else:
+                await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
+        
+        elif action == 'download':
+            track = data.get('track')
+            artist = data.get('artist')
+            await message.answer(f"📥 Скачиваю: {track} — {artist}")
+        
+        elif action == 'like':
+            track = data.get('track')
+            await message.answer(f"❤️ Лайк: {track}")
+        
+        elif action == 'add_to_playlist':
+            track = data.get('track')
+            await message.answer(f"➕ Добавлено в плейлист: {track}")
+            
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
+        await message.answer(f"❌ Ошибка: {str(e)}")
 
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
