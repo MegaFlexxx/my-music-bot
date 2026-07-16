@@ -7,6 +7,7 @@ from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.client.session.aiohttp import AiohttpSession  # НОВОЕ!
 from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
@@ -30,7 +31,9 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
-bot = Bot(token=TELEGRAM_TOKEN)
+# СОЗДАЁМ СЕССИЮ ДЛЯ БОТА (чтобы не было конфликтов)
+session = AiohttpSession()
+bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
@@ -167,7 +170,7 @@ async def download_and_send(message: types.Message, track_id: str):
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
-# --- ВЕБ-СЕРВЕР ДЛЯ UPTIME ROBOT ---
+# --- ВЕБ-СЕРВЕР ---
 async def handle(request):
     return web.Response(text="Бот активен")
 
@@ -182,9 +185,8 @@ async def start_web_server():
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
 
-# --- ФУНКЦИЯ ДЛЯ УСТАНОВКИ МЕНЮ КОМАНД ---
+# --- МЕНЮ КОМАНД ---
 async def set_commands():
-    """Устанавливает меню команд в Telegram"""
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="stats", description="📊 Моя статистика"),
@@ -303,10 +305,7 @@ async def callback_download(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ФУНКЦИЯ ---
 async def main():
-    # Устанавливаем меню команд в Telegram
     await set_commands()
-    
-    # Запускаем веб-сервер и бота параллельно
     await asyncio.gather(
         start_web_server(),
         dp.start_polling(bot)
