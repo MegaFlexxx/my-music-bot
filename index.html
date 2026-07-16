@@ -64,7 +64,9 @@
             cursor: pointer;
             transition: 0.3s;
         }
-        .search-btn:hover { transform: scale(1.02); }
+        .search-btn:hover {
+            transform: scale(1.02);
+        }
         .hint {
             color: #555;
             font-size: 14px;
@@ -79,7 +81,9 @@
             font-size: 14px;
             display: none;
         }
-        .status.show { display: block; }
+        .status.show {
+            display: block;
+        }
         .status.success { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
         .status.error { color: #f87171; background: rgba(248, 113, 113, 0.1); }
         .status.loading { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
@@ -94,7 +98,9 @@
             font-size: 14px;
             transition: 0.3s;
         }
-        .close-btn:hover { background: rgba(255,255,255,0.05); }
+        .close-btn:hover {
+            background: rgba(255,255,255,0.05);
+        }
     </style>
 </head>
 <body>
@@ -120,11 +126,10 @@
     </div>
 
     <script>
+        // --- ИНИЦИАЛИЗАЦИЯ ---
         const tg = Telegram.WebApp;
         tg.expand();
         tg.ready();
-        
-        const BOT_TOKEN = '8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU';
         
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
@@ -135,57 +140,39 @@
             status.className = 'status show ' + type;
         }
         
-        async function searchTrack() {
+        function searchTrack() {
             const query = searchInput.value.trim();
             if (!query) {
                 showStatus('⚠️ Напиши название трека!', 'error');
                 return;
             }
             
-            showStatus('⏳ Отправляю запрос...', 'loading');
+            showStatus('🔍 Ищу "' + query + '"...', 'loading');
             
-            try {
-                // Получаем ID пользователя
-                const user = tg.initDataUnsafe?.user;
-                const chatId = user?.id;
-                
-                if (!chatId) {
-                    showStatus('❌ Не удалось определить пользователя', 'error');
-                    return;
-                }
-                
-                // Отправляем через API бота
-                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: query,
-                        parse_mode: 'Markdown'
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.ok) {
-                    showStatus('✅ Отправлено в бот!', 'success');
-                    setTimeout(() => tg.close(), 1500);
-                } else {
-                    showStatus('❌ Ошибка: ' + result.description, 'error');
-                }
-            } catch (error) {
-                showStatus('❌ Ошибка: ' + error.message, 'error');
-            }
+            // --- ОТПРАВЛЯЕМ ДАННЫЕ НАПРЯМУЮ В БОТА ---
+            tg.sendData(JSON.stringify({
+                action: 'search',
+                query: query
+            }));
+            
+            showStatus('✅ Запрос отправлен в бот!', 'success');
+            
+            // Закрываем через 1.5 секунды
+            setTimeout(() => {
+                tg.close();
+            }, 1500);
         }
         
         searchBtn.addEventListener('click', searchTrack);
+        
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') searchTrack();
         });
         
         searchInput.focus();
+        
         console.log('🎵 Skibidi Sound Player готов!');
+        console.log('📤 Будет отправлять web_app_data в бота');
     </script>
 </body>
 </html>
