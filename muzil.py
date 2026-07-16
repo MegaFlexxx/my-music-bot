@@ -65,7 +65,6 @@ def update_stats(user_id, track_title, artist_name):
     stats[user_id_str]["total_downloads"] += 1
     stats[user_id_str]["last_seen"] = datetime.now().isoformat()
     
-    # Добавляем трек в историю (храним последние 10)
     track_info = {
         "title": track_title,
         "artist": artist_name,
@@ -101,7 +100,6 @@ def get_top_users():
     if not stats:
         return []
     
-    # Сортируем по количеству скачиваний
     sorted_users = sorted(
         stats.items(),
         key=lambda x: x[1]["total_downloads"],
@@ -117,13 +115,11 @@ async def download_and_send(message: types.Message, track_id: str):
         track = yandex_client.tracks([track_id])[0]
         f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
         
-        # Скачиваем трек
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
         with open(f_name, 'wb') as f: 
             f.write(requests.get(link, timeout=15).content)
         
-        # Скачиваем обложку (если есть)
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_cover_url = cover_url if cover_url.startswith('http') else "https:" + cover_url
@@ -131,7 +127,6 @@ async def download_and_send(message: types.Message, track_id: str):
                 f.write(requests.get(full_cover_url, timeout=10).content)
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
             
-            # Вшиваем обложку в MP3
             audio = MP3(f_name, ID3=ID3)
             if audio.tags is None: 
                 audio.add_tags(ID3=ID3)
@@ -139,24 +134,19 @@ async def download_and_send(message: types.Message, track_id: str):
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
         
-        # Получаем данные для статистики
         artists = ", ".join([a.name for a in track.artists])
         track_title = track.title
         
-        # ОБНОВЛЯЕМ СТАТИСТИКУ
         update_stats(message.from_user.id, track_title, artists)
         
-        # Длительность в минутах и секундах
         duration_sec = track.duration_ms // 1000
         minutes = duration_sec // 60
         seconds = duration_sec % 60
         duration_str = f"{minutes}:{seconds:02d}"
         
-        # Размер файла
-        file_size = os.path.getsize(f_name) / (1024 * 1024)  # В МБ
+        file_size = os.path.getsize(f_name) / (1024 * 1024)
         size_str = f"{file_size:.1f} MB"
         
-        # Красивая подпись
         caption = (
             f"🔥 {track_title}\n"
             f"🎤 Исполнитель: {artists}\n"
@@ -165,7 +155,6 @@ async def download_and_send(message: types.Message, track_id: str):
             f"🎧 Skibidi_sound бахает для тебя!"
         )
         
-        # Отправляем аудио с красивым оформлением
         await message.answer_audio(
             audio=types.FSInputFile(f_name),
             thumbnail=types.FSInputFile(c_name) if os.path.exists(c_name) else None,
@@ -174,7 +163,6 @@ async def download_and_send(message: types.Message, track_id: str):
             caption=caption
         )
         
-        # Чистим файлы
         for f in [f_name, c_name]: 
             if os.path.exists(f): 
                 os.remove(f)
@@ -193,14 +181,14 @@ async def start_web_server():
     runner = web.AppRunner(app)
     await runner.setup()
     
-    # Render сам задает порт через переменную PORT
     port = int(os.environ.get('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
-    print(f"✅ Пинг-URL: http://0.0.0.0:{port}")
 
 # --- ОБРАБОТЧИКИ ---
+
+# 1. Обработчик команды /start
 @dp.message(Command("start"))
 async def start(m: types.Message): 
     await m.answer(
@@ -213,6 +201,7 @@ async def start(m: types.Message):
         parse_mode="Markdown"
     )
 
+# 2. Обработчик команды /stats
 @dp.message(Command("stats"))
 async def show_stats(m: types.Message):
     user_id_str = str(m.from_user.id)
@@ -229,16 +218,11 @@ async def show_stats(m: types.Message):
     last_seen = datetime.fromisoformat(user_stats["last_seen"]).strftime("%d.%m.%Y")
     track_count = len(user_stats["tracks"])
     
-    # Считаем общую длительность всех треков
-    total_sec = 0
-    for track in user_stats["tracks"]:
-        # Упрощённо: считаем, что каждый трек в среднем 3 минуты (180 сек)
-        total_sec += 180
+    total_sec = track_count * 180
     total_min = total_sec // 60
     total_hours = total_min // 60
     total_min_remain = total_min % 60
     
-    # Формируем ответ
     text = (
         f"📊 **Твоя статистика**\n\n"
         f"🎵 **Скачано треков:** {total_downloads}\n"
@@ -249,7 +233,6 @@ async def show_stats(m: types.Message):
         f"🔄 **Последний раз:** {last_seen}\n"
     )
     
-    # Показываем последние 5 треков
     if user_stats["tracks"]:
         text += "\n📋 **Последние треки:**\n"
         for i, track in enumerate(user_stats["tracks"][-5:], 1):
@@ -257,6 +240,7 @@ async def show_stats(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
+# 3. Обработчик команды /top
 @dp.message(Command("top"))
 async def show_top(m: types.Message):
     top_users = get_top_users()
@@ -267,7 +251,6 @@ async def show_top(m: types.Message):
     
     text = "🏆 **ТОП ПОЛЬЗОВАТЕЛЕЙ**\n\n"
     for i, (user_id, data) in enumerate(top_users, 1):
-        # Пытаемся получить имя пользователя
         try:
             user = await bot.get_chat(int(user_id))
             name = user.first_name or user.username or "Аноним"
@@ -283,9 +266,13 @@ async def show_top(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
+# 4. Обработчик текстовых сообщений (поиск треков)
 @dp.message(F.text)
 async def handle_search(m: types.Message):
-    # Обновляем статистику поисков
+    # ПРОВЕРЯЕМ: если это команда (начинается с /) - игнорируем
+    if m.text.startswith('/'):
+        return
+    
     update_search(m.from_user.id)
     
     if "/track/" in m.text:
@@ -307,6 +294,7 @@ async def handle_search(m: types.Message):
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
+# 5. Обработчик callback-запросов (кнопки)
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(c: types.CallbackQuery):
     await c.answer("🔽 Начинаю загрузку...")
@@ -314,7 +302,6 @@ async def callback_download(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ФУНКЦИЯ ---
 async def main():
-    # Запускаем веб-сервер и бота параллельно
     await asyncio.gather(
         start_web_server(),
         dp.start_polling(bot)
