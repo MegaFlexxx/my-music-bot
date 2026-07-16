@@ -60,12 +60,9 @@ async def download_and_send(message: types.Message, track_id: str):
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
         
-        # --- КРАСИВОЕ ОФОРМЛЕНИЕ ---
+        # --- КРАСИВОЕ ОФОРМЛЕНИЕ (БЕЗ Markdown, ЧТОБЫ НЕ БЫЛО ОШИБОК) ---
         # Исполнители
         artists = ", ".join([a.name for a in track.artists])
-        
-        # Жанр (если есть) — в yandex-music нет жанра по умолчанию, ставим заглушку
-        genre = "Неизвестный жанр"
         
         # Длительность в минутах и секундах
         duration_sec = track.duration_ms // 1000
@@ -77,24 +74,22 @@ async def download_and_send(message: types.Message, track_id: str):
         file_size = os.path.getsize(f_name) / (1024 * 1024)  # В МБ
         size_str = f"{file_size:.1f} MB"
         
-        # Красивая подпись
+        # Красивая подпись (БЕЗ Markdown, просто текст)
         caption = (
-            f"🚽 **{track.title}**\n"
-            f"👤 **Исполнитель:** {artists}\n"
-            f"🎶 **Жанр:** {genre}\n"
-            f"⏱ **Длительность:** {duration_str}\n"
-            f"📦 **Размер:** {size_str}\n\n"
-            f"🤖 **Бот Skibidi_sound рекомендует!**"
+            f"🎵 {track.title}\n"
+            f"👤 Исполнитель: {artists}\n"
+            f"⏱ Длительность: {duration_str}\n"
+            f"📦 Размер: {size_str}\n\n"
+            f"🤖 Бот Skibidi_sound рекомендует!"
         )
         
-        # Отправляем аудио с красивым оформлением
+        # Отправляем аудио с красивым оформлением (БЕЗ parse_mode)
         await message.answer_audio(
             audio=types.FSInputFile(f_name),
             thumbnail=types.FSInputFile(c_name) if os.path.exists(c_name) else None,
             title=track.title,
             performer=artists,
-            caption=caption,
-            parse_mode="Markdown"
+            caption=caption
         )
         
         # Чистим файлы
@@ -126,7 +121,7 @@ async def start_web_server():
 # --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("🎵 **Skibidi_sound** — твой музыкальный помощник!\n\nОтправь название трека или исполнителя, и я найду музыку за считанные секунды! 🔥", parse_mode="Markdown")
+    await m.answer("🎵 Skibidi_sound — твой музыкальный помощник!\n\nОтправь название трека или исполнителя, и я найду музыку за считанные секунды! 🔥")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
@@ -137,10 +132,9 @@ async def handle_search(m: types.Message):
         if res.tracks:
             track = res.tracks.results[0]
             await m.answer(
-                f"✅ **Нашел трек!**\n\n"
-                f"🎵 **{track.title}** — **{track.artists[0].name}**\n"
-                f"👇 Нажми на кнопку, чтобы скачать", 
-                parse_mode="Markdown",
+                f"✅ Нашел трек!\n\n"
+                f"🎵 {track.title} — {track.artists[0].name}\n"
+                f"👇 Нажми на кнопку, чтобы скачать",
                 reply_markup=types.InlineKeyboardMarkup(
                     inline_keyboard=[[
                         types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")
