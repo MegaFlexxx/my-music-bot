@@ -3,6 +3,9 @@ import os
 import json
 import asyncio
 import requests
+import zipfile
+import io
+import random
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -40,142 +43,172 @@ bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ДЛЯ КАЖДОГО ПОЛЬЗОВАТЕЛЯ ---
-user_search_results = {}  # {user_id: [список треков]}
-user_current_position = {}  # {user_id: текущая_позиция}
+# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ---
+user_search_results = {}
+user_current_position = {}
+playlist_counter = 1
 
-# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN ---
-def load_stats():
+# --- ЗАГРУЗКА/СОХРАНЕНИЕ ДАННЫХ ---
+def load_data():
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
-        headers = {
-            "X-Master-Key": JSONBIN_API_KEY,
-            "X-Bin-Private": "false"
-        }
+        headers = {"X-Master-Key": JSONBIN_API_KEY, "X-Bin-Private": "false"}
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             data = response.json()
             record = data.get("record", {})
-            if isinstance(record, dict) and "users" in record:
-                return record.get("users", {})
             return record
-        else:
-            print(f"❌ Ошибка загрузки: {response.status_code}")
-            return {}
+        return {}
     except Exception as e:
-        print(f"❌ Ошибка загрузки статистики: {e}")
+        print(f"❌ Ошибка загрузки: {e}")
         return {}
 
-def save_stats(stats):
+def save_data(data):
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
-        headers = {
-            "X-Master-Key": JSONBIN_API_KEY,
-            "Content-Type": "application/json",
-            "X-Bin-Private": "false"
-        }
-        data_to_save = {"users": stats}
-        response = requests.put(url, json=data_to_save, headers=headers, timeout=10)
+        headers = {"X-Master-Key": JSONBIN_API_KEY, "Content-Type": "application/json", "X-Bin-Private": "false"}
+        response = requests.put(url, json=data, headers=headers, timeout=10)
         if response.status_code == 200:
-            print("✅ Статистика сохранена в JSONBin")
+            print("✅ Данные сохранены в JSONBin")
         else:
             print(f"❌ Ошибка сохранения: {response.status_code}")
     except Exception as e:
-        print(f"❌ Ошибка сохранения статистики: {e}")
+        print(f"❌ Ошибка: {e}")
 
-def update_stats(user_id, track_title, artist_name):
-    stats = load_stats()
-    user_id_str = str(user_id)
+# --- ФУНКЦИИ ДЛЯ ПЛЕЙЛИСТОВ ---
+def get_playlists_data():
+    data = load_data()
+    if "playlists" not in data:
+        data["playlists"] = {}
+        data["playlist_counter"] = 1
+    return data
+
+def save_playlists_data(data):
+    save_data(data)
+
+def create_playlist(chat_id, creator_id, name):
+    data = get_playlists_data()
+    playlist_id = data.get("playlist_counter", 1)
     
-    if user_id_str not in stats:
-        stats[user_id_str] = {
-            "total_downloads": 0,
-            "total_searches": 0,
-            "tracks": [],
-            "first_seen": datetime.now().isoformat(),
-            "last_seen": datetime.now().isoformat()
-        }
-    
-    stats[user_id_str]["total_downloads"] += 1
-    stats[user_id_str]["last_seen"] = datetime.now().isoformat()
-    
-    track_info = {
-        "title": track_title,
-        "artist": artist_name,
-        "date": datetime.now().isoformat()
+    data["playlists"][str(playlist_id)] = {
+        "name": name,
+        "chat_id": chat_id,
+        "creator": creator_id,
+        "tracks": [],
+        "created": datetime.now().isoformat(),
+        "likes": 0
     }
-    stats[user_id_str]["tracks"].append(track_info)
-    if len(stats[user_id_str]["tracks"]) > 10:
-        stats[user_id_str]["tracks"] = stats[user_id_str]["tracks"][-10:]
-    
-    save_stats(stats)
+    data["playlist_counter"] = playlist_id + 1
+    save_playlists_data(data)
+    return playlist_id
 
-def update_search(user_id):
-    stats = load_stats()
-    user_id_str = str(user_id)
+def add_track_to_playlist(playlist_id, track_id, track_title, track_artist, added_by):
+    data = get_playlists_data()
+    playlist_id_str = str(playlist_id)
     
-    if user_id_str not in stats:
-        stats[user_id_str] = {
-            "total_downloads": 0,
-            "total_searches": 0,
-            "tracks": [],
-            "first_seen": datetime.now().isoformat(),
-            "last_seen": datetime.now().isoformat()
-        }
+    if playlist_id_str not in data["playlists"]:
+        return None
     
-    stats[user_id_str]["total_searches"] += 1
-    stats[user_id_str]["last_seen"] = datetime.now().isoformat()
-    save_stats(stats)
+    track = {
+        "track_id": track_id,
+        "title": track_title,
+        "artist": track_artist,
+        "added_by": added_by,
+        "added_at": datetime.now().isoformat(),
+        "likes": 0
+    }
+    
+    data["playlists"][playlist_id_str]["tracks"].append(track)
+    save_playlists_data(data)
+    return track
 
-def get_top_users():
-    stats = load_stats()
-    if not stats:
+def get_playlist(playlist_id):
+    data = get_playlists_data()
+    playlist_id_str = str(playlist_id)
+    return data["playlists"].get(playlist_id_str)
+
+def get_playlists_in_chat(chat_id):
+    data = get_playlists_data()
+    result = []
+    for pid, playlist in data["playlists"].items():
+        if playlist["chat_id"] == chat_id:
+            result.append((pid, playlist))
+    return result
+
+def like_track(playlist_id, track_index):
+    data = get_playlists_data()
+    playlist_id_str = str(playlist_id)
+    
+    if playlist_id_str not in data["playlists"]:
+        return False
+    
+    tracks = data["playlists"][playlist_id_str]["tracks"]
+    if track_index < 0 or track_index >= len(tracks):
+        return False
+    
+    tracks[track_index]["likes"] += 1
+    save_playlists_data(data)
+    return True
+
+def remove_track(playlist_id, track_index, user_id):
+    data = get_playlists_data()
+    playlist_id_str = str(playlist_id)
+    
+    if playlist_id_str not in data["playlists"]:
+        return False, "Плейлист не найден"
+    
+    playlist = data["playlists"][playlist_id_str]
+    
+    # Только создатель может удалять
+    if playlist["creator"] != user_id:
+        return False, "❌ Только создатель плейлиста может удалять треки"
+    
+    tracks = playlist["tracks"]
+    if track_index < 0 or track_index >= len(tracks):
+        return False, "❌ Трек не найден"
+    
+    removed = tracks.pop(track_index)
+    save_playlists_data(data)
+    return True, f"✅ Трек '{removed['title']}' удалён"
+
+# --- ПОИСК ПО ИСПОЛНИТЕЛЮ ---
+def search_tracks_by_artist(artist_name):
+    try:
+        result = yandex_client.search(artist_name, type_='track')
+        if result.tracks:
+            return result.tracks.results[:5]
         return []
-    
-    sorted_users = sorted(
-        stats.items(),
-        key=lambda x: x[1]["total_downloads"],
-        reverse=True
-    )[:5]
-    
-    return sorted_users
+    except Exception as e:
+        print(f"❌ Ошибка поиска по исполнителю: {e}")
+        return []
 
-# --- ФУНКЦИЯ ДЛЯ ПОКАЗА ТРЕКА С КНОПКАМИ ---
+# --- ФУНКЦИЯ ДЛЯ ПОКАЗА ТРЕКА ---
 async def show_track(message: types.Message, user_id: int, position: int):
-    """Показывает трек на определённой позиции с кнопками"""
     results = user_search_results.get(user_id, [])
-    
     if not results or position >= len(results):
         await message.answer("❌ Треки закончились!")
         return
     
     track = results[position]
     total = len(results)
+    artists = ", ".join([a.name for a in track.artists])
     
-    # Формируем кнопки
-    buttons = []
+    buttons = [
+        [types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")]
+    ]
     
-    # Кнопка скачать
-    buttons.append([types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")])
-    
-    # Кнопки навигации
     nav_buttons = []
     if position > 0:
         nav_buttons.append(types.InlineKeyboardButton(text="◀️ Назад", callback_data=f"nav_{user_id}_{position-1}"))
     if position < total - 1:
         nav_buttons.append(types.InlineKeyboardButton(text="Вперёд ▶️", callback_data=f"nav_{user_id}_{position+1}"))
-    
     if nav_buttons:
         buttons.append(nav_buttons)
     
-    # Информация о прогрессе
-    info_button = [types.InlineKeyboardButton(text=f"📌 {position+1}/{total}", callback_data="ignore")]
-    buttons.append(info_button)
+    buttons.append([types.InlineKeyboardButton(text=f"📌 {position+1}/{total}", callback_data="ignore")])
     
     reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
     
-    # Показываем трек
-    artists = ", ".join([a.name for a in track.artists])
     await message.answer(
         f"🎵 **{track.title}**\n"
         f"👤 **Исполнитель:** {artists}\n"
@@ -185,8 +218,8 @@ async def show_track(message: types.Message, user_id: int, position: int):
         reply_markup=reply_markup
     )
 
-# --- ЛОГИКА СКАЧИВАНИЯ ---
-async def download_and_send(message: types.Message, track_id: str):
+# --- СКАЧИВАНИЕ ---
+async def download_and_send(message: types.Message, track_id: str, from_playlist=False):
     msg = await message.answer("📥 Ищу трек...")
     try:
         track = yandex_client.tracks([track_id])[0]
@@ -203,7 +236,6 @@ async def download_and_send(message: types.Message, track_id: str):
             with open(c_name, 'wb') as f: 
                 f.write(requests.get(full_cover_url, timeout=10).content)
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
-            
             audio = MP3(f_name, ID3=ID3)
             if audio.tags is None: 
                 audio.add_tags(ID3=ID3)
@@ -213,14 +245,9 @@ async def download_and_send(message: types.Message, track_id: str):
         
         artists = ", ".join([a.name for a in track.artists])
         track_title = track.title
-        
-        update_stats(message.from_user.id, track_title, artists)
-        
         duration_sec = track.duration_ms // 1000
-        minutes = duration_sec // 60
-        seconds = duration_sec % 60
+        minutes, seconds = duration_sec // 60, duration_sec % 60
         duration_str = f"{minutes}:{seconds:02d}"
-        
         file_size = os.path.getsize(f_name) / (1024 * 1024)
         size_str = f"{file_size:.1f} MB"
         
@@ -232,15 +259,31 @@ async def download_and_send(message: types.Message, track_id: str):
             f"🎧 Skibidi_sound бахает для тебя!"
         )
         
+        # Создаём кнопки для добавления в плейлист
+        buttons = [
+            [types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track_id}")],
+            [types.InlineKeyboardButton(text="➕ Добавить в плейлист", callback_data=f"add_to_playlist_{track_id}")]
+        ]
+        
+        # Если это не из плейлиста, кнопки будут другие
+        if not from_playlist:
+            buttons = [
+                [types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track_id}")],
+                [types.InlineKeyboardButton(text="➕ Добавить в плейлист", callback_data=f"add_to_playlist_{track_id}")]
+            ]
+        
+        reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+        
         await message.answer_audio(
             audio=types.FSInputFile(f_name),
             thumbnail=types.FSInputFile(c_name) if os.path.exists(c_name) else None,
             title=track_title,
             performer=artists,
-            caption=caption
+            caption=caption,
+            reply_markup=reply_markup
         )
         
-        for f in [f_name, c_name]: 
+        for f in [f_name, c_name]:
             if os.path.exists(f): 
                 os.remove(f)
         await msg.delete()
@@ -257,161 +300,337 @@ async def start_web_server():
     app.add_routes([web.get('/', handle)])
     runner = web.AppRunner(app)
     await runner.setup()
-    
     port = int(os.environ.get('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    print(f"✅ Веб-сервер запущен на порту {port}")
+    print(f"✅ Веб-сервер на порту {port}")
 
 # --- МЕНЮ КОМАНД ---
 async def set_commands():
     commands = [
-        BotCommand(command="start", description="🚀 Запустить бота"),
-        BotCommand(command="stats", description="📊 Моя статистика"),
-        BotCommand(command="top", description="🏆 Топ пользователей"),
+        BotCommand(command="лосяра", description="🦌 Зови лосяру!"),
+        BotCommand(command="создать_плейлист", description="🎵 Создать новый плейлист"),
+        BotCommand(command="плейлист", description="📋 Посмотреть плейлист"),
+        BotCommand(command="плейлисты", description="📋 Все плейлисты в чате"),
+        BotCommand(command="лайк", description="❤️ Лайкнуть трек в плейлисте"),
+        BotCommand(command="добавить_в_плейлист", description="➕ Добавить трек в плейлист"),
+        BotCommand(command="удалить_из_плейлиста", description="❌ Удалить трек из плейлиста"),
+        BotCommand(command="случайный", description="🎲 Случайный трек"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
-# --- ОБРАБОТЧИКИ ---
+# --- КОМАНДЫ ---
 
-@dp.message(Command("start"))
-async def start(m: types.Message): 
+# --- /ЛОСЯРА (СТАРТ) ---
+@dp.message(Command("лосяра"))
+async def losyara_command(m: types.Message):
     await m.answer(
+        "🦌 **ЛОСЯРА ПРИШЁЛ!** \n\n"
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "📌 **Команды:**\n"
-        "/stats — твоя статистика\n"
-        "/top — топ пользователей\n"
-        "/start — показать это сообщение\n\n"
-        "🔥 Отправь название трека или исполнителя, и я найду музыку за считанные секунды!",
+        "/лосяра — позвать лосяру\n"
+        "/создать_плейлист Название — создать новый плейлист\n"
+        "/плейлист ID — посмотреть плейлист\n"
+        "/плейлисты — все плейлисты в чате\n"
+        "/добавить_в_плейлист ID ссылка_на_трек — добавить трек\n"
+        "/удалить_из_плейлиста ID номер_трека — удалить трек\n"
+        "/лайк ID номер_трека — лайкнуть трек\n"
+        "/случайный — случайный трек\n\n"
+        "🔥 Отправь название трека или исполнителя, и я найду музыку!",
         parse_mode="Markdown"
     )
 
-@dp.message(Command("stats"))
-async def show_stats(m: types.Message):
-    user_id_str = str(m.from_user.id)
-    stats = load_stats()
-    
-    if user_id_str not in stats:
-        await m.answer("📊 У тебя пока нет скачанных треков. Начни искать музыку! 🎵")
+@dp.message(Command("start"))
+async def start_command(m: types.Message):
+    await losyara_command(m)
+
+# --- /СЛУЧАЙНЫЙ ---
+@dp.message(Command("случайный"))
+async def random_track_command(m: types.Message):
+    await m.answer("🎲 Ищу случайный трек...")
+    try:
+        # Ищем популярные треки
+        res = yandex_client.search("популярное", type_='track')
+        if res.tracks:
+            track = random.choice(res.tracks.results)
+            await download_and_send(m, track.id)
+        else:
+            await m.answer("❌ Не нашёл ни одного трека")
+    except Exception as e:
+        await m.answer(f"❌ Ошибка: {str(e)}")
+
+# --- /СОЗДАТЬ_ПЛЕЙЛИСТ ---
+@dp.message(Command("создать_плейлист"))
+async def create_playlist_command(m: types.Message):
+    args = m.text.split(maxsplit=1)
+    if len(args) < 2:
+        await m.answer("❌ Напиши название плейлиста:\n`/создать_плейлист Мои хиты`", parse_mode="Markdown")
         return
     
-    user_stats = stats[user_id_str]
-    total_downloads = user_stats["total_downloads"]
-    total_searches = user_stats["total_searches"]
-    first_seen = datetime.fromisoformat(user_stats["first_seen"]).strftime("%d.%m.%Y")
-    last_seen = datetime.fromisoformat(user_stats["last_seen"]).strftime("%d.%m.%Y")
-    track_count = len(user_stats["tracks"])
+    name = args[1].strip()
+    chat_id = m.chat.id
+    user_id = m.from_user.id
     
-    total_sec = track_count * 180
-    total_min = total_sec // 60
-    total_hours = total_min // 60
-    total_min_remain = total_min % 60
+    playlist_id = create_playlist(chat_id, user_id, name)
+    await m.answer(
+        f"🎵 **Плейлист создан!**\n\n"
+        f"📌 **Название:** {name}\n"
+        f"🆔 **ID:** {playlist_id}\n"
+        f"👤 **Создатель:** {m.from_user.first_name}\n\n"
+        f"➕ Добавить трек: `/добавить_в_плейлист {playlist_id} ссылка_на_трек`\n"
+        f"📋 Посмотреть: `/плейлист {playlist_id}`",
+        parse_mode="Markdown"
+    )
+
+# --- /ПЛЕЙЛИСТ ---
+@dp.message(Command("плейлист"))
+async def show_playlist_command(m: types.Message):
+    args = m.text.split(maxsplit=1)
+    if len(args) < 2:
+        await m.answer("❌ Укажи ID плейлиста:\n`/плейлист 42`", parse_mode="Markdown")
+        return
     
+    try:
+        playlist_id = int(args[1].strip())
+    except:
+        await m.answer("❌ ID должен быть числом")
+        return
+    
+    playlist = get_playlist(playlist_id)
+    if not playlist:
+        await m.answer("❌ Плейлист не найден")
+        return
+    
+    tracks = playlist["tracks"]
     text = (
-        f"📊 **Твоя статистика**\n\n"
-        f"🎵 **Скачано треков:** {total_downloads}\n"
-        f"🔍 **Поисков:** {total_searches}\n"
-        f"📁 **В истории:** {track_count} треков\n"
-        f"⏱ **Прослушано:** {total_hours}ч {total_min_remain}мин\n"
-        f"📅 **Первый раз:** {first_seen}\n"
-        f"🔄 **Последний раз:** {last_seen}\n"
+        f"🎵 **{playlist['name']}**\n"
+        f"🆔 **ID:** {playlist_id}\n"
+        f"👤 **Создатель:** {playlist['creator']}\n"
+        f"📊 **Треков:** {len(tracks)}\n\n"
     )
     
-    if user_stats["tracks"]:
-        text += "\n📋 **Последние треки:**\n"
-        for i, track in enumerate(user_stats["tracks"][-5:], 1):
-            text += f"{i}. {track['artist']} — {track['title']}\n"
+    if not tracks:
+        text += "📭 Плейлист пуст. Добавь первый трек!"
+    else:
+        for i, track in enumerate(tracks, 1):
+            likes = "❤️" + "❤️" * min(track.get("likes", 0), 5)
+            text += f"{i}. **{track['title']}** — {track['artist']} {likes}\n"
     
     await m.answer(text, parse_mode="Markdown")
 
-@dp.message(Command("top"))
-async def show_top(m: types.Message):
-    top_users = get_top_users()
+# --- /ПЛЕЙЛИСТЫ (все в чате) ---
+@dp.message(Command("плейлисты"))
+async def list_playlists_command(m: types.Message):
+    chat_id = m.chat.id
+    playlists = get_playlists_in_chat(chat_id)
     
-    if not top_users:
-        await m.answer("📊 Пока нет статистики. Будь первым! 🚀")
+    if not playlists:
+        await m.answer("📭 В этом чате нет плейлистов. Создай первый!")
         return
     
-    text = "🏆 **ТОП ПОЛЬЗОВАТЕЛЕЙ**\n\n"
-    for i, (user_id, data) in enumerate(top_users, 1):
-        try:
-            user = await bot.get_chat(int(user_id))
-            name = user.first_name or user.username or "Аноним"
-        except:
-            name = "Аноним"
-        
-        medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
-        medal = medals[i-1] if i <= 5 else f"{i}."
-        
-        text += f"{medal} **{name}**\n"
-        text += f"   📥 Скачано: {data['total_downloads']} треков\n"
-        text += f"   🔍 Поисков: {data['total_searches']}\n\n"
+    text = "📋 **Плейлисты в этом чате:**\n\n"
+    for pid, playlist in playlists:
+        track_count = len(playlist["tracks"])
+        text += f"🆔 {pid}: **{playlist['name']}** ({track_count} треков)\n"
     
     await m.answer(text, parse_mode="Markdown")
 
+# --- /ДОБАВИТЬ_В_ПЛЕЙЛИСТ ---
+@dp.message(Command("добавить_в_плейлист"))
+async def add_to_playlist_command(m: types.Message):
+    args = m.text.split(maxsplit=2)
+    if len(args) < 3:
+        await m.answer("❌ Использование:\n`/добавить_в_плейлист ID ссылка_на_трек`\n\nИли отправь трек текстом после команды.", parse_mode="Markdown")
+        return
+    
+    try:
+        playlist_id = int(args[1])
+    except:
+        await m.answer("❌ ID должен быть числом")
+        return
+    
+    track_query = args[2].strip()
+    
+    # Ищем трек
+    res = yandex_client.search(track_query, type_='track')
+    if not res.tracks:
+        await m.answer("❌ Трек не найден")
+        return
+    
+    track = res.tracks.results[0]
+    track_id = track.id
+    track_title = track.title
+    track_artist = ", ".join([a.name for a in track.artists])
+    
+    result = add_track_to_playlist(playlist_id, track_id, track_title, track_artist, m.from_user.id)
+    if result is None:
+        await m.answer("❌ Плейлист не найден")
+        return
+    
+    await m.answer(
+        f"✅ **Трек добавлен!**\n\n"
+        f"🎵 {track_title} — {track_artist}\n"
+        f"📌 В плейлист: ID {playlist_id}\n"
+        f"👤 Добавил: {m.from_user.first_name}",
+        parse_mode="Markdown"
+    )
+
+# --- /УДАЛИТЬ_ИЗ_ПЛЕЙЛИСТА ---
+@dp.message(Command("удалить_из_плейлиста"))
+async def remove_from_playlist_command(m: types.Message):
+    args = m.text.split()
+    if len(args) < 3:
+        await m.answer("❌ Использование:\n`/удалить_из_плейлиста ID номер_трека`", parse_mode="Markdown")
+        return
+    
+    try:
+        playlist_id = int(args[1])
+        track_index = int(args[2]) - 1
+    except:
+        await m.answer("❌ ID и номер должны быть числами")
+        return
+    
+    success, message = remove_track(playlist_id, track_index, m.from_user.id)
+    await m.answer(message)
+
+# --- /ЛАЙК ---
+@dp.message(Command("лайк"))
+async def like_track_command(m: types.Message):
+    args = m.text.split()
+    if len(args) < 3:
+        await m.answer("❌ Использование:\n`/лайк ID номер_трека`", parse_mode="Markdown")
+        return
+    
+    try:
+        playlist_id = int(args[1])
+        track_index = int(args[2]) - 1
+    except:
+        await m.answer("❌ ID и номер должны быть числами")
+        return
+    
+    if like_track(playlist_id, track_index):
+        await m.answer("❤️ **Ты лайкнул этот трек!**")
+    else:
+        await m.answer("❌ Трек или плейлист не найден")
+
+# --- ОБРАБОТЧИК ПОИСКА (ТЕКСТ) ---
 @dp.message(F.text)
 async def handle_search(m: types.Message):
     if m.text.startswith('/'):
         return
     
-    update_search(m.from_user.id)
-    
-    if "/track/" in m.text:
-        await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
+    res = yandex_client.search(m.text, type_='track')
+    if res.tracks:
+        user_id = m.from_user.id
+        user_search_results[user_id] = res.tracks.results
+        user_current_position[user_id] = 0
+        await show_track(m, user_id, 0)
     else:
-        res = yandex_client.search(m.text, type_='track')
-        if res.tracks:
-            # Сохраняем все результаты поиска для пользователя
-            user_id = m.from_user.id
-            user_search_results[user_id] = res.tracks.results
-            user_current_position[user_id] = 0
-            
-            # Показываем первый трек
-            await show_track(m, user_id, 0)
-        else:
-            await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
+        await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
+# --- CALLBACK: СКАЧАТЬ ---
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(c: types.CallbackQuery):
-    await c.answer("🔽 Начинаю загрузку...")
-    await download_and_send(c.message, c.data.split("_")[1])
+    await c.answer("🔄 Скачиваю...")
+    track_id = c.data.replace("down_", "")
+    await download_and_send(c.message, track_id)
 
+# --- CALLBACK: НАВИГАЦИЯ ---
 @dp.callback_query(F.data.startswith("nav_"))
 async def callback_navigation(c: types.CallbackQuery):
-    """Обрабатывает навигацию по трекам"""
-    # Разбираем данные: nav_userId_position
     parts = c.data.split("_")
     user_id = int(parts[1])
     position = int(parts[2])
     
-    # Проверяем, что это тот же пользователь
     if c.from_user.id != user_id:
         await c.answer("❌ Это не твой поиск!", show_alert=True)
         return
     
-    # Обновляем текущую позицию
     user_current_position[c.from_user.id] = position
-    
-    # Показываем трек на новой позиции
     await show_track(c.message, user_id, position)
-    
-    # Удаляем старые кнопки
     await c.message.delete()
-    
     await c.answer()
+
+# --- CALLBACK: ДОБАВИТЬ В ПЛЕЙЛИСТ ---
+@dp.callback_query(F.data.startswith("add_to_playlist_"))
+async def callback_add_to_playlist(c: types.CallbackQuery):
+    track_id = c.data.replace("add_to_playlist_", "")
+    
+    # Получаем информацию о треке
+    try:
+        track = yandex_client.tracks([track_id])[0]
+        track_title = track.title
+        track_artist = ", ".join([a.name for a in track.artists])
+        
+        # Находим плейлисты пользователя в этом чате
+        playlists = get_playlists_in_chat(c.message.chat.id)
+        
+        if not playlists:
+            await c.answer("❌ В этом чате нет плейлистов. Создай первый!", show_alert=True)
+            return
+        
+        # Создаём кнопки для выбора плейлиста
+        buttons = []
+        for pid, playlist in playlists:
+            buttons.append([types.InlineKeyboardButton(
+                text=f"📌 {playlist['name']} (ID: {pid})",
+                callback_data=f"add_to_playlist_confirm_{pid}_{track_id}"
+            )])
+        
+        buttons.append([types.InlineKeyboardButton(text="❌ Отмена", callback_data="ignore")])
+        
+        reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+        
+        await c.message.answer(
+            f"🎵 **Выбери плейлист для добавления:**\n\n"
+            f"Трек: {track_title} — {track_artist}",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+        await c.answer()
+    except Exception as e:
+        await c.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
+
+# --- CALLBACK: ПОДТВЕРЖДЕНИЕ ДОБАВЛЕНИЯ В ПЛЕЙЛИСТ ---
+@dp.callback_query(F.data.startswith("add_to_playlist_confirm_"))
+async def callback_add_to_playlist_confirm(c: types.CallbackQuery):
+    parts = c.data.split("_")
+    playlist_id = int(parts[3])
+    track_id = parts[4]
+    
+    try:
+        track = yandex_client.tracks([track_id])[0]
+        track_title = track.title
+        track_artist = ", ".join([a.name for a in track.artists])
+        
+        result = add_track_to_playlist(playlist_id, track_id, track_title, track_artist, c.from_user.id)
+        if result is None:
+            await c.answer("❌ Плейлист не найден", show_alert=True)
+            return
+        
+        await c.answer("✅ Трек добавлен в плейлист!")
+        await c.message.edit_text(
+            f"✅ **Трек добавлен!**\n\n"
+            f"🎵 {track_title} — {track_artist}\n"
+            f"📌 В плейлист: ID {playlist_id}",
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await c.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
 
 @dp.callback_query(F.data == "ignore")
 async def ignore_callback(c: types.CallbackQuery):
     await c.answer()
+    try:
+        await c.message.delete()
+    except:
+        pass
 
-# --- ГЛАВНАЯ ФУНКЦИЯ ---
+# --- ГЛАВНАЯ ---
 async def main():
     await set_commands()
-    await asyncio.gather(
-        start_web_server(),
-        dp.start_polling(bot)
-    )
+    await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
 if __name__ == "__main__":
     asyncio.run(main())
