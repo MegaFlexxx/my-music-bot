@@ -164,7 +164,7 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (НОВЫЙ!) ---
+# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
     """Обрабатывает данные, отправленные из Mini App"""
@@ -175,7 +175,6 @@ async def handle_web_app_data(message: types.Message):
         if action == 'search':
             query = data.get('query')
             if query:
-                # Ищем трек в Яндекс.Музыке
                 res = yandex_client.search(query, type_='track')
                 if res.tracks:
                     track = res.tracks.results[0]
@@ -203,4 +202,73 @@ async def handle_web_app_data(message: types.Message):
                 f"📥 **Скачиваю:** {track} — {artist}\n\n"
                 f"💡 Найди этот трек в боте командой:\n"
                 f"`{track} {artist}`",
-                parse_mode="Mark
+                parse_mode="Markdown"
+            )
+        
+        elif action == 'like':
+            track = data.get('track')
+            await message.answer(f"❤️ Ты лайкнул трек: **{track}**!", parse_mode="Markdown")
+        
+        elif action == 'add_to_playlist':
+            track = data.get('track')
+            await message.answer(f"➕ Трек **{track}** добавлен в плейлист!", parse_mode="Markdown")
+            
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
+
+# --- ОБРАБОТЧИК ТЕКСТОВЫХ СООБЩЕНИЙ ---
+@dp.message(F.text)
+async def search_command(m: types.Message):
+    if m.text.startswith('/'):
+        return
+    
+    if "/track/" in m.text:
+        await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
+    else:
+        res = yandex_client.search(m.text, type_='track')
+        if res.tracks:
+            user_id = m.from_user.id
+            user_search_results[user_id] = res.tracks.results
+            user_current_position[user_id] = 0
+            await show_track(m, user_id, 0)
+        else:
+            await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
+
+# --- ОБРАБОТЧИКИ CALLBACK ---
+@dp.callback_query(F.data.startswith("down_"))
+async def download_callback(c: types.CallbackQuery):
+    await c.answer("🔄 Скачиваю...")
+    track_id = c.data.replace("down_", "")
+    await download_and_send(c.message, track_id)
+
+@dp.callback_query(F.data.startswith("nav_"))
+async def nav_callback(c: types.CallbackQuery):
+    parts = c.data.split("_")
+    user_id = int(parts[1])
+    position = int(parts[2])
+    if c.from_user.id != user_id:
+        await c.answer("❌ Это не твой поиск!", show_alert=True)
+        return
+    user_current_position[c.from_user.id] = position
+    await show_track(c.message, user_id, position)
+    await c.message.delete()
+    await c.answer()
+
+@dp.callback_query(F.data == "ignore")
+async def ignore_callback(c: types.CallbackQuery):
+    await c.answer()
+
+# --- ГЛАВНАЯ ---
+async def main():
+    # КНОПКА ВСЕГДА ВНИЗУ
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="🎵 Плеер",
+            web_app=WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
+        )
+    )
+    await set_commands()
+    await asyncio.gather(start_web_server(), dp.start_polling(bot))
+
+if __name__ == "__main__":
+    asyncio.run(main())
