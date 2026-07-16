@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skibidi Sound</title>
-    <!-- ПОДКЛЮЧАЕМ TELEGRAM SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -586,17 +585,25 @@
             showPopup('➕ Добавлено', `Трек "${track.title}" добавлен в плейлист!`);
         });
         
-        // --- ПОИСК ---
+        // --- ПОИСК (ОБНОВЛЁННЫЙ!) ---
         searchBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             const query = searchInput.value.trim();
             console.log(`🔍 Поиск: "${query}"`);
             if (query) {
-                renderPlaylist(query);
+                // Отправляем запрос в бот
                 sendToBot({
                     action: 'search',
                     query: query
                 });
+                
+                // Показываем уведомление
+                showPopup('🔍 Поиск', `Ищу "${query}" в Яндекс.Музыке...\nТрек скоро появится в боте!`);
+                
+                // Очищаем поле
+                searchInput.value = '';
+            } else {
+                showPopup('⚠️', 'Напиши название трека или исполнителя!');
             }
         });
         
