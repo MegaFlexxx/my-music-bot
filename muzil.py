@@ -3,7 +3,6 @@ import os
 import asyncio
 import requests
 import json
-import pydantic
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -14,7 +13,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 
-# --- ПАТЧ YANDEX MUSIC ---
+# --- ПАТЧ ---
 def apply_patch():
     try:
         import yandex_music
@@ -27,7 +26,7 @@ def apply_patch():
     except ImportError: pass
 apply_patch()
 
-# --- КОНФИГУРАЦИЯ ---
+# --- КОНФИГ ---
 TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
@@ -36,7 +35,7 @@ bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ---
+# --- ХРАНИЛИЩЕ ---
 user_search_results = {}
 user_current_position = {}
 
@@ -146,7 +145,7 @@ async def start_web_server():
     await site.start()
     print(f"✅ Веб-сервер на порту {port}")
 
-# --- МЕНЮ КОМАНД ---
+# --- МЕНЮ ---
 async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
@@ -154,7 +153,7 @@ async def set_commands():
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
-# --- ОБРАБОТЧИК КОМАНДЫ /START ---
+# --- /START ---
 @dp.message(CommandStart())
 async def start_command(m: types.Message):
     await m.answer(
@@ -164,7 +163,7 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ОБРАБОТЧИК ПОИСКА (ТЕКСТ) ---
+# --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
@@ -182,64 +181,36 @@ async def search_command(m: types.Message):
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (ПРАВИЛЬНЫЙ!) ---
+# --- ДАННЫЕ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
-    """Обрабатывает данные из Mini App (кнопка "Отправить" в плеере)"""
     try:
-        # Получаем данные из плеера
         data = json.loads(message.web_app_data.data)
         text = data.get('text', '')
+        print(f"📩 Из плеера: {text}")
         
-        print(f"📩 Получено из плеера: {text}")
-        
-        # Если это поисковый запрос
-        if text and not text.startswith(('Скачать', 'Лайк', 'Добавить', 'Показать')):
-            # Ищем в Яндекс.Музыке
-            res = yandex_client.search(text, type_='track')
-            if res.tracks:
-                track = res.tracks.results[0]
-                artists = ", ".join([a.name for a in track.artists])
-                
-                await message.answer(
-                    f"✅ **Нашёл для тебя!**\n\n"
-                    f"🎵 **{track.title}** — {artists}\n"
-                    f"👇 Нажми кнопку, чтобы скачать",
-                    reply_markup=types.InlineKeyboardMarkup(
-                        inline_keyboard=[[
-                            types.InlineKeyboardButton(
-                                text="📥 Скачать трек",
-                                callback_data=f"down_{track.id}"
-                            )
-                        ]]
-                    ),
-                    parse_mode="Markdown"
-                )
-            else:
-                await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
-        
-        # Обработка команд из плеера
-        elif text.startswith('Скачать'):
-            # Пример: "Скачать Believer Imagine Dragons"
-            parts = text.replace('Скачать ', '').rsplit(' ', 1)
-            if len(parts) == 2:
-                track_name, artist = parts
-                await message.answer(
-                    f"📥 **Скачиваю:** {track_name} — {artist}\n\n"
-                    f"💡 Напиши в чате: `{track_name} {artist}`",
-                    parse_mode="Markdown"
-                )
-        
-        elif text.startswith('Лайк'):
-            track_name = text.replace('Лайк ', '')
-            await message.answer(f"❤️ Ты лайкнул трек: **{track_name}**!")
-        
-        elif text.startswith('Добавить'):
-            track_name = text.replace('Добавить в плейлист ', '')
-            await message.answer(f"➕ Трек **{track_name}** добавлен в плейлист!")
-        
-        elif text.startswith('Показать'):
-            await message.answer(f"📋 Функция в разработке! 🚀")
+        # Ищем в Яндекс.Музыке
+        res = yandex_client.search(text, type_='track')
+        if res.tracks:
+            track = res.tracks.results[0]
+            artists = ", ".join([a.name for a in track.artists])
+            
+            await message.answer(
+                f"✅ **Нашёл для тебя!**\n\n"
+                f"🎵 **{track.title}** — {artists}\n"
+                f"👇 Нажми кнопку, чтобы скачать",
+                reply_markup=types.InlineKeyboardMarkup(
+                    inline_keyboard=[[
+                        types.InlineKeyboardButton(
+                            text="📥 Скачать трек",
+                            callback_data=f"down_{track.id}"
+                        )
+                    ]]
+                ),
+                parse_mode="Markdown"
+            )
+        else:
+            await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
             
     except Exception as e:
         print(f"❌ Ошибка: {e}")
