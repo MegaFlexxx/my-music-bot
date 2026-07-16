@@ -40,11 +40,11 @@ bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ДЛЯ КАЖДОГО ПОЛЬЗОВАТЕЛЯ ---
-user_search_results = {}  # {user_id: [список треков]}
-user_current_position = {}  # {user_id: текущая_позиция}
+# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ---
+user_search_results = {}
+user_current_position = {}
 
-# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN ---
+# --- СТАТИСТИКА ---
 def load_stats():
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
@@ -140,9 +140,8 @@ def get_top_users():
     
     return sorted_users
 
-# --- ФУНКЦИЯ ДЛЯ ПОКАЗА ТРЕКА С КНОПКАМИ ---
+# --- ФУНКЦИЯ ДЛЯ ПОКАЗА ТРЕКА ---
 async def show_track(message: types.Message, user_id: int, position: int):
-    """Показывает трек на определённой позиции с кнопками"""
     results = user_search_results.get(user_id, [])
     
     if not results or position >= len(results):
@@ -152,13 +151,9 @@ async def show_track(message: types.Message, user_id: int, position: int):
     track = results[position]
     total = len(results)
     
-    # Формируем кнопки
     buttons = []
-    
-    # Кнопка скачать
     buttons.append([types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")])
     
-    # Кнопки навигации
     nav_buttons = []
     if position > 0:
         nav_buttons.append(types.InlineKeyboardButton(text="◀️ Назад", callback_data=f"nav_{user_id}_{position-1}"))
@@ -168,13 +163,11 @@ async def show_track(message: types.Message, user_id: int, position: int):
     if nav_buttons:
         buttons.append(nav_buttons)
     
-    # Информация о прогрессе
     info_button = [types.InlineKeyboardButton(text=f"📌 {position+1}/{total}", callback_data="ignore")]
     buttons.append(info_button)
     
     reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
     
-    # Показываем трек
     artists = ", ".join([a.name for a in track.artists])
     await message.answer(
         f"🎵 **{track.title}**\n"
@@ -273,10 +266,11 @@ async def set_commands():
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
-# --- ОБРАБОТЧИКИ ---
+# --- ОБРАБОТЧИКИ (ПРАВИЛЬНЫЙ ПОРЯДОК) ---
 
+# 1. Команда /start
 @dp.message(Command("start"))
-async def start(m: types.Message): 
+async def start_command(m: types.Message):
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "📌 **Команды:**\n"
@@ -287,8 +281,9 @@ async def start(m: types.Message):
         parse_mode="Markdown"
     )
 
+# 2. Команда /stats
 @dp.message(Command("stats"))
-async def show_stats(m: types.Message):
+async def stats_command(m: types.Message):
     user_id_str = str(m.from_user.id)
     stats = load_stats()
     
@@ -325,8 +320,9 @@ async def show_stats(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
+# 3. Команда /top
 @dp.message(Command("top"))
-async def show_top(m: types.Message):
+async def top_command(m: types.Message):
     top_users = get_top_users()
     
     if not top_users:
@@ -350,8 +346,10 @@ async def show_top(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
+# 4. Обработчик текстовых сообщений (поиск)
 @dp.message(F.text)
-async def handle_search(m: types.Message):
+async def search_command(m: types.Message):
+    # Пропускаем команды (начинаются с /)
     if m.text.startswith('/'):
         return
     
@@ -362,45 +360,36 @@ async def handle_search(m: types.Message):
     else:
         res = yandex_client.search(m.text, type_='track')
         if res.tracks:
-            # Сохраняем все результаты поиска для пользователя
             user_id = m.from_user.id
             user_search_results[user_id] = res.tracks.results
             user_current_position[user_id] = 0
-            
-            # Показываем первый трек
             await show_track(m, user_id, 0)
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
+# 5. Callback: скачать трек
 @dp.callback_query(F.data.startswith("down_"))
-async def callback_download(c: types.CallbackQuery):
+async def download_callback(c: types.CallbackQuery):
     await c.answer("🔽 Начинаю загрузку...")
     await download_and_send(c.message, c.data.split("_")[1])
 
+# 6. Callback: навигация
 @dp.callback_query(F.data.startswith("nav_"))
-async def callback_navigation(c: types.CallbackQuery):
-    """Обрабатывает навигацию по трекам"""
-    # Разбираем данные: nav_userId_position
+async def nav_callback(c: types.CallbackQuery):
     parts = c.data.split("_")
     user_id = int(parts[1])
     position = int(parts[2])
     
-    # Проверяем, что это тот же пользователь
     if c.from_user.id != user_id:
         await c.answer("❌ Это не твой поиск!", show_alert=True)
         return
     
-    # Обновляем текущую позицию
     user_current_position[c.from_user.id] = position
-    
-    # Показываем трек на новой позиции
     await show_track(c.message, user_id, position)
-    
-    # Удаляем старые кнопки
     await c.message.delete()
-    
     await c.answer()
 
+# 7. Callback: игнор
 @dp.callback_query(F.data == "ignore")
 async def ignore_callback(c: types.CallbackQuery):
     await c.answer()
