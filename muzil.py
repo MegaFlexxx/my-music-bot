@@ -4,7 +4,7 @@ import asyncio
 import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
@@ -154,7 +154,8 @@ async def set_commands():
 
 # --- ОБРАБОТЧИКИ ---
 
-@dp.message(CommandStart())
+# 1. ОБРАБОТЧИК /start (САМЫЙ ПЕРВЫЙ!)
+@dp.message(Command("start"))
 async def start_command(m: types.Message):
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
@@ -162,9 +163,11 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
+# 2. ОБРАБОТЧИК ВСЕГО ОСТАЛЬНОГО
 @dp.message(F.text)
 async def search_command(m: types.Message):
-    if m.text.startswith('/'): 
+    # ЕСЛИ ЭТО КОМАНДА — ИГНОРИРУЕМ
+    if m.text.startswith('/'):
         return
     
     if "/track/" in m.text:
