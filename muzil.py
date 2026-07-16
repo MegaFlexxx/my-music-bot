@@ -33,14 +33,15 @@ yandex_client = Client(YANDEX_TOKEN).init()
 
 # --- ЛОГИКА СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str):
-    msg = await message.answer("📥...")
+    msg = await message.answer("📥 Загрузка...")
     try:
         track = yandex_client.tracks([track_id])[0]
         f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
         
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
-        with open(f_name, 'wb') as f: f.write(requests.get(link, timeout=15).content)
+        with open(f_name, 'wb') as f: 
+            f.write(requests.get(link, timeout=15).content)
         
         cover_url = track.get_cover_url('400x400')
         if cover_url:
@@ -50,7 +51,8 @@ async def download_and_send(message: types.Message, track_id: str):
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
             
             audio = MP3(f_name, ID3=ID3)
-            if audio.tags is None: audio.add_tags(ID3=ID3)
+            if audio.tags is None: 
+                audio.add_tags(ID3=ID3)
             with open(c_name, 'rb') as img:
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
@@ -62,7 +64,8 @@ async def download_and_send(message: types.Message, track_id: str):
             performer=", ".join([a.name for a in track.artists])
         )
         for f in [f_name, c_name]: 
-            if os.path.exists(f): os.remove(f)
+            if os.path.exists(f): 
+                os.remove(f)
         await msg.delete()
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
@@ -76,8 +79,12 @@ async def start_web_server():
     app.add_routes([web.get('/', handle)])
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 8080)))
+    
+    # Берем порт из переменной окружения или ставим 8080 по умолчанию
+    port = int(os.environ.get('PORT', 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
+    print(f"✅ Веб-сервер запущен на порту {port}")
 
 # --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
@@ -92,17 +99,29 @@ async def handle_search(m: types.Message):
         res = yandex_client.search(m.text, type_='track')
         if res.tracks:
             track = res.tracks.results[0]
-            await m.answer(f"✅ Нашел: {track.title} — {track.artists[0].name}", 
-                           reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать", callback_data=f"down_{track.id}")]]))
+            await m.answer(
+                f"✅ Нашел: {track.title} — {track.artists[0].name}", 
+                reply_markup=types.InlineKeyboardMarkup(
+                    inline_keyboard=[[
+                        types.InlineKeyboardButton(text="📥 Скачать", callback_data=f"down_{track.id}")
+                    ]]
+                )
+            )
+        else:
+            await m.answer("❌ Ничего не найдено")
 
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(c: types.CallbackQuery):
     await c.answer()
     await download_and_send(c.message, c.data.split("_")[1])
 
+# --- ГЛАВНАЯ ФУНКЦИЯ ---
 async def main():
-    await start_web_server()
-    await dp.start_polling(bot)
+    # Запускаем веб-сервер и бота параллельно
+    await asyncio.gather(
+        start_web_server(),
+        dp.start_polling(bot)
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
