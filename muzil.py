@@ -6,6 +6,7 @@ import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
+from aiogram.types import BotCommand, BotCommandScopeDefault
 from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
@@ -37,19 +38,16 @@ yandex_client = Client(YANDEX_TOKEN).init()
 STATS_FILE = "stats.json"
 
 def load_stats():
-    """Загружает статистику из файла"""
     if os.path.exists(STATS_FILE):
         with open(STATS_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     return {}
 
 def save_stats(stats):
-    """Сохраняет статистику в файл"""
     with open(STATS_FILE, 'w', encoding='utf-8') as f:
         json.dump(stats, f, ensure_ascii=False, indent=2)
 
 def update_stats(user_id, track_title, artist_name):
-    """Обновляет статистику пользователя"""
     stats = load_stats()
     user_id_str = str(user_id)
     
@@ -77,7 +75,6 @@ def update_stats(user_id, track_title, artist_name):
     save_stats(stats)
 
 def update_search(user_id):
-    """Обновляет количество поисков"""
     stats = load_stats()
     user_id_str = str(user_id)
     
@@ -95,7 +92,6 @@ def update_search(user_id):
     save_stats(stats)
 
 def get_top_users():
-    """Возвращает топ-5 пользователей по скачиваниям"""
     stats = load_stats()
     if not stats:
         return []
@@ -108,7 +104,7 @@ def get_top_users():
     
     return sorted_users
 
-# --- ЛОГИКА СКАЧИВАНИЯ С КРАСИВЫМ ОФОРМЛЕНИЕМ ---
+# --- ЛОГИКА СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥 Ищу трек...")
     try:
@@ -186,9 +182,19 @@ async def start_web_server():
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
 
+# --- ФУНКЦИЯ ДЛЯ УСТАНОВКИ МЕНЮ КОМАНД ---
+async def set_commands():
+    """Устанавливает меню команд в Telegram"""
+    commands = [
+        BotCommand(command="start", description="🚀 Запустить бота"),
+        BotCommand(command="stats", description="📊 Моя статистика"),
+        BotCommand(command="top", description="🏆 Топ пользователей"),
+    ]
+    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+    print("✅ Меню команд установлено!")
+
 # --- ОБРАБОТЧИКИ ---
 
-# 1. Обработчик команды /start
 @dp.message(Command("start"))
 async def start(m: types.Message): 
     await m.answer(
@@ -201,7 +207,6 @@ async def start(m: types.Message):
         parse_mode="Markdown"
     )
 
-# 2. Обработчик команды /stats
 @dp.message(Command("stats"))
 async def show_stats(m: types.Message):
     user_id_str = str(m.from_user.id)
@@ -240,7 +245,6 @@ async def show_stats(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# 3. Обработчик команды /top
 @dp.message(Command("top"))
 async def show_top(m: types.Message):
     top_users = get_top_users()
@@ -266,10 +270,8 @@ async def show_top(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# 4. Обработчик текстовых сообщений (поиск треков)
 @dp.message(F.text)
 async def handle_search(m: types.Message):
-    # ПРОВЕРЯЕМ: если это команда (начинается с /) - игнорируем
     if m.text.startswith('/'):
         return
     
@@ -294,7 +296,6 @@ async def handle_search(m: types.Message):
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# 5. Обработчик callback-запросов (кнопки)
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(c: types.CallbackQuery):
     await c.answer("🔽 Начинаю загрузку...")
@@ -302,6 +303,10 @@ async def callback_download(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ФУНКЦИЯ ---
 async def main():
+    # Устанавливаем меню команд в Telegram
+    await set_commands()
+    
+    # Запускаем веб-сервер и бота параллельно
     await asyncio.gather(
         start_web_server(),
         dp.start_polling(bot)
