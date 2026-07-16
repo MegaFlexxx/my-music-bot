@@ -14,7 +14,6 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 from datetime import datetime
-import io
 
 # --- SPOTIFY ---
 try:
@@ -43,10 +42,10 @@ TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 # --- SPOTIFY НАСТРОЙКИ ---
-SPOTIFY_CLIENT_ID = "dd8639a7232b4776b68b4fdbc7d0690b"          # Замени на свой
-SPOTIFY_CLIENT_SECRET = "1b805ef3f54640669769ebe52cb76da3"  # Замени на свой
+SPOTIFY_CLIENT_ID = os.environ.get("dd8639a7232b4776b68b4fdbc7d0690b")
+SPOTIFY_CLIENT_SECRET = os.environ.get("1b805ef3f54640669769ebe52cb76da3")
 
-# --- JSONBIN НАСТРОЙКИ ---
+# --- JSONBIN ---
 JSONBIN_API_KEY = "$2a$10$CX38xBtBqOre7M6olAPo4ehOVtTcINNnDU5hpOVbvk6/VMx22C2ti"
 JSONBIN_BIN_ID = "6a58c64cf5f4af5e299736cd"
 
@@ -57,7 +56,7 @@ yandex_client = Client(YANDEX_TOKEN).init()
 
 # --- SPOTIFY КЛИЕНТ ---
 sp = None
-if SPOTIFY_AVAILABLE and SPOTIFY_CLIENT_ID != "твой_client_id":
+if SPOTIFY_AVAILABLE and SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET:
     try:
         sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
             client_id=SPOTIFY_CLIENT_ID,
@@ -67,8 +66,7 @@ if SPOTIFY_AVAILABLE and SPOTIFY_CLIENT_ID != "твой_client_id":
     except Exception as e:
         print(f"❌ Ошибка Spotify: {e}")
 else:
-    if SPOTIFY_AVAILABLE:
-        print("⚠️ Заполни SPOTIFY_CLIENT_ID и SPOTIFY_CLIENT_SECRET")
+    print("⚠️ Spotify не настроен. Используем только Яндекс.Музыку.")
 
 # --- ХРАНИЛИЩЕ ---
 user_search_results = {}
@@ -128,7 +126,7 @@ def get_top_users():
     return sorted(stats.items(), key=lambda x: x[1]["total_downloads"], reverse=True)[:5]
 
 # --- ПОИСК В SPOTIFY ---
-def search_spotify(query, limit=10):
+def search_spotify(query, limit=5):
     if not sp:
         return []
     try:
@@ -143,32 +141,12 @@ def search_spotify(query, limit=10):
                 'cover': item['album']['images'][0]['url'] if item['album']['images'] else None,
                 'duration_ms': item['duration_ms'],
                 'source': 'spotify',
-                'url': item['external_urls']['spotify'],
-                'preview_url': item['preview_url']  # 30-секундный превью
+                'url': item['external_urls']['spotify']
             })
         return tracks
     except Exception as e:
         print(f"Spotify ошибка: {e}")
         return []
-
-# --- СКАЧИВАНИЕ ИЗ SPOTIFY (через внешний API) ---
-def download_from_spotify(track_id):
-    """
-    Скачивает трек из Spotify через внешний API.
-    Используем api.spotify-downloader.com (бесплатно)
-    """
-    try:
-        # Используем бесплатный API для скачивания
-        url = f"https://api.spotify-downloader.com/v1/track/{track_id}"
-        response = requests.get(url, timeout=30)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('success'):
-                return data.get('download_url')
-        return None
-    except Exception as e:
-        print(f"Ошибка скачивания Spotify: {e}")
-        return None
 
 # --- ОБЪЕДИНЕНИЕ РЕЗУЛЬТАТОВ ---
 def merge_results(yandex_tracks, spotify_tracks):
@@ -201,7 +179,7 @@ async def show_track(message: types.Message, user_id: int, position: int):
     item = results[position]
     total = len(results)
     
-    # Определяем, что за трек и откуда
+    # Определяем, что за трек
     if item['source'] == 'yandex':
         track = item['track']
         title = track.title
@@ -218,63 +196,12 @@ async def show_track(message: types.Message, user_id: int, position: int):
     # Создаём кнопки
     buttons = []
     
-    # Кнопки скачивания
-    download_buttons = []
-    
-    # Если трек есть в Яндексе
-    yandex_exists = False
-    spotify_exists = False
-    
-    # Проверяем, есть ли Яндекс версия этого трека
-    for result in results:
-        if result['source'] == 'yandex':
-            if item['source'] == 'yandex':
-                yandex_exists = True
-            # Проверяем, есть ли такая же песня в Яндексе
-            yandex_track = result['track']
-            yandex_title = yandex_track.title.lower()
-            yandex_artist = ", ".join([a.name for a in yandex_track.artists]).lower()
-            if yandex_title == title.lower() or yandex_artist == artists.lower():
-                yandex_exists = True
-    
-    # Проверяем, есть ли Spotify версия
-    for result in results:
-        if result['source'] == 'spotify':
-            spotify_track = result['track']
-            if spotify_track['title'].lower() == title.lower() or spotify_track['artists'].lower() == artists.lower():
-                spotify_exists = True
-    
-    # Кнопки скачивания
-    if yandex_exists:
-        download_buttons.append(types.InlineKeyboardButton(
-            text="📥 Скачать (Яндекс)", 
-            callback_data=f"down_yandex_{track_id if item['source'] == 'yandex' else next((r['track'].id for r in results if r['source'] == 'yandex' and r['track'].title.lower() == title.lower()), None)}"
-        ))
-    
-    if spotify_exists:
-        download_buttons.append(types.InlineKeyboardButton(
-            text="📥 Скачать (Spotify)", 
-            callback_data=f"down_spotify_{track_id if item['source'] == 'spotify' else next((r['track']['id'] for r in results if r['source'] == 'spotify' and r['track']['title'].lower() == title.lower()), None)}"
-        ))
-    
-    # Если нет точного совпадения, даём общие кнопки
-    if not download_buttons:
-        # Если текущий трек из Яндекса
-        if item['source'] == 'yandex':
-            download_buttons.append(types.InlineKeyboardButton(
-                text="📥 Скачать (Яндекс)", 
-                callback_data=f"down_yandex_{track_id}"
-            ))
-        # Если текущий трек из Spotify
-        else:
-            download_buttons.append(types.InlineKeyboardButton(
-                text="📥 Скачать (Spotify)", 
-                callback_data=f"down_spotify_{track_id}"
-            ))
-    
-    # Добавляем кнопки скачивания в основную клавиатуру
-    if download_buttons:
-        buttons.append(download_buttons)
+    if source == 'yandex':
+        # Трек из Яндекса → можно скачать
+        buttons.append([types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track_id}")])
+    else:
+        # Трек из Spotify → только ссылка
+        buttons.append([types.InlineKeyboardButton(text="🎵 Слушать в Spotify", url=track['url'])])
     
     # Навигация
     nav_buttons = []
@@ -293,18 +220,20 @@ async def show_track(message: types.Message, user_id: int, position: int):
     source_emoji = "🎧" if source == 'yandex' else "🔵"
     source_text = "Яндекс.Музыка" if source == 'yandex' else "Spotify"
     
+    action_text = "скачать" if source == 'yandex' else "открыть в Spotify"
+    
     await message.answer(
         f"{source_emoji} **{title}**\n"
         f"👤 **Исполнитель:** {artists}\n"
         f"📡 **Источник:** {source_text}\n"
         f"📌 **Результат {position+1} из {total}**\n\n"
-        f"👇 Выбери источник для скачивания:",
+        f"👇 Нажми на кнопку, чтобы {action_text}",
         parse_mode="Markdown",
         reply_markup=reply_markup
     )
 
-# --- СКАЧИВАНИЕ ИЗ ЯНДЕКСА ---
-async def download_from_yandex(message: types.Message, track_id: str):
+# --- СКАЧИВАНИЕ ---
+async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥 Скачиваю из Яндекс.Музыки...")
     try:
         track = yandex_client.tracks([track_id])[0]
@@ -343,8 +272,7 @@ async def download_from_yandex(message: types.Message, track_id: str):
             f"🎤 Исполнитель: {artists}\n"
             f"⏱ Длительность: {duration_str}\n"
             f"💿 Размер: {size_str}\n\n"
-            f"🎧 Skibidi_sound бахает для тебя!\n"
-            f"📡 Источник: Яндекс.Музыка"
+            f"🎧 Skibidi_sound бахает для тебя!"
         )
         
         await message.answer_audio(
@@ -359,87 +287,6 @@ async def download_from_yandex(message: types.Message, track_id: str):
             if os.path.exists(f): 
                 os.remove(f)
         await msg.delete()
-    except Exception as e:
-        await msg.edit_text(f"❌ Ошибка: {str(e)}")
-
-# --- СКАЧИВАНИЕ ИЗ SPOTIFY ---
-async def download_from_spotify_source(message: types.Message, track_id: str):
-    msg = await message.answer("📥 Скачиваю из Spotify...\n⏳ Это может занять немного времени...")
-    try:
-        # Получаем информацию о треке из Spotify
-        track = sp.track(track_id)
-        track_name = track['name']
-        artists = ", ".join([a['name'] for a in track['artists']])
-        
-        # Пытаемся скачать через внешний API
-        download_url = download_from_spotify(track_id)
-        
-        if download_url:
-            # Скачиваем файл
-            response = requests.get(download_url, timeout=30)
-            if response.status_code == 200:
-                f_name = f"{track_id}.mp3"
-                with open(f_name, 'wb') as f:
-                    f.write(response.content)
-                
-                # Пытаемся добавить обложку
-                cover_url = track['album']['images'][0]['url'] if track['album']['images'] else None
-                c_name = f"{track_id}.jpg"
-                if cover_url:
-                    try:
-                        img_response = requests.get(cover_url, timeout=10)
-                        if img_response.status_code == 200:
-                            with open(c_name, 'wb') as f:
-                                f.write(img_response.content)
-                            # Вшиваем обложку
-                            audio = MP3(f_name, ID3=ID3)
-                            if audio.tags is None:
-                                audio.add_tags(ID3=ID3)
-                            with open(c_name, 'rb') as img:
-                                audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
-                            audio.save(v2_version=3)
-                    except:
-                        pass
-                
-                update_stats(message.from_user.id, track_name, artists)
-                
-                duration_sec = track['duration_ms'] // 1000
-                minutes, seconds = duration_sec // 60, duration_sec % 60
-                duration_str = f"{minutes}:{seconds:02d}"
-                file_size = os.path.getsize(f_name) / (1024 * 1024)
-                size_str = f"{file_size:.1f} MB"
-                
-                caption = (
-                    f"🔥 {track_name}\n"
-                    f"🎤 Исполнитель: {artists}\n"
-                    f"⏱ Длительность: {duration_str}\n"
-                    f"💿 Размер: {size_str}\n\n"
-                    f"🎧 Skibidi_sound бахает для тебя!\n"
-                    f"📡 Источник: Spotify"
-                )
-                
-                await message.answer_audio(
-                    audio=types.FSInputFile(f_name),
-                    thumbnail=types.FSInputFile(c_name) if os.path.exists(c_name) else None,
-                    title=track_name,
-                    performer=artists,
-                    caption=caption
-                )
-                
-                for f in [f_name, c_name]:
-                    if os.path.exists(f):
-                        os.remove(f)
-                await msg.delete()
-            else:
-                await msg.edit_text("❌ Не удалось скачать трек из Spotify. Попробуй Яндекс версию.")
-        else:
-            await msg.edit_text(
-                "❌ Spotify трек не удалось скачать.\n\n"
-                "💡 **Возможные причины:**\n"
-                "• Трек защищён авторскими правами\n"
-                "• Доступен только для прослушивания\n\n"
-                "Попробуй найти этот трек в Яндекс.Музыке!"
-            )
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
@@ -477,7 +324,7 @@ async def start_command(m: types.Message):
         "/stats — твоя статистика\n"
         "/top — топ пользователей\n\n"
         "🔥 Отправь название трека или исполнителя — я найду музыку в Яндекс.Музыке **и** Spotify!\n"
-        "📥 У каждого трека будет выбор: скачать из Яндекса или Spotify!",
+        "📥 Из Яндекса — скачиваю, из Spotify — даю ссылку на прослушивание.",
         parse_mode="Markdown"
     )
 
@@ -529,6 +376,50 @@ async def search_command(m: types.Message):
     
     update_search(m.from_user.id)
     
+    # --- ПРОВЕРКА НА SPOTIFY ССЫЛКУ ---
+    if "open.spotify.com" in m.text and "/track/" in m.text:
+        # Если это ссылка на Spotify — ищем в Яндексе
+        await m.answer("🔍 Ищу этот трек в Яндекс.Музыке...")
+        
+        # Парсим ID из ссылки
+        match = re.search(r'track/([a-zA-Z0-9]+)', m.text)
+        if match:
+            spotify_id = match.group(1)
+            if sp:
+                try:
+                    track_info = sp.track(spotify_id)
+                    track_name = track_info['name']
+                    artist_name = track_info['artists'][0]['name']
+                    
+                    # Ищем в Яндексе
+                    res = yandex_client.search(f"{track_name} {artist_name}", type_='track')
+                    if res.tracks:
+                        track = res.tracks.results[0]
+                        user_id = m.from_user.id
+                        user_search_results[user_id] = [{'track': track, 'source': 'yandex'}]
+                        user_current_position[user_id] = 0
+                        await show_track(m, user_id, 0)
+                    else:
+                        # Если нет в Яндексе — даём ссылку на Spotify
+                        await m.answer(
+                            f"🔵 **{track_name}**\n"
+                            f"👤 **Исполнитель:** {artist_name}\n\n"
+                            f"❌ Не найден в Яндекс.Музыке.\n"
+                            f"🎵 Слушай в Spotify: {m.text}",
+                            parse_mode="Markdown",
+                            reply_markup=types.InlineKeyboardMarkup(
+                                inline_keyboard=[[
+                                    types.InlineKeyboardButton(text="🎵 Открыть в Spotify", url=m.text)
+                                ]]
+                            )
+                        )
+                except Exception as e:
+                    await m.answer(f"❌ Ошибка: {str(e)}")
+            else:
+                await m.answer("❌ Spotify не подключён.")
+        return
+    
+    # --- ОБЫЧНЫЙ ПОИСК ---
     # Ищем в Яндекс.Музыке
     yandex_results = []
     try:
@@ -555,27 +446,12 @@ async def search_command(m: types.Message):
     user_current_position[user_id] = 0
     await show_track(m, user_id, 0)
 
-# --- CALLBACK: СКАЧИВАНИЕ ИЗ ЯНДЕКСА ---
-@dp.callback_query(F.data.startswith("down_yandex_"))
-async def download_yandex_callback(c: types.CallbackQuery):
-    await c.answer("🔄 Скачиваю из Яндекс.Музыки...")
-    track_id = c.data.replace("down_yandex_", "")
-    if track_id and track_id != "None":
-        await download_from_yandex(c.message, track_id)
-    else:
-        await c.message.answer("❌ Трек не найден в Яндекс.Музыке")
+@dp.callback_query(F.data.startswith("down_"))
+async def download_callback(c: types.CallbackQuery):
+    await c.answer("🔄 Скачиваю...")
+    track_id = c.data.replace("down_", "")
+    await download_and_send(c.message, track_id)
 
-# --- CALLBACK: СКАЧИВАНИЕ ИЗ SPOTIFY ---
-@dp.callback_query(F.data.startswith("down_spotify_"))
-async def download_spotify_callback(c: types.CallbackQuery):
-    await c.answer("🔄 Скачиваю из Spotify...")
-    track_id = c.data.replace("down_spotify_", "")
-    if track_id and track_id != "None":
-        await download_from_spotify_source(c.message, track_id)
-    else:
-        await c.message.answer("❌ Трек не найден в Spotify")
-
-# --- CALLBACK: НАВИГАЦИЯ ---
 @dp.callback_query(F.data.startswith("nav_"))
 async def nav_callback(c: types.CallbackQuery):
     parts = c.data.split("_")
