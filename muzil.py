@@ -2,11 +2,11 @@ import sys
 import os
 import asyncio
 import requests
-import pydanticы
+import pydantic
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
 from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
 from mutagen.mp3 import MP3
@@ -145,7 +145,7 @@ async def start_web_server():
     await site.start()
     print(f"✅ Веб-сервер на порту {port}")
 
-# --- МЕНЮ ---
+# --- МЕНЮ КОМАНД ---
 async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
@@ -160,15 +160,7 @@ async def start_command(m: types.Message):
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
-        "🎮 Или открой полноценный плеер!",
-        reply_markup=types.InlineKeyboardMarkup(
-            inline_keyboard=[[
-                types.InlineKeyboardButton(
-                    text="🎵 Открыть плеер",
-                    web_app=types.WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
-                )
-            ]]
-        ),
+        "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!",
         parse_mode="Markdown"
     )
 
@@ -214,6 +206,13 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
+    # ✅ КНОПКА ВСЕГДА ВНИЗУ (рядом с полем ввода)
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="🎵 Плеер",
+            web_app=WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
+        )
+    )
     await set_commands()
     await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
