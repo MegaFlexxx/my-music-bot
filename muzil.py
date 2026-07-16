@@ -26,13 +26,8 @@ def apply_patch():
 apply_patch()
 
 # --- КОНФИГУРАЦИЯ ---
-TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
+TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
-
-# --- ПРОВЕРКА ТОКЕНА ---
-if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "ВАШ_ТОКЕН":
-    print("❌ Токен бота не установлен! Добавь TELEGRAM_TOKEN в код.")
-    sys.exit(1)
 
 session = AiohttpSession()
 bot = Bot(token=TELEGRAM_TOKEN, session=session)
@@ -152,13 +147,13 @@ async def start_web_server():
 # --- МЕНЮ ---
 async def set_commands():
     commands = [
-        BotCommand(command="лосяра", description="🦌 ЗОВИ ЛОСЯРУ!"),
+        BotCommand(command="лосяра", description="🦌 Зови лосяру!"),
     ]
     try:
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
         print("✅ Меню команд установлено!")
     except Exception as e:
-        print(f"⚠️ Не удалось установить меню: {e}")
+        print(f"⚠️ Ошибка установки меню: {e}")
 
 # --- ОБРАБОТЧИКИ ---
 
@@ -171,6 +166,11 @@ async def losyara_command(m: types.Message):
         "🦌 Лосяра одобряет!",
         parse_mode="Markdown"
     )
+
+@dp.message(Command("start"))
+async def start_command(m: types.Message):
+    # Тоже отвечаем на /start, чтобы не было ошибок
+    await losyara_command(m)
 
 @dp.message(F.text)
 async def search_command(m: types.Message):
@@ -215,20 +215,8 @@ async def ignore_callback(c: types.CallbackQuery):
 # --- ГЛАВНАЯ ---
 async def main():
     print("🚀 Запускаем бота...")
-    try:
-        await set_commands()
-    except Exception as e:
-        print(f"⚠️ Ошибка при установке меню: {e}")
-    
-    await asyncio.gather(
-        start_web_server(),
-        dp.start_polling(bot)
-    )
+    await set_commands()
+    await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("👋 Бот остановлен")
-    except Exception as e:
-        print(f"❌ Критическая ошибка: {e}")
+    asyncio.run(main())
