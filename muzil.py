@@ -182,25 +182,25 @@ async def search_command(m: types.Message):
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА ---
+# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (ПРАВИЛЬНЫЙ!) ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
-    """Обрабатывает данные, отправленные из Mini App"""
+    """Обрабатывает данные из Mini App (кнопка "Отправить" в плеере)"""
     try:
+        # Получаем данные из плеера
         data = json.loads(message.web_app_data.data)
-        action = data.get('action')
-        query = data.get('query')
+        text = data.get('text', '')
         
-        print(f"📩 Получено из плеера: {data}")  # Лог в консоль Render
+        print(f"📩 Получено из плеера: {text}")
         
-        if action == 'search' and query:
+        # Если это поисковый запрос
+        if text and not text.startswith(('Скачать', 'Лайк', 'Добавить', 'Показать')):
             # Ищем в Яндекс.Музыке
-            res = yandex_client.search(query, type_='track')
+            res = yandex_client.search(text, type_='track')
             if res.tracks:
                 track = res.tracks.results[0]
                 artists = ", ".join([a.name for a in track.artists])
                 
-                # Отправляем результат в чат
                 await message.answer(
                     f"✅ **Нашёл для тебя!**\n\n"
                     f"🎵 **{track.title}** — {artists}\n"
@@ -218,26 +218,31 @@ async def handle_web_app_data(message: types.Message):
             else:
                 await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
         
-        elif action == 'download':
-            track = data.get('track')
-            artist = data.get('artist')
-            await message.answer(
-                f"📥 **Скачиваю:** {track} — {artist}\n\n"
-                f"💡 Найди этот трек в боте командой:\n"
-                f"`{track} {artist}`",
-                parse_mode="Markdown"
-            )
+        # Обработка команд из плеера
+        elif text.startswith('Скачать'):
+            # Пример: "Скачать Believer Imagine Dragons"
+            parts = text.replace('Скачать ', '').rsplit(' ', 1)
+            if len(parts) == 2:
+                track_name, artist = parts
+                await message.answer(
+                    f"📥 **Скачиваю:** {track_name} — {artist}\n\n"
+                    f"💡 Напиши в чате: `{track_name} {artist}`",
+                    parse_mode="Markdown"
+                )
         
-        elif action == 'like':
-            track = data.get('track')
-            await message.answer(f"❤️ Ты лайкнул трек: **{track}**!")
+        elif text.startswith('Лайк'):
+            track_name = text.replace('Лайк ', '')
+            await message.answer(f"❤️ Ты лайкнул трек: **{track_name}**!")
         
-        elif action == 'add_to_playlist':
-            track = data.get('track')
-            await message.answer(f"➕ Трек **{track}** добавлен в плейлист!")
+        elif text.startswith('Добавить'):
+            track_name = text.replace('Добавить в плейлист ', '')
+            await message.answer(f"➕ Трек **{track_name}** добавлен в плейлист!")
+        
+        elif text.startswith('Показать'):
+            await message.answer(f"📋 Функция в разработке! 🚀")
             
     except Exception as e:
-        print(f"❌ Ошибка обработки web_app_data: {e}")
+        print(f"❌ Ошибка: {e}")
         await message.answer(f"❌ Ошибка: {str(e)}")
 
 # --- CALLBACK ---
