@@ -98,6 +98,8 @@
         .close-btn:hover {
             background: rgba(255,255,255,0.05);
         }
+        .status.success { color: #4ade80; background: rgba(74, 222, 128, 0.1); }
+        .status.error { color: #f87171; background: rgba(248, 113, 113, 0.1); }
     </style>
 </head>
 <body>
@@ -115,7 +117,7 @@
             <button class="search-btn" id="searchBtn">🔍 Найти музыку</button>
         </div>
         
-        <div class="status" id="status">✅ Отправлено в бот!</div>
+        <div class="status" id="status"></div>
         
         <div class="hint">💡 Бот найдёт трек в Яндекс.Музыке</div>
         
@@ -131,24 +133,59 @@
         const searchBtn = document.getElementById('searchBtn');
         const status = document.getElementById('status');
         
-        function searchTrack() {
+        // ТОКЕН ТВОЕГО БОТА
+        const BOT_TOKEN = '8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU';
+        
+        function showStatus(text, type = '') {
+            status.textContent = text;
+            status.className = 'status show ' + type;
+        }
+        
+        async function searchTrack() {
             const query = searchInput.value.trim();
             if (!query) {
-                alert('⚠️ Напиши название трека или исполнителя!');
+                showStatus('⚠️ Напиши название трека!', 'error');
                 return;
             }
             
-            // Показываем статус
-            status.textContent = `✅ Отправлено в бот: "${query}"`;
-            status.className = 'status show';
+            showStatus('⏳ Отправляю запрос боту...', '');
             
-            // Отправляем в чат
-            tg.sendData(JSON.stringify({ text: query }));
-            
-            // Закрываем через 1.5 секунды
-            setTimeout(() => {
-                tg.close();
-            }, 1500);
+            try {
+                // Получаем информацию о пользователе
+                const user = tg.initDataUnsafe?.user;
+                const chatId = user?.id;
+                
+                if (!chatId) {
+                    showStatus('❌ Не удалось определить пользователя', 'error');
+                    return;
+                }
+                
+                // Отправляем сообщение через API бота
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: query,
+                        parse_mode: 'Markdown'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    showStatus('✅ Отправлено в бот! Трек скоро появится!', 'success');
+                    setTimeout(() => tg.close(), 1500);
+                } else {
+                    showStatus('❌ Ошибка: ' + result.description, 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Ошибка: ' + error.message, 'error');
+                console.error('Ошибка:', error);
+            }
         }
         
         searchBtn.addEventListener('click', searchTrack);
@@ -160,6 +197,7 @@
         searchInput.focus();
         
         console.log('🎵 Skibidi Sound Player готов!');
+        console.log('🤖 Бот токен установлен');
     </script>
 </body>
 </html>
