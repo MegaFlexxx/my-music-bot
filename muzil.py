@@ -31,7 +31,7 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
-# --- JSONBIN НАСТРОЙКИ (ТВОИ ДАННЫЕ) ---
+# --- JSONBIN НАСТРОЙКИ ---
 JSONBIN_API_KEY = "$2a$10$CX38xBtBqOre7M6olAPo4ehOVtTcINNnDU5hpOVbvk6/VMx22C2ti"
 JSONBIN_BIN_ID = "6a58c64cf5f4af5e299736cd"
 
@@ -40,14 +40,17 @@ bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN (С ПОДДЕРЖКОЙ ПРИВАТНЫХ БИНОВ) ---
+# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ДЛЯ КАЖДОГО ПОЛЬЗОВАТЕЛЯ ---
+user_search_results = {}  # {user_id: [список треков]}
+user_current_position = {}  # {user_id: текущая_позиция}
+
+# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN ---
 def load_stats():
-    """Загружает статистику из JSONBin (поддерживает приватные бины)"""
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
         headers = {
             "X-Master-Key": JSONBIN_API_KEY,
-            "X-Bin-Private": "false"  # ВАЖНО! Для приватных бинов
+            "X-Bin-Private": "false"
         }
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
@@ -57,27 +60,26 @@ def load_stats():
                 return record.get("users", {})
             return record
         else:
-            print(f"❌ Ошибка загрузки: {response.status_code} - {response.text}")
+            print(f"❌ Ошибка загрузки: {response.status_code}")
             return {}
     except Exception as e:
         print(f"❌ Ошибка загрузки статистики: {e}")
         return {}
 
 def save_stats(stats):
-    """Сохраняет статистику в JSONBin (поддерживает приватные бины)"""
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
         headers = {
             "X-Master-Key": JSONBIN_API_KEY,
             "Content-Type": "application/json",
-            "X-Bin-Private": "false"  # ВАЖНО! Для приватных бинов
+            "X-Bin-Private": "false"
         }
         data_to_save = {"users": stats}
         response = requests.put(url, json=data_to_save, headers=headers, timeout=10)
         if response.status_code == 200:
             print("✅ Статистика сохранена в JSONBin")
         else:
-            print(f"❌ Ошибка сохранения: {response.status_code} - {response.text}")
+            print(f"❌ Ошибка сохранения: {response.status_code}")
     except Exception as e:
         print(f"❌ Ошибка сохранения статистики: {e}")
 
@@ -137,6 +139,51 @@ def get_top_users():
     )[:5]
     
     return sorted_users
+
+# --- ФУНКЦИЯ ДЛЯ ПОКАЗА ТРЕКА С КНОПКАМИ ---
+async def show_track(message: types.Message, user_id: int, position: int):
+    """Показывает трек на определённой позиции с кнопками"""
+    results = user_search_results.get(user_id, [])
+    
+    if not results or position >= len(results):
+        await message.answer("❌ Треки закончились!")
+        return
+    
+    track = results[position]
+    total = len(results)
+    
+    # Формируем кнопки
+    buttons = []
+    
+    # Кнопка скачать
+    buttons.append([types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")])
+    
+    # Кнопки навигации
+    nav_buttons = []
+    if position > 0:
+        nav_buttons.append(types.InlineKeyboardButton(text="◀️ Назад", callback_data=f"nav_{user_id}_{position-1}"))
+    if position < total - 1:
+        nav_buttons.append(types.InlineKeyboardButton(text="Вперёд ▶️", callback_data=f"nav_{user_id}_{position+1}"))
+    
+    if nav_buttons:
+        buttons.append(nav_buttons)
+    
+    # Информация о прогрессе
+    info_button = [types.InlineKeyboardButton(text=f"📌 {position+1}/{total}", callback_data="ignore")]
+    buttons.append(info_button)
+    
+    reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+    
+    # Показываем трек
+    artists = ", ".join([a.name for a in track.artists])
+    await message.answer(
+        f"🎵 **{track.title}**\n"
+        f"👤 **Исполнитель:** {artists}\n"
+        f"📌 **Результат {position+1} из {total}**\n\n"
+        f"👇 Нажми на кнопку, чтобы скачать",
+        parse_mode="Markdown",
+        reply_markup=reply_markup
+    )
 
 # --- ЛОГИКА СКАЧИВАНИЯ ---
 async def download_and_send(message: types.Message, track_id: str):
@@ -215,7 +262,6 @@ async def start_web_server():
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
-    print(f"📁 Статистика хранится в JSONBin (приватный бин)")
 
 # --- МЕНЮ КОМАНД ---
 async def set_commands():
@@ -316,17 +362,13 @@ async def handle_search(m: types.Message):
     else:
         res = yandex_client.search(m.text, type_='track')
         if res.tracks:
-            track = res.tracks.results[0]
-            await m.answer(
-                f"✅ Нашел трек!\n\n"
-                f"🎵 {track.title} — {track.artists[0].name}\n"
-                f"👇 Нажми на кнопку, чтобы скачать",
-                reply_markup=types.InlineKeyboardMarkup(
-                    inline_keyboard=[[
-                        types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")
-                    ]]
-                )
-            )
+            # Сохраняем все результаты поиска для пользователя
+            user_id = m.from_user.id
+            user_search_results[user_id] = res.tracks.results
+            user_current_position[user_id] = 0
+            
+            # Показываем первый трек
+            await show_track(m, user_id, 0)
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
@@ -334,6 +376,34 @@ async def handle_search(m: types.Message):
 async def callback_download(c: types.CallbackQuery):
     await c.answer("🔽 Начинаю загрузку...")
     await download_and_send(c.message, c.data.split("_")[1])
+
+@dp.callback_query(F.data.startswith("nav_"))
+async def callback_navigation(c: types.CallbackQuery):
+    """Обрабатывает навигацию по трекам"""
+    # Разбираем данные: nav_userId_position
+    parts = c.data.split("_")
+    user_id = int(parts[1])
+    position = int(parts[2])
+    
+    # Проверяем, что это тот же пользователь
+    if c.from_user.id != user_id:
+        await c.answer("❌ Это не твой поиск!", show_alert=True)
+        return
+    
+    # Обновляем текущую позицию
+    user_current_position[c.from_user.id] = position
+    
+    # Показываем трек на новой позиции
+    await show_track(c.message, user_id, position)
+    
+    # Удаляем старые кнопки
+    await c.message.delete()
+    
+    await c.answer()
+
+@dp.callback_query(F.data == "ignore")
+async def ignore_callback(c: types.CallbackQuery):
+    await c.answer()
 
 # --- ГЛАВНАЯ ФУНКЦИЯ ---
 async def main():
