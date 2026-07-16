@@ -79,8 +79,8 @@ async def download_and_send(message: types.Message, track_id: str):
             f"🎵 {track.title}\n"
             f"👤 Исполнитель: {artists}\n"
             f"⏱ Длительность: {duration_str}\n"
-            f"📦 Размер: {size_str}\n\n"
-            f"🤖 Бот Skibidi_sound рекомендует!"
+            f"💾 Размер: {size_str}\n\n"
+            f"🚽 Бот Skibidi_sound рекомендует!"
         )
         
         # Отправляем аудио с красивым оформлением (БЕЗ parse_mode)
