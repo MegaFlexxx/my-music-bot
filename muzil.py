@@ -40,11 +40,15 @@ bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN ---
+# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN (С ПОДДЕРЖКОЙ ПРИВАТНЫХ БИНОВ) ---
 def load_stats():
+    """Загружает статистику из JSONBin (поддерживает приватные бины)"""
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
-        headers = {"X-Master-Key": JSONBIN_API_KEY}
+        headers = {
+            "X-Master-Key": JSONBIN_API_KEY,
+            "X-Bin-Private": "false"  # ВАЖНО! Для приватных бинов
+        }
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             data = response.json()
@@ -53,18 +57,20 @@ def load_stats():
                 return record.get("users", {})
             return record
         else:
-            print(f"❌ Ошибка загрузки: {response.status_code}")
+            print(f"❌ Ошибка загрузки: {response.status_code} - {response.text}")
             return {}
     except Exception as e:
         print(f"❌ Ошибка загрузки статистики: {e}")
         return {}
 
 def save_stats(stats):
+    """Сохраняет статистику в JSONBin (поддерживает приватные бины)"""
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
         headers = {
             "X-Master-Key": JSONBIN_API_KEY,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-Bin-Private": "false"  # ВАЖНО! Для приватных бинов
         }
         data_to_save = {"users": stats}
         response = requests.put(url, json=data_to_save, headers=headers, timeout=10)
@@ -209,7 +215,7 @@ async def start_web_server():
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
-    print(f"📁 Статистика хранится в JSONBin")
+    print(f"📁 Статистика хранится в JSONBin (приватный бин)")
 
 # --- МЕНЮ КОМАНД ---
 async def set_commands():
