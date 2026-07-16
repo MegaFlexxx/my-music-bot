@@ -293,7 +293,7 @@
     </div>
     
     <script>
-        // --- ПРОВЕРКА: ЕСЛИ SDK НЕ ЗАГРУЗИЛСЯ ---
+        // --- ПРОВЕРКА SDK ---
         if (typeof Telegram === 'undefined') {
             console.warn('Telegram SDK не загружен! Сайт открыт вне Telegram.');
         }
@@ -350,7 +350,7 @@
         const likeBtn = document.getElementById('likeBtn');
         const addBtn = document.getElementById('addBtn');
         
-        // --- ФУНКЦИЯ ОТПРАВКИ В БОТ (безопасная) ---
+        // --- ФУНКЦИЯ ОТПРАВКИ В БОТ ---
         function sendToBot(data) {
             if (tg) {
                 tg.sendData(JSON.stringify(data));
@@ -360,7 +360,7 @@
             }
         }
         
-        // --- ФУНКЦИЯ ПОКАЗА POPUP (безопасная) ---
+        // --- ФУНКЦИЯ ПОКАЗА POPUP ---
         function showPopup(title, message) {
             if (tg) {
                 tg.showPopup({
@@ -507,7 +507,7 @@
         }
         
         // ============================================================
-        // ВСЕ ОБРАБОТЧИКИ СОБЫТИЙ (РАБОТАЮТ!)
+        // ВСЕ ОБРАБОТЧИКИ СОБЫТИЙ
         // ============================================================
         
         // --- ВОСПРОИЗВЕДЕНИЕ ---
@@ -585,22 +585,23 @@
             showPopup('➕ Добавлено', `Трек "${track.title}" добавлен в плейлист!`);
         });
         
-        // --- ПОИСК (ОБНОВЛЁННЫЙ!) ---
+        // --- ПОИСК (ОТПРАВЛЯЕТ В БОТА) ---
         searchBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             const query = searchInput.value.trim();
             console.log(`🔍 Поиск: "${query}"`);
             if (query) {
-                // Отправляем запрос в бот
-                sendToBot({
-                    action: 'search',
-                    query: query
-                });
-                
-                // Показываем уведомление
-                showPopup('🔍 Поиск', `Ищу "${query}" в Яндекс.Музыке...\nТрек скоро появится в боте!`);
-                
-                // Очищаем поле
+                // Отправляем в бот через WebApp
+                if (tg) {
+                    tg.sendData(JSON.stringify({
+                        action: 'search',
+                        query: query
+                    }));
+                    showPopup('🔍 Поиск', `Ищу "${query}" в Яндекс.Музыке...\nРезультат придёт в чат!`);
+                } else {
+                    // Если не в Telegram
+                    window.open(`https://t.me/skibidi_sound_bot?start=search_${encodeURIComponent(query)}`);
+                }
                 searchInput.value = '';
             } else {
                 showPopup('⚠️', 'Напиши название трека или исполнителя!');
@@ -614,7 +615,7 @@
             }
         });
         
-        // --- НАВИГАЦИЯ (вкладки внизу) ---
+        // --- НАВИГАЦИЯ ---
         document.getElementById('navPlayer').addEventListener('click', function() {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             this.classList.add('active');
