@@ -147,26 +147,27 @@ async def start_web_server():
 # --- МЕНЮ ---
 async def set_commands():
     commands = [
-        BotCommand(command="start", description="🚀 Запустить бота"),
+        BotCommand(command="лосяра", description="🦌 ЗОВИ ЛОСЯРУ!"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
 # --- ОБРАБОТЧИКИ ---
 
-# 1. ОБРАБОТЧИК /start (САМЫЙ ПЕРВЫЙ!)
-@dp.message(Command("start"))
-async def start_command(m: types.Message):
+# 1. КОМАНДА /ЛОСЯРА
+@dp.message(Command("лосяра"))
+async def losyara_command(m: types.Message):
     await m.answer(
+        "🦌 **ЛОСЯРА ПРИШЁЛ!** \n\n"
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
-        "🔥 Отправь название трека или исполнителя, и я найду музыку за считанные секунды!",
+        "🔥 Отправь название трека или исполнителя, и я найду музыку за считанные секунды!\n\n"
+        "🦌 Лосяра одобряет!",
         parse_mode="Markdown"
     )
 
-# 2. ОБРАБОТЧИК ВСЕГО ОСТАЛЬНОГО
+# 2. ВСЁ ОСТАЛЬНОЕ (поиск)
 @dp.message(F.text)
 async def search_command(m: types.Message):
-    # ЕСЛИ ЭТО КОМАНДА — ИГНОРИРУЕМ
     if m.text.startswith('/'):
         return
     
