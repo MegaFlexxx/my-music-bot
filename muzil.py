@@ -2,6 +2,7 @@ import sys
 import os
 import asyncio
 import requests
+import logging
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -11,6 +12,13 @@ from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
+
+# --- НАСТРОЙКА ЛОГОВ ---
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # --- ПАТЧ YANDEX MUSIC ---
 def apply_patch():
@@ -29,10 +37,26 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
-session = AiohttpSession()
-bot = Bot(token=TELEGRAM_TOKEN, session=session)
-dp = Dispatcher()
-yandex_client = Client(YANDEX_TOKEN).init()
+logger.info("🚀 Запускаем бота...")
+logger.info(f"Токен бота: {TELEGRAM_TOKEN[:10]}...")
+
+try:
+    logger.info("Подключаемся к Яндекс.Музыке...")
+    yandex_client = Client(YANDEX_TOKEN).init()
+    logger.info("✅ Яндекс.Музыка подключена!")
+except Exception as e:
+    logger.error(f"❌ Ошибка подключения к Яндекс.Музыке: {e}")
+    sys.exit(1)
+
+try:
+    logger.info("Создаём сессию для бота...")
+    session = AiohttpSession()
+    bot = Bot(token=TELEGRAM_TOKEN, session=session)
+    dp = Dispatcher()
+    logger.info("✅ Бот создан!")
+except Exception as e:
+    logger.error(f"❌ Ошибка создания бота: {e}")
+    sys.exit(1)
 
 # --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ---
 user_search_results = {}
@@ -142,7 +166,7 @@ async def start_web_server():
     port = int(os.environ.get('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    print(f"✅ Веб-сервер на порту {port}")
+    logger.info(f"✅ Веб-сервер на порту {port}")
 
 # --- МЕНЮ ---
 async def set_commands():
@@ -151,9 +175,9 @@ async def set_commands():
     ]
     try:
         await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
-        print("✅ Меню команд установлено!")
+        logger.info("✅ Меню команд установлено!")
     except Exception as e:
-        print(f"⚠️ Ошибка установки меню: {e}")
+        logger.warning(f"⚠️ Ошибка установки меню: {e}")
 
 # --- ОБРАБОТЧИКИ ---
 
@@ -169,7 +193,6 @@ async def losyara_command(m: types.Message):
 
 @dp.message(Command("start"))
 async def start_command(m: types.Message):
-    # Тоже отвечаем на /start, чтобы не было ошибок
     await losyara_command(m)
 
 @dp.message(F.text)
@@ -214,9 +237,25 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
-    print("🚀 Запускаем бота...")
-    await set_commands()
-    await asyncio.gather(start_web_server(), dp.start_polling(bot))
+    logger.info("🚀 Запускаем основной процесс...")
+    try:
+        await set_commands()
+    except Exception as e:
+        logger.error(f"❌ Ошибка при установке меню: {e}")
+    
+    try:
+        logger.info("🔄 Запускаем веб-сервер и polling...")
+        await asyncio.gather(
+            start_web_server(),
+            dp.start_polling(bot)
+        )
+    except Exception as e:
+        logger.error(f"❌ Критическая ошибка: {e}")
+        raise
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logger.error(f"❌ Фатальная ошибка: {e}")
+        sys.exit(1)
