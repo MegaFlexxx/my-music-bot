@@ -31,18 +31,20 @@ bot = Bot(token=TELEGRAM_TOKEN)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- ЛОГИКА СКАЧИВАНИЯ ---
+# --- ЛОГИКА СКАЧИВАНИЯ С КРАСИВЫМ ОФОРМЛЕНИЕМ ---
 async def download_and_send(message: types.Message, track_id: str):
-    msg = await message.answer("📥 Загрузка...")
+    msg = await message.answer("📥 Ищу трек...")
     try:
         track = yandex_client.tracks([track_id])[0]
         f_name, c_name = f"{track_id}.mp3", f"{track_id}.jpg"
         
+        # Скачиваем трек
         info = track.get_download_info()
         link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
         with open(f_name, 'wb') as f: 
             f.write(requests.get(link, timeout=15).content)
         
+        # Скачиваем обложку (если есть)
         cover_url = track.get_cover_url('400x400')
         if cover_url:
             full_cover_url = cover_url if cover_url.startswith('http') else "https:" + cover_url
@@ -50,23 +52,57 @@ async def download_and_send(message: types.Message, track_id: str):
                 f.write(requests.get(full_cover_url, timeout=10).content)
             Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
             
+            # Вшиваем обложку в MP3
             audio = MP3(f_name, ID3=ID3)
             if audio.tags is None: 
                 audio.add_tags(ID3=ID3)
             with open(c_name, 'rb') as img:
                 audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
             audio.save(v2_version=3)
-
+        
+        # --- КРАСИВОЕ ОФОРМЛЕНИЕ ---
+        # Исполнители
+        artists = ", ".join([a.name for a in track.artists])
+        
+        # Жанр (если есть) — в yandex-music нет жанра по умолчанию, ставим заглушку
+        genre = "Неизвестный жанр"
+        
+        # Длительность в минутах и секундах
+        duration_sec = track.duration_ms // 1000
+        minutes = duration_sec // 60
+        seconds = duration_sec % 60
+        duration_str = f"{minutes}:{seconds:02d}"
+        
+        # Размер файла
+        file_size = os.path.getsize(f_name) / (1024 * 1024)  # В МБ
+        size_str = f"{file_size:.1f} MB"
+        
+        # Красивая подпись
+        caption = (
+            f"🚽 **{track.title}**\n"
+            f"👤 **Исполнитель:** {artists}\n"
+            f"🎶 **Жанр:** {genre}\n"
+            f"⏱ **Длительность:** {duration_str}\n"
+            f"📦 **Размер:** {size_str}\n\n"
+            f"🤖 **Бот Skibidi_sound рекомендует!**"
+        )
+        
+        # Отправляем аудио с красивым оформлением
         await message.answer_audio(
-            audio=types.FSInputFile(f_name), 
+            audio=types.FSInputFile(f_name),
             thumbnail=types.FSInputFile(c_name) if os.path.exists(c_name) else None,
             title=track.title,
-            performer=", ".join([a.name for a in track.artists])
+            performer=artists,
+            caption=caption,
+            parse_mode="Markdown"
         )
+        
+        # Чистим файлы
         for f in [f_name, c_name]: 
             if os.path.exists(f): 
                 os.remove(f)
         await msg.delete()
+        
     except Exception as e:
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
@@ -90,7 +126,7 @@ async def start_web_server():
 # --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
 async def start(m: types.Message): 
-    await m.answer("Я — Skibidi_sound. Отправь название трека, исполнителя или ссылку, а я найду музыку за считанные секунды.")
+    await m.answer("🎵 **Skibidi_sound** — твой музыкальный помощник!\n\nОтправь название трека или исполнителя, и я найду музыку за считанные секунды! 🔥", parse_mode="Markdown")
 
 @dp.message(F.text)
 async def handle_search(m: types.Message):
@@ -101,19 +137,22 @@ async def handle_search(m: types.Message):
         if res.tracks:
             track = res.tracks.results[0]
             await m.answer(
-                f"✅ Нашел: {track.title} — {track.artists[0].name}", 
+                f"✅ **Нашел трек!**\n\n"
+                f"🎵 **{track.title}** — **{track.artists[0].name}**\n"
+                f"👇 Нажми на кнопку, чтобы скачать", 
+                parse_mode="Markdown",
                 reply_markup=types.InlineKeyboardMarkup(
                     inline_keyboard=[[
-                        types.InlineKeyboardButton(text="📥 Скачать", callback_data=f"down_{track.id}")
+                        types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")
                     ]]
                 )
             )
         else:
-            await m.answer("❌ Ничего не найдено")
+            await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
 @dp.callback_query(F.data.startswith("down_"))
 async def callback_download(c: types.CallbackQuery):
-    await c.answer()
+    await c.answer("🔽 Начинаю загрузку...")
     await download_and_send(c.message, c.data.split("_")[1])
 
 # --- ГЛАВНАЯ ФУНКЦИЯ ---
