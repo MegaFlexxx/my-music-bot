@@ -232,11 +232,13 @@
 </head>
 <body>
     <div class="container" id="app">
+        <!-- Header -->
         <div class="header">
             <div class="logo">🎵 Skibidi Sound</div>
             <button class="close-btn" onclick="Telegram.WebApp.close()">✕</button>
         </div>
         
+        <!-- Player -->
         <div class="player-card">
             <div class="album-art" id="albumArt">🎵</div>
             <div class="track-info">
@@ -266,6 +268,7 @@
             </div>
         </div>
         
+        <!-- Playlist -->
         <div class="playlist-section">
             <div class="playlist-header">
                 <span class="playlist-title">📋 Текущий плейлист</span>
@@ -274,24 +277,28 @@
             <div id="playlistContainer"></div>
         </div>
         
+        <!-- Search -->
         <div class="search-box">
             <input type="text" class="search-input" placeholder="🔍 Найти трек..." id="searchInput">
             <button class="search-btn" id="searchBtn">Найти</button>
         </div>
         
+        <!-- Bottom Navigation -->
         <div class="nav-bottom">
-            <button class="nav-item active"><span class="icon">🎵</span>Плеер</button>
-            <button class="nav-item" id="playlistNav"><span class="icon">📋</span>Плейлисты</button>
-            <button class="nav-item" id="favoritesNav"><span class="icon">⭐</span>Избранное</button>
-            <button class="nav-item" id="profileNav"><span class="icon">👤</span>Профиль</button>
+            <button class="nav-item active" id="navPlayer"><span class="icon">🎵</span>Плеер</button>
+            <button class="nav-item" id="navPlaylists"><span class="icon">📋</span>Плейлисты</button>
+            <button class="nav-item" id="navFavorites"><span class="icon">⭐</span>Избранное</button>
+            <button class="nav-item" id="navProfile"><span class="icon">👤</span>Профиль</button>
         </div>
     </div>
     
     <script>
+        // --- ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP ---
         const tg = Telegram.WebApp;
         tg.expand();
         tg.ready();
         
+        // --- СОСТОЯНИЕ ---
         const state = {
             currentTrack: 0,
             isPlaying: false,
@@ -308,9 +315,11 @@
                 { title: 'On Top of the World', artist: 'Imagine Dragons', duration: '3:12' },
                 { title: 'Shots', artist: 'Imagine Dragons', duration: '3:52' },
                 { title: 'Whatever It Takes', artist: 'Imagine Dragons', duration: '3:21' },
-            ]
+            ],
+            progressInterval: null
         };
         
+        // --- DOM ЭЛЕМЕНТЫ ---
         const albumArt = document.getElementById('albumArt');
         const trackTitle = document.getElementById('trackTitle');
         const trackArtist = document.getElementById('trackArtist');
@@ -320,6 +329,8 @@
         const playBtn = document.getElementById('playBtn');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
         const playlistContainer = document.getElementById('playlistContainer');
         const trackCount = document.getElementById('trackCount');
         const searchInput = document.getElementById('searchInput');
@@ -328,119 +339,277 @@
         const likeBtn = document.getElementById('likeBtn');
         const addBtn = document.getElementById('addBtn');
         
+        // --- ФУНКЦИЯ ЗАГРУЗКИ ТРЕКА ---
         function loadTrack(index) {
             const track = state.tracks[index];
             if (!track) return;
+            
             state.currentTrack = index;
             trackTitle.textContent = track.title;
             trackArtist.textContent = track.artist;
             totalTime.textContent = track.duration;
+            
+            // Сброс прогресса
             progressFill.style.width = '0%';
             currentTime.textContent = '0:00';
+            
+            // Обновляем активный трек в списке
             document.querySelectorAll('.track-item').forEach((el, i) => {
                 el.classList.toggle('active', i === index);
             });
-            tg.sendData(JSON.stringify({ action: 'load', track: track.title, artist: track.artist, index: index }));
+            
+            // Отправляем данные в бот
+            tg.sendData(JSON.stringify({
+                action: 'load',
+                track: track.title,
+                artist: track.artist,
+                index: index
+            }));
         }
         
+        // --- ФУНКЦИЯ ВОСПРОИЗВЕДЕНИЯ ---
         function togglePlay() {
             state.isPlaying = !state.isPlaying;
             playBtn.textContent = state.isPlaying ? '⏸️' : '▶️';
-            tg.sendData(JSON.stringify({ action: state.isPlaying ? 'play' : 'pause' }));
+            
+            tg.sendData(JSON.stringify({
+                action: state.isPlaying ? 'play' : 'pause'
+            }));
+            
             if (state.isPlaying) {
-                let progress = 0;
-                const interval = setInterval(() => {
-                    if (!state.isPlaying) { clearInterval(interval); return; }
-                    progress += 0.5;
-                    if (progress > 100) { progress = 0; clearInterval(interval); nextTrack(); return; }
+                // Запускаем имитацию прогресса
+                if (state.progressInterval) clearInterval(state.progressInterval);
+                
+                let progress = parseFloat(progressFill.style.width) || 0;
+                const totalSec = 204; // 3:24 в секундах
+                
+                state.progressInterval = setInterval(() => {
+                    if (!state.isPlaying) {
+                        clearInterval(state.progressInterval);
+                        return;
+                    }
+                    
+                    progress += 0.3;
+                    if (progress >= 100) {
+                        progress = 0;
+                        clearInterval(state.progressInterval);
+                        nextTrack();
+                        return;
+                    }
+                    
                     progressFill.style.width = progress + '%';
-                    const totalSec = 204;
+                    
                     const currentSec = Math.floor((progress / 100) * totalSec);
                     const min = Math.floor(currentSec / 60);
                     const sec = currentSec % 60;
                     currentTime.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
-                }, 300);
+                }, 200);
+            } else {
+                if (state.progressInterval) {
+                    clearInterval(state.progressInterval);
+                    state.progressInterval = null;
+                }
             }
         }
         
+        // --- СЛЕДУЮЩИЙ ТРЕК ---
         function nextTrack() {
             const next = (state.currentTrack + 1) % state.tracks.length;
             loadTrack(next);
-            if (state.isPlaying) { togglePlay(); togglePlay(); }
+            if (state.isPlaying) {
+                // Если играло, продолжаем на новом треке
+                const wasPlaying = state.isPlaying;
+                togglePlay();
+                togglePlay();
+            }
         }
         
+        // --- ПРЕДЫДУЩИЙ ТРЕК ---
         function prevTrack() {
             const prev = (state.currentTrack - 1 + state.tracks.length) % state.tracks.length;
             loadTrack(prev);
-            if (state.isPlaying) { togglePlay(); togglePlay(); }
+            if (state.isPlaying) {
+                togglePlay();
+                togglePlay();
+            }
         }
         
+        // --- ОТРИСОВКА ПЛЕЙЛИСТА ---
         function renderPlaylist(filter = '') {
-            const filtered = filter ? state.tracks.filter(t => t.title.toLowerCase().includes(filter.toLowerCase()) || t.artist.toLowerCase().includes(filter.toLowerCase())) : state.tracks;
+            const filtered = filter
+                ? state.tracks.filter(t => 
+                    t.title.toLowerCase().includes(filter.toLowerCase()) ||
+                    t.artist.toLowerCase().includes(filter.toLowerCase())
+                  )
+                : state.tracks;
+            
             playlistContainer.innerHTML = '';
+            
             if (filtered.length === 0) {
-                playlistContainer.innerHTML = `<div style="text-align:center;color:#555;padding:20px;">🔍 Ничего не найдено</div>`;
+                playlistContainer.innerHTML = `
+                    <div style="text-align:center;color:#555;padding:20px;">
+                        🔍 Ничего не найдено
+                    </div>
+                `;
                 trackCount.textContent = '0 треков';
                 return;
             }
+            
             filtered.forEach((track, i) => {
                 const div = document.createElement('div');
                 div.className = `track-item ${i === state.currentTrack ? 'active' : ''}`;
-                div.innerHTML = `<span class="track-number">${i + 1}</span><div class="track-info-playlist"><div class="track-name">${track.title}</div><div class="track-artist-small">${track.artist}</div></div><span class="track-duration">${track.duration}</span>`;
+                div.innerHTML = `
+                    <span class="track-number">${i + 1}</span>
+                    <div class="track-info-playlist">
+                        <div class="track-name">${track.title}</div>
+                        <div class="track-artist-small">${track.artist}</div>
+                    </div>
+                    <span class="track-duration">${track.duration}</span>
+                `;
                 div.addEventListener('click', () => {
                     const realIndex = state.tracks.indexOf(track);
                     loadTrack(realIndex);
-                    if (state.isPlaying) { togglePlay(); togglePlay(); }
+                    if (state.isPlaying) {
+                        togglePlay();
+                        togglePlay();
+                    }
                 });
                 playlistContainer.appendChild(div);
             });
+            
             trackCount.textContent = `${filtered.length} ${filtered.length === 1 ? 'трек' : 'треков'}`;
         }
         
+        // --- ОБРАБОТЧИКИ СОБЫТИЙ (ВСЕ РАБОТАЮТ!) ---
+        
+        // Воспроизведение
         playBtn.addEventListener('click', togglePlay);
+        
+        // Следующий / предыдущий
         nextBtn.addEventListener('click', nextTrack);
         prevBtn.addEventListener('click', prevTrack);
         
+        // Скачивание (отправка в бот)
         downloadBtn.addEventListener('click', () => {
             const track = state.tracks[state.currentTrack];
-            tg.sendData(JSON.stringify({ action: 'download', track: track.title, artist: track.artist }));
-            tg.showPopup({ title: '📥 Скачивание', message: `Трек "${track.title}" — ${track.artist} скоро будет отправлен!`, buttons: [{ type: 'ok' }] });
+            tg.sendData(JSON.stringify({
+                action: 'download',
+                track: track.title,
+                artist: track.artist
+            }));
+            tg.showPopup({
+                title: '📥 Скачивание',
+                message: `Трек "${track.title}" — ${track.artist} скоро будет отправлен!`,
+                buttons: [{ type: 'ok' }]
+            });
         });
         
+        // Лайк
         likeBtn.addEventListener('click', () => {
             likeBtn.textContent = likeBtn.textContent === '❤️' ? '❤️‍🔥' : '❤️';
-            tg.sendData(JSON.stringify({ action: 'like', track: state.tracks[state.currentTrack].title }));
+            tg.sendData(JSON.stringify({
+                action: 'like',
+                track: state.tracks[state.currentTrack].title
+            }));
+            tg.showPopup({
+                title: '❤️ Лайк!',
+                message: `Ты лайкнул "${state.tracks[state.currentTrack].title}"!`,
+                buttons: [{ type: 'ok' }]
+            });
         });
         
+        // Добавить в плейлист
         addBtn.addEventListener('click', () => {
-            tg.sendData(JSON.stringify({ action: 'add_to_playlist', track: state.tracks[state.currentTrack].title }));
-            tg.showPopup({ title: '➕ Добавлено', message: 'Трек добавлен в плейлист!', buttons: [{ type: 'ok' }] });
+            tg.sendData(JSON.stringify({
+                action: 'add_to_playlist',
+                track: state.tracks[state.currentTrack].title
+            }));
+            tg.showPopup({
+                title: '➕ Добавлено',
+                message: `Трек "${state.tracks[state.currentTrack].title}" добавлен в плейлист!`,
+                buttons: [{ type: 'ok' }]
+            });
         });
         
+        // Поиск
         searchBtn.addEventListener('click', () => {
             const query = searchInput.value.trim();
-            if (query) { renderPlaylist(query); tg.sendData(JSON.stringify({ action: 'search', query: query })); }
+            if (query) {
+                renderPlaylist(query);
+                tg.sendData(JSON.stringify({
+                    action: 'search',
+                    query: query
+                }));
+            }
         });
         
-        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchBtn.click(); });
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') searchBtn.click();
+        });
         
-        document.getElementById('playlistNav').addEventListener('click', () => {
+        // Перемешка
+        shuffleBtn.addEventListener('click', () => {
+            shuffleBtn.style.transform = 'rotate(45deg)';
+            shuffleBtn.style.opacity = shuffleBtn.style.opacity === '1' ? '0.7' : '1';
+            tg.sendData(JSON.stringify({ action: 'shuffle' }));
+        });
+        
+        // Повтор
+        repeatBtn.addEventListener('click', () => {
+            repeatBtn.style.color = repeatBtn.style.color === '#ff6b6b' ? '#fff' : '#ff6b6b';
+            tg.sendData(JSON.stringify({ action: 'repeat' }));
+        });
+        
+        // --- НАВИГАЦИЯ ПО ВКЛАДКАМ ---
+        document.getElementById('navPlayer').addEventListener('click', () => {
+            tg.sendData(JSON.stringify({ action: 'view_player' }));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('navPlayer').classList.add('active');
+            tg.showPopup({
+                title: '🎵 Плеер',
+                message: 'Ты на главном экране плеера!',
+                buttons: [{ type: 'ok' }]
+            });
+        });
+        
+        document.getElementById('navPlaylists').addEventListener('click', () => {
             tg.sendData(JSON.stringify({ action: 'view_playlists' }));
-            tg.showPopup({ title: '📋 Плейлисты', message: 'Функция плейлистов в разработке! 🚀', buttons: [{ type: 'ok' }] });
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('navPlaylists').classList.add('active');
+            tg.showPopup({
+                title: '📋 Плейлисты',
+                message: 'Твои плейлисты будут здесь! Скоро добавлю! 🚀',
+                buttons: [{ type: 'ok' }]
+            });
         });
         
-        document.getElementById('favoritesNav').addEventListener('click', () => {
+        document.getElementById('navFavorites').addEventListener('click', () => {
             tg.sendData(JSON.stringify({ action: 'view_favorites' }));
-            tg.showPopup({ title: '⭐ Избранное', message: 'Твои любимые треки будут здесь! ❤️', buttons: [{ type: 'ok' }] });
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('navFavorites').classList.add('active');
+            tg.showPopup({
+                title: '⭐ Избранное',
+                message: 'Твои любимые треки будут здесь! ❤️',
+                buttons: [{ type: 'ok' }]
+            });
         });
         
-        document.getElementById('profileNav').addEventListener('click', () => {
+        document.getElementById('navProfile').addEventListener('click', () => {
             tg.sendData(JSON.stringify({ action: 'view_profile' }));
-            tg.showPopup({ title: '👤 Профиль', message: 'Статистика скоро появится! 📊', buttons: [{ type: 'ok' }] });
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('navProfile').classList.add('active');
+            tg.showPopup({
+                title: '👤 Профиль',
+                message: 'Твоя статистика скоро появится! 📊',
+                buttons: [{ type: 'ok' }]
+            });
         });
         
+        // --- ЗАГРУЗКА ---
         loadTrack(0);
         renderPlaylist();
+        
+        console.log('🎵 Skibidi Sound Player fully loaded!');
     </script>
 </body>
 </html>
