@@ -6,6 +6,7 @@ import requests
 import zipfile
 import io
 import random
+import logging
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -16,6 +17,10 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 from datetime import datetime
+
+# --- ЛОГИ ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # --- ПАТЧ YANDEX MUSIC ---
 def apply_patch():
@@ -38,15 +43,34 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 JSONBIN_API_KEY = "$2a$10$CX38xBtBqOre7M6olAPo4ehOVtTcINNnDU5hpOVbvk6/VMx22C2ti"
 JSONBIN_BIN_ID = "6a58c64cf5f4af5e299736cd"
 
-session = AiohttpSession()
-bot = Bot(token=TELEGRAM_TOKEN, session=session)
-dp = Dispatcher()
-yandex_client = Client(YANDEX_TOKEN).init()
+logger.info("🚀 Запускаем бота...")
 
-# --- ХРАНИЛИЩЕ РЕЗУЛЬТАТОВ ПОИСКА ---
+# --- ПРОВЕРКА ТОКЕНОВ ---
+if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "ВАШ_ТОКЕН":
+    logger.error("❌ Токен бота не установлен!")
+    sys.exit(1)
+
+try:
+    logger.info("Подключаем Яндекс.Музыку...")
+    yandex_client = Client(YANDEX_TOKEN).init()
+    logger.info("✅ Яндекс.Музыка подключена!")
+except Exception as e:
+    logger.error(f"❌ Ошибка Яндекс.Музыки: {e}")
+    sys.exit(1)
+
+try:
+    logger.info("Создаём сессию бота...")
+    session = AiohttpSession()
+    bot = Bot(token=TELEGRAM_TOKEN, session=session)
+    dp = Dispatcher()
+    logger.info("✅ Бот создан!")
+except Exception as e:
+    logger.error(f"❌ Ошибка создания бота: {e}")
+    sys.exit(1)
+
+# --- ХРАНИЛИЩЕ ---
 user_search_results = {}
 user_current_position = {}
-playlist_counter = 1
 
 # --- ЗАГРУЗКА/СОХРАНЕНИЕ ДАННЫХ ---
 def load_data():
@@ -57,29 +81,42 @@ def load_data():
         if response.status_code == 200:
             data = response.json()
             record = data.get("record", {})
+            # Проверяем наличие обязательных полей
+            if "playlists" not in record:
+                record["playlists"] = {}
+            if "playlist_counter" not in record:
+                record["playlist_counter"] = 1
             return record
-        return {}
+        else:
+            # Если бина нет — создаём новый
+            logger.warning("Бин не найден, создаём новый...")
+            return {"playlists": {}, "playlist_counter": 1}
     except Exception as e:
-        print(f"❌ Ошибка загрузки: {e}")
-        return {}
+        logger.error(f"❌ Ошибка загрузки: {e}")
+        return {"playlists": {}, "playlist_counter": 1}
 
 def save_data(data):
     try:
         url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
-        headers = {"X-Master-Key": JSONBIN_API_KEY, "Content-Type": "application/json", "X-Bin-Private": "false"}
+        headers = {
+            "X-Master-Key": JSONBIN_API_KEY,
+            "Content-Type": "application/json",
+            "X-Bin-Private": "false"
+        }
         response = requests.put(url, json=data, headers=headers, timeout=10)
         if response.status_code == 200:
-            print("✅ Данные сохранены в JSONBin")
+            logger.info("✅ Данные сохранены в JSONBin")
         else:
-            print(f"❌ Ошибка сохранения: {response.status_code}")
+            logger.error(f"❌ Ошибка сохранения: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
+        logger.error(f"❌ Ошибка сохранения: {e}")
 
 # --- ФУНКЦИИ ДЛЯ ПЛЕЙЛИСТОВ ---
 def get_playlists_data():
     data = load_data()
     if "playlists" not in data:
         data["playlists"] = {}
+    if "playlist_counter" not in data:
         data["playlist_counter"] = 1
     return data
 
@@ -131,7 +168,7 @@ def get_playlists_in_chat(chat_id):
     data = get_playlists_data()
     result = []
     for pid, playlist in data["playlists"].items():
-        if playlist["chat_id"] == chat_id:
+        if playlist.get("chat_id") == chat_id:
             result.append((pid, playlist))
     return result
 
@@ -159,7 +196,6 @@ def remove_track(playlist_id, track_index, user_id):
     
     playlist = data["playlists"][playlist_id_str]
     
-    # Только создатель может удалять
     if playlist["creator"] != user_id:
         return False, "❌ Только создатель плейлиста может удалять треки"
     
@@ -170,17 +206,6 @@ def remove_track(playlist_id, track_index, user_id):
     removed = tracks.pop(track_index)
     save_playlists_data(data)
     return True, f"✅ Трек '{removed['title']}' удалён"
-
-# --- ПОИСК ПО ИСПОЛНИТЕЛЮ ---
-def search_tracks_by_artist(artist_name):
-    try:
-        result = yandex_client.search(artist_name, type_='track')
-        if result.tracks:
-            return result.tracks.results[:5]
-        return []
-    except Exception as e:
-        print(f"❌ Ошибка поиска по исполнителю: {e}")
-        return []
 
 # --- ФУНКЦИЯ ДЛЯ ПОКАЗА ТРЕКА ---
 async def show_track(message: types.Message, user_id: int, position: int):
@@ -219,7 +244,7 @@ async def show_track(message: types.Message, user_id: int, position: int):
     )
 
 # --- СКАЧИВАНИЕ ---
-async def download_and_send(message: types.Message, track_id: str, from_playlist=False):
+async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥 Ищу трек...")
     try:
         track = yandex_client.tracks([track_id])[0]
@@ -259,18 +284,10 @@ async def download_and_send(message: types.Message, track_id: str, from_playlist
             f"🎧 Skibidi_sound бахает для тебя!"
         )
         
-        # Создаём кнопки для добавления в плейлист
         buttons = [
             [types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track_id}")],
             [types.InlineKeyboardButton(text="➕ Добавить в плейлист", callback_data=f"add_to_playlist_{track_id}")]
         ]
-        
-        # Если это не из плейлиста, кнопки будут другие
-        if not from_playlist:
-            buttons = [
-                [types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track_id}")],
-                [types.InlineKeyboardButton(text="➕ Добавить в плейлист", callback_data=f"add_to_playlist_{track_id}")]
-            ]
         
         reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
         
@@ -303,7 +320,7 @@ async def start_web_server():
     port = int(os.environ.get('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    print(f"✅ Веб-сервер на порту {port}")
+    logger.info(f"✅ Веб-сервер на порту {port}")
 
 # --- МЕНЮ КОМАНД ---
 async def set_commands():
@@ -312,17 +329,19 @@ async def set_commands():
         BotCommand(command="создать_плейлист", description="🎵 Создать новый плейлист"),
         BotCommand(command="плейлист", description="📋 Посмотреть плейлист"),
         BotCommand(command="плейлисты", description="📋 Все плейлисты в чате"),
-        BotCommand(command="лайк", description="❤️ Лайкнуть трек в плейлисте"),
+        BotCommand(command="лайк", description="❤️ Лайкнуть трек"),
         BotCommand(command="добавить_в_плейлист", description="➕ Добавить трек в плейлист"),
-        BotCommand(command="удалить_из_плейлиста", description="❌ Удалить трек из плейлиста"),
+        BotCommand(command="удалить_из_плейлиста", description="❌ Удалить трек"),
         BotCommand(command="случайный", description="🎲 Случайный трек"),
     ]
-    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
-    print("✅ Меню команд установлено!")
+    try:
+        await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+        logger.info("✅ Меню команд установлено!")
+    except Exception as e:
+        logger.warning(f"⚠️ Ошибка меню: {e}")
 
 # --- КОМАНДЫ ---
 
-# --- /ЛОСЯРА (СТАРТ) ---
 @dp.message(Command("лосяра"))
 async def losyara_command(m: types.Message):
     await m.answer(
@@ -333,9 +352,9 @@ async def losyara_command(m: types.Message):
         "/создать_плейлист Название — создать новый плейлист\n"
         "/плейлист ID — посмотреть плейлист\n"
         "/плейлисты — все плейлисты в чате\n"
-        "/добавить_в_плейлист ID ссылка_на_трек — добавить трек\n"
-        "/удалить_из_плейлиста ID номер_трека — удалить трек\n"
-        "/лайк ID номер_трека — лайкнуть трек\n"
+        "/добавить_в_плейлист ID ссылка — добавить трек\n"
+        "/удалить_из_плейлиста ID номер — удалить трек\n"
+        "/лайк ID номер — лайкнуть трек\n"
         "/случайный — случайный трек\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!",
         parse_mode="Markdown"
@@ -345,12 +364,10 @@ async def losyara_command(m: types.Message):
 async def start_command(m: types.Message):
     await losyara_command(m)
 
-# --- /СЛУЧАЙНЫЙ ---
 @dp.message(Command("случайный"))
 async def random_track_command(m: types.Message):
     await m.answer("🎲 Ищу случайный трек...")
     try:
-        # Ищем популярные треки
         res = yandex_client.search("популярное", type_='track')
         if res.tracks:
             track = random.choice(res.tracks.results)
@@ -360,7 +377,6 @@ async def random_track_command(m: types.Message):
     except Exception as e:
         await m.answer(f"❌ Ошибка: {str(e)}")
 
-# --- /СОЗДАТЬ_ПЛЕЙЛИСТ ---
 @dp.message(Command("создать_плейлист"))
 async def create_playlist_command(m: types.Message):
     args = m.text.split(maxsplit=1)
@@ -378,12 +394,11 @@ async def create_playlist_command(m: types.Message):
         f"📌 **Название:** {name}\n"
         f"🆔 **ID:** {playlist_id}\n"
         f"👤 **Создатель:** {m.from_user.first_name}\n\n"
-        f"➕ Добавить трек: `/добавить_в_плейлист {playlist_id} ссылка_на_трек`\n"
+        f"➕ Добавить трек: `/добавить_в_плейлист {playlist_id} ссылка`\n"
         f"📋 Посмотреть: `/плейлист {playlist_id}`",
         parse_mode="Markdown"
     )
 
-# --- /ПЛЕЙЛИСТ ---
 @dp.message(Command("плейлист"))
 async def show_playlist_command(m: types.Message):
     args = m.text.split(maxsplit=1)
@@ -419,7 +434,6 @@ async def show_playlist_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# --- /ПЛЕЙЛИСТЫ (все в чате) ---
 @dp.message(Command("плейлисты"))
 async def list_playlists_command(m: types.Message):
     chat_id = m.chat.id
@@ -436,12 +450,11 @@ async def list_playlists_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# --- /ДОБАВИТЬ_В_ПЛЕЙЛИСТ ---
 @dp.message(Command("добавить_в_плейлист"))
 async def add_to_playlist_command(m: types.Message):
     args = m.text.split(maxsplit=2)
     if len(args) < 3:
-        await m.answer("❌ Использование:\n`/добавить_в_плейлист ID ссылка_на_трек`\n\nИли отправь трек текстом после команды.", parse_mode="Markdown")
+        await m.answer("❌ Использование:\n`/добавить_в_плейлист ID Название трека`", parse_mode="Markdown")
         return
     
     try:
@@ -452,7 +465,6 @@ async def add_to_playlist_command(m: types.Message):
     
     track_query = args[2].strip()
     
-    # Ищем трек
     res = yandex_client.search(track_query, type_='track')
     if not res.tracks:
         await m.answer("❌ Трек не найден")
@@ -471,12 +483,10 @@ async def add_to_playlist_command(m: types.Message):
     await m.answer(
         f"✅ **Трек добавлен!**\n\n"
         f"🎵 {track_title} — {track_artist}\n"
-        f"📌 В плейлист: ID {playlist_id}\n"
-        f"👤 Добавил: {m.from_user.first_name}",
+        f"📌 В плейлист: ID {playlist_id}",
         parse_mode="Markdown"
     )
 
-# --- /УДАЛИТЬ_ИЗ_ПЛЕЙЛИСТА ---
 @dp.message(Command("удалить_из_плейлиста"))
 async def remove_from_playlist_command(m: types.Message):
     args = m.text.split()
@@ -494,7 +504,6 @@ async def remove_from_playlist_command(m: types.Message):
     success, message = remove_track(playlist_id, track_index, m.from_user.id)
     await m.answer(message)
 
-# --- /ЛАЙК ---
 @dp.message(Command("лайк"))
 async def like_track_command(m: types.Message):
     args = m.text.split()
@@ -514,7 +523,6 @@ async def like_track_command(m: types.Message):
     else:
         await m.answer("❌ Трек или плейлист не найден")
 
-# --- ОБРАБОТЧИК ПОИСКА (ТЕКСТ) ---
 @dp.message(F.text)
 async def handle_search(m: types.Message):
     if m.text.startswith('/'):
@@ -557,20 +565,17 @@ async def callback_navigation(c: types.CallbackQuery):
 async def callback_add_to_playlist(c: types.CallbackQuery):
     track_id = c.data.replace("add_to_playlist_", "")
     
-    # Получаем информацию о треке
     try:
         track = yandex_client.tracks([track_id])[0]
         track_title = track.title
         track_artist = ", ".join([a.name for a in track.artists])
         
-        # Находим плейлисты пользователя в этом чате
         playlists = get_playlists_in_chat(c.message.chat.id)
         
         if not playlists:
             await c.answer("❌ В этом чате нет плейлистов. Создай первый!", show_alert=True)
             return
         
-        # Создаём кнопки для выбора плейлиста
         buttons = []
         for pid, playlist in playlists:
             buttons.append([types.InlineKeyboardButton(
@@ -592,7 +597,7 @@ async def callback_add_to_playlist(c: types.CallbackQuery):
     except Exception as e:
         await c.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
 
-# --- CALLBACK: ПОДТВЕРЖДЕНИЕ ДОБАВЛЕНИЯ В ПЛЕЙЛИСТ ---
+# --- CALLBACK: ПОДТВЕРЖДЕНИЕ ДОБАВЛЕНИЯ ---
 @dp.callback_query(F.data.startswith("add_to_playlist_confirm_"))
 async def callback_add_to_playlist_confirm(c: types.CallbackQuery):
     parts = c.data.split("_")
@@ -629,8 +634,15 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
+    logger.info("🚀 Запускаем основной процесс...")
     await set_commands()
     await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("👋 Бот остановлен")
+    except Exception as e:
+        logger.error(f"❌ Фатальная ошибка: {e}")
+        sys.exit(1)
