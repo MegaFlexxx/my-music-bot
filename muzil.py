@@ -80,11 +80,12 @@ async def start_web_server():
     runner = web.AppRunner(app)
     await runner.setup()
     
-    # Берем порт из переменной окружения или ставим 8080 по умолчанию
+    # Render сам задает порт через переменную PORT
     port = int(os.environ.get('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
+    print(f"✅ Пинг-URL: http://0.0.0.0:{port}")
 
 # --- ОБРАБОТЧИКИ ---
 @dp.message(Command("start"))
