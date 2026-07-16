@@ -169,6 +169,8 @@ async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
+    print(f"📩 Получено сообщение: {m.text}")
+    
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
     else:
@@ -180,41 +182,6 @@ async def search_command(m: types.Message):
             await show_track(m, user_id, 0)
         else:
             await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
-
-# --- ДАННЫЕ ИЗ ПЛЕЕРА ---
-@dp.message(F.web_app_data)
-async def handle_web_app_data(message: types.Message):
-    try:
-        data = json.loads(message.web_app_data.data)
-        text = data.get('text', '')
-        print(f"📩 Из плеера: {text}")
-        
-        # Ищем в Яндекс.Музыке
-        res = yandex_client.search(text, type_='track')
-        if res.tracks:
-            track = res.tracks.results[0]
-            artists = ", ".join([a.name for a in track.artists])
-            
-            await message.answer(
-                f"✅ **Нашёл для тебя!**\n\n"
-                f"🎵 **{track.title}** — {artists}\n"
-                f"👇 Нажми кнопку, чтобы скачать",
-                reply_markup=types.InlineKeyboardMarkup(
-                    inline_keyboard=[[
-                        types.InlineKeyboardButton(
-                            text="📥 Скачать трек",
-                            callback_data=f"down_{track.id}"
-                        )
-                    ]]
-                ),
-                parse_mode="Markdown"
-            )
-        else:
-            await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
-            
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        await message.answer(f"❌ Ошибка: {str(e)}")
 
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
