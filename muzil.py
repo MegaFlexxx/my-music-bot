@@ -7,7 +7,7 @@ from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import BotCommand, BotCommandScopeDefault
-from aiogram.client.session.aiohttp import AiohttpSession  # НОВОЕ!
+from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
@@ -31,24 +31,49 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAE58ZHOF3_TbNNlXhmHjTaSRBim1gBByQo" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
-# СОЗДАЁМ СЕССИЮ ДЛЯ БОТА (чтобы не было конфликтов)
+# --- JSONBIN НАСТРОЙКИ (ТВОИ ДАННЫЕ) ---
+JSONBIN_API_KEY = "$2a$10$CX38xBtBqOre7M6olAPo4ehOVtTcINNnDU5hpOVbvk6/VMx22C2ti"
+JSONBIN_BIN_ID = "6a58c64cf5f4af5e299736cd"
+
 session = AiohttpSession()
 bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
 yandex_client = Client(YANDEX_TOKEN).init()
 
-# --- СТАТИСТИКА ---
-STATS_FILE = "stats.json"
-
+# --- СТАТИСТИКА ЧЕРЕЗ JSONBIN ---
 def load_stats():
-    if os.path.exists(STATS_FILE):
-        with open(STATS_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
+    try:
+        url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
+        headers = {"X-Master-Key": JSONBIN_API_KEY}
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            record = data.get("record", {})
+            if isinstance(record, dict) and "users" in record:
+                return record.get("users", {})
+            return record
+        else:
+            print(f"❌ Ошибка загрузки: {response.status_code}")
+            return {}
+    except Exception as e:
+        print(f"❌ Ошибка загрузки статистики: {e}")
+        return {}
 
 def save_stats(stats):
-    with open(STATS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, ensure_ascii=False, indent=2)
+    try:
+        url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
+        headers = {
+            "X-Master-Key": JSONBIN_API_KEY,
+            "Content-Type": "application/json"
+        }
+        data_to_save = {"users": stats}
+        response = requests.put(url, json=data_to_save, headers=headers, timeout=10)
+        if response.status_code == 200:
+            print("✅ Статистика сохранена в JSONBin")
+        else:
+            print(f"❌ Ошибка сохранения: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Ошибка сохранения статистики: {e}")
 
 def update_stats(user_id, track_title, artist_name):
     stats = load_stats()
@@ -184,6 +209,7 @@ async def start_web_server():
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     print(f"✅ Веб-сервер запущен на порту {port}")
+    print(f"📁 Статистика хранится в JSONBin")
 
 # --- МЕНЮ КОМАНД ---
 async def set_commands():
