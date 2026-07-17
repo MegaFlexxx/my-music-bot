@@ -243,49 +243,41 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ ИИ (ЧЕРЕЗ OpenRouter - РАБОЧИЙ) ---
-OPENROUTER_API_KEY = "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"
+# --- МОДУЛЬ ЯНДЕКС.АЛИСА ---
+YANDEX_CLOUD_API_KEY = "AQVNzWG1tGLkOIJPkgD3OGxBofNSEPA8BwNaVyDh"
+FOLDER_ID = "b1g9d8hiqaprobfhjrt5"
 
 async def ask_ai(prompt: str) -> str:
-    """Отправляет запрос к ИИ через OpenRouter (с несколькими моделями)"""
-    
-    # Список бесплатных моделей, которые точно работают
-    models = [
-        "google/gemini-2.0-flash-exp:free",
-        "microsoft/phi-3-mini-128k-instruct:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
-        "qwen/qwen-2.5-72b-instruct:free"
-    ]
-    
-    for model in models:
-        try:
-            url = "https://openrouter.ai/api/v1/chat/completions"
-            payload = {
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+    """Отправляет запрос к Яндекс.Алисе"""
+    try:
+        url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+        payload = {
+            "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite",
+            "completionOptions": {
                 "temperature": 0.7,
-                "max_tokens": 1000
-            }
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=headers, timeout=60) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        answer = data["choices"][0]["message"]["content"]
-                        return answer
-                    else:
-                        error_text = await response.text()
-                        print(f"❌ Модель {model}: {response.status} - {error_text}")
-                        continue
-        except Exception as e:
-            print(f"❌ Ошибка с моделью {model}: {e}")
-            continue
-    
-    return "🤖 **Все модели ИИ временно недоступны.**\n💡 Попробуй через пару минут."
+                "maxTokens": 1000
+            },
+            "messages": [
+                {"role": "user", "text": prompt}
+            ]
+        }
+        headers = {
+            "Authorization": f"Api-Key {YANDEX_CLOUD_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers, timeout=60) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data["result"]["alternatives"][0]["message"]["text"]
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Ошибка Алисы: {response.status} - {error_text}")
+                    return "🤖 **Алиса временно недоступна.**\n💡 Попробуй позже."
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
+        return "🤖 **Ошибка подключения к Алисе.**\n💡 Проверь API-ключ."
 
 # --- ПРОМО-МОДУЛЬ ---
 PROMO_ENABLED = True
@@ -440,7 +432,7 @@ async def set_commands():
         BotCommand(command="weather", description="🌦 Погода в городе"),
         BotCommand(command="currency", description="💰 Курс валют"),
         BotCommand(command="btc", description="🪙 Курс криптовалют"),
-        BotCommand(command="ask", description="🤖 Спросить ИИ"),
+        BotCommand(command="ask", description="🤖 Спросить Алису"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -465,7 +457,7 @@ async def start_command(m: types.Message):
         "🌦 Или введи `/weather Оренбург` для погоды!\n"
         "💰 Или введи `/currency` для курса валют!\n"
         "🪙 Или введи `/btc` для курса криптовалют!\n"
-        "🤖 Или введи `/ask текст` для ИИ!",
+        "🤖 Или введи `/ask текст` для Алисы!",
         parse_mode="Markdown"
     )
 
@@ -579,10 +571,10 @@ async def btc_command(m: types.Message):
             text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
-# --- /ask ---
+# --- /ask (Алиса) ---
 @dp.message(Command("ask"))
 async def ask_command(m: types.Message):
-    """Задаёт вопрос ИИ с защитой от спама"""
+    """Задаёт вопрос Алисе с защитой от спама"""
     
     user_id = m.from_user.id
     
@@ -619,7 +611,7 @@ async def ask_command(m: types.Message):
     
     query = args[1].strip()
     
-    msg = await m.answer("🤖 **Думаю...**", parse_mode="Markdown")
+    msg = await m.answer("🧠 **Алиса думает...**", parse_mode="Markdown")
     
     response = await ask_ai(query)
     
@@ -627,7 +619,7 @@ async def ask_command(m: types.Message):
         response = response[:4000] + "...\n\n(Ответ обрезан из-за длины)"
     
     await msg.edit_text(
-        f"🤖 **ИИ отвечает:**\n\n{response}\n\n━━━━━━━━━━━━━━━━━━━\n💡 Задай ещё вопрос: `/ask текст`",
+        f"🧠 **Алиса отвечает:**\n\n{response}\n\n━━━━━━━━━━━━━━━━━━━\n💡 Задай ещё вопрос: `/ask текст`",
         parse_mode="Markdown"
     )
 
