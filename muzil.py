@@ -48,10 +48,6 @@ WHITELIST = [
 STATS_FILE = "user_stats.json"
 ADMIN_IDS = [1711230756]
 
-# --- ЗАЩИТА ОТ СПАМА (ДЛЯ /ask) ---
-user_last_ask = {}
-ASK_COOLDOWN = 10
-
 def load_stats():
     if os.path.exists(STATS_FILE):
         try:
@@ -243,65 +239,6 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ ЯНДЕКС.АЛИСА (ЧЕРЕЗ IAM-ТОКЕН) ---
-YANDEX_CLOUD_API_KEY = "AQVNzWG1tGLkOIJPkgD3OGxBofNSEPA8BwNaVyDh"
-FOLDER_ID = "b1g9d8hiqaprobfhjrt5"
-
-async def get_iam_token():
-    """Получает IAM-токен по API-ключу"""
-    try:
-        url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
-        payload = {"yandexPassportOauthToken": YANDEX_CLOUD_API_KEY}
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data.get("iamToken")
-                else:
-                    print(f"❌ Ошибка получения IAM-токена: {response.status}")
-                    return None
-    except Exception as e:
-        print(f"❌ Ошибка получения IAM-токена: {e}")
-        return None
-
-async def ask_ai(prompt: str) -> str:
-    """Отправляет запрос к Яндекс.Алисе через IAM-токен"""
-    try:
-        # Получаем IAM-токен
-        iam_token = await get_iam_token()
-        if not iam_token:
-            return "🤖 Не удалось получить токен для Алисы.\n💡 Попробуй позже."
-        
-        url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-        payload = {
-            "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite",
-            "completionOptions": {
-                "temperature": 0.7,
-                "maxTokens": 1000
-            },
-            "messages": [
-                {"role": "user", "text": prompt}
-            ]
-        }
-        headers = {
-            "Authorization": f"Bearer {iam_token}",
-            "Content-Type": "application/json"
-        }
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=60) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data["result"]["alternatives"][0]["message"]["text"]
-                else:
-                    error_text = await response.text()
-                    print(f"❌ Ошибка Алисы: {response.status} - {error_text}")
-                    return "🤖 Алиса временно недоступна.\n💡 Попробуй позже."
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        return "🤖 Ошибка подключения к Алисе.\n💡 Попробуй позже."
-
 # --- ПРОМО-МОДУЛЬ ---
 PROMO_ENABLED = True
 PROMO_IMAGES = []
@@ -455,7 +392,6 @@ async def set_commands():
         BotCommand(command="weather", description="🌦 Погода в городе"),
         BotCommand(command="currency", description="💰 Курс валют"),
         BotCommand(command="btc", description="🪙 Курс криптовалют"),
-        BotCommand(command="ask", description="🤖 Спросить Алису"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -479,8 +415,7 @@ async def start_command(m: types.Message):
         "🦌 Или введи /moose для случайного контента!\n"
         "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
-        "🪙 Или введи /btc для курса криптовалют!\n"
-        "🤖 Или введи /ask текст для Алисы!",
+        "🪙 Или введи /btc для курса криптовалют!",
         parse_mode="Markdown"
     )
 
@@ -593,58 +528,6 @@ async def btc_command(m: types.Message):
             rub = coin.get("rub", 0)
             text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
-
-# --- /ask (Алиса) ---
-@dp.message(Command("ask"))
-async def ask_command(m: types.Message):
-    """Задаёт вопрос Алисе с защитой от спама"""
-    
-    user_id = m.from_user.id
-    
-    if not await check_access(user_id):
-        await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
-        )
-        return
-    
-    args = m.text.split(maxsplit=1)
-    if len(args) < 2:
-        await m.answer(
-            "🤖 **Напиши свой вопрос!**\nПример: `/ask Как работает ИИ?`",
-            parse_mode="Markdown"
-        )
-        return
-    
-    # --- ЗАЩИТА ОТ СПАМА ---
-    now = datetime.now()
-    if user_id in user_last_ask:
-        last_time = user_last_ask[user_id]
-        seconds_diff = (now - last_time).total_seconds()
-        if seconds_diff < ASK_COOLDOWN:
-            remaining = int(ASK_COOLDOWN - seconds_diff)
-            await m.answer(
-                f"⏳ **Подожди {remaining} сек.**\nНе флуди, я не успеваю отвечать! 😅",
-                parse_mode="Markdown"
-            )
-            return
-    
-    user_last_ask[user_id] = now
-    
-    query = args[1].strip()
-    
-    msg = await m.answer("🧠 **Алиса думает...**", parse_mode="Markdown")
-    
-    response = await ask_ai(query)
-    
-    if len(response) > 4000:
-        response = response[:4000] + "...\n\n(Ответ обрезан из-за длины)"
-    
-    await msg.edit_text(
-        f"🧠 **Алиса отвечает:**\n\n{response}\n\n━━━━━━━━━━━━━━━━━━━\n💡 Задай ещё вопрос: `/ask текст`",
-        parse_mode="Markdown"
-    )
 
 # --- ПОИСК ---
 @dp.message(F.text)
