@@ -30,15 +30,14 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
-# --- КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ---
+# --- КАНАЛ ---
 REQUIRED_CHANNEL_ID = -1001745381023
 CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
-# --- БЕЛЫЙ СПИСОК (ТЕ, КТО МОЖЕТ БЕЗ ПОДПИСКИ) ---
+# --- БЕЛЫЙ СПИСОК ---
 WHITELIST = [
     1711230756,  # ТЫ
     1425787444,  # ДРУГ
-    # Добавляй сюда ID своих друзей
 ]
 
 session = AiohttpSession()
@@ -50,25 +49,51 @@ yandex_client = Client(YANDEX_TOKEN).init()
 user_search_results = {}
 user_current_position = {}
 
+# --- ПРОВЕРКА, ЧТО БОТ АДМИН ---
+async def check_bot_admin():
+    try:
+        bot_info = await bot.get_chat_member(REQUIRED_CHANNEL_ID, bot.id)
+        if bot_info.status in ['administrator', 'creator']:
+            print(f"✅ Бот админ в канале {CHANNEL_LINK}")
+            return True
+        else:
+            print(f"❌ Бот НЕ админ в канале {CHANNEL_LINK}")
+            print(f"   Статус бота: {bot_info.status}")
+            return False
+    except Exception as e:
+        print(f"❌ Ошибка проверки: {e}")
+        return False
+
 # --- ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ ---
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(REQUIRED_CHANNEL_ID, user_id)
+        print(f"🔍 Проверка пользователя {user_id}: статус {member.status}")
         return member.status in ['member', 'creator', 'administrator']
     except Exception as e:
-        print(f"Ошибка проверки подписки: {e}")
+        print(f"❌ Ошибка проверки подписки: {e}")
         return False
 
 # --- ФУНКЦИЯ ПРОВЕРКИ ДОСТУПА ---
 async def check_access(user_id: int) -> bool:
+    # Проверяем белый список
     if user_id in WHITELIST:
+        print(f"✅ Пользователь {user_id} в белом списке")
         return True
-    return await check_subscription(user_id)
+    
+    # Проверяем подписку
+    is_subscribed = await check_subscription(user_id)
+    if is_subscribed:
+        print(f"✅ Пользователь {user_id} подписан на канал")
+    else:
+        print(f"❌ Пользователь {user_id} НЕ подписан")
+    return is_subscribed
 
-# --- ДЕКОРАТОР ДЛЯ ЗАЩИТЫ ---
+# --- ДЕКОРАТОР ---
 def require_access(func):
     async def wrapper(message: types.Message, *args, **kwargs):
         user_id = message.from_user.id
+        print(f"🔑 Проверка доступа для пользователя {user_id}")
         
         if not await check_access(user_id):
             await message.answer(
@@ -318,6 +343,9 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
+    # Проверяем, что бот админ в канале
+    await check_bot_admin()
+    
     await bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(
             text="🎵 Плеер",
