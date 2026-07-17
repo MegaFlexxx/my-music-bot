@@ -243,13 +243,36 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ ЯНДЕКС.АЛИСА ---
+# --- МОДУЛЬ ЯНДЕКС.АЛИСА (ЧЕРЕЗ IAM-ТОКЕН) ---
 YANDEX_CLOUD_API_KEY = "AQVNzWG1tGLkOIJPkgD3OGxBofNSEPA8BwNaVyDh"
 FOLDER_ID = "b1g9d8hiqaprobfhjrt5"
 
-async def ask_ai(prompt: str) -> str:
-    """Отправляет запрос к Яндекс.Алисе"""
+async def get_iam_token():
+    """Получает IAM-токен по API-ключу"""
     try:
+        url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
+        payload = {"yandexPassportOauthToken": YANDEX_CLOUD_API_KEY}
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("iamToken")
+                else:
+                    print(f"❌ Ошибка получения IAM-токена: {response.status}")
+                    return None
+    except Exception as e:
+        print(f"❌ Ошибка получения IAM-токена: {e}")
+        return None
+
+async def ask_ai(prompt: str) -> str:
+    """Отправляет запрос к Яндекс.Алисе через IAM-токен"""
+    try:
+        # Получаем IAM-токен
+        iam_token = await get_iam_token()
+        if not iam_token:
+            return "🤖 Не удалось получить токен для Алисы.\n💡 Попробуй позже."
+        
         url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
         payload = {
             "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-lite",
@@ -262,7 +285,7 @@ async def ask_ai(prompt: str) -> str:
             ]
         }
         headers = {
-            "Authorization": f"Api-Key {YANDEX_CLOUD_API_KEY}",
+            "Authorization": f"Bearer {iam_token}",
             "Content-Type": "application/json"
         }
         
@@ -277,7 +300,7 @@ async def ask_ai(prompt: str) -> str:
                     return "🤖 Алиса временно недоступна.\n💡 Попробуй позже."
     except Exception as e:
         print(f"❌ Ошибка: {e}")
-        return "🤖 Ошибка подключения к Алисе.\n💡 Проверь API-ключ."
+        return "🤖 Ошибка подключения к Алисе.\n💡 Попробуй позже."
 
 # --- ПРОМО-МОДУЛЬ ---
 PROMO_ENABLED = True
