@@ -233,6 +233,9 @@ async def get_crypto_prices():
                 if "TONUSDT" in prices:
                     ton_usd = prices["TONUSDT"]
                     result["toncoin"] = {"usd": ton_usd, "eur": ton_usd * usd_to_eur, "rub": ton_usd * usd_to_rub}
+                if "BNBUSDT" in prices:
+                    bnb_usd = prices["BNBUSDT"]
+                    result["bnb"] = {"usd": bnb_usd, "eur": bnb_usd * usd_to_eur, "rub": bnb_usd * usd_to_rub}
                 
                 return result if result else None
     except Exception as e:
@@ -496,6 +499,7 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
+# --- /btc (С BNB) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
@@ -509,9 +513,21 @@ async def btc_command(m: types.Message):
     if not data:
         await m.answer(f"❌ Не удалось загрузить курсы криптовалют.\n💡 Попробуй позже.")
         return
-    emoji_map = {"bitcoin": "🟠", "ethereum": "🔷", "solana": "🟣", "toncoin": "🔵"}
-    name_map = {"bitcoin": "Bitcoin (BTC)", "ethereum": "Ethereum (ETH)", "solana": "Solana (SOL)", "toncoin": "Toncoin (TON)"}
-    text = f"🪙 Курсы криптовалют\n\n"
+    emoji_map = {
+        "bitcoin": "🟠",
+        "ethereum": "🔷",
+        "solana": "🟣",
+        "toncoin": "🔵",
+        "bnb": "🟡"
+    }
+    name_map = {
+        "bitcoin": "Bitcoin (BTC)",
+        "ethereum": "Ethereum (ETH)",
+        "solana": "Solana (SOL)",
+        "toncoin": "Toncoin (TON)",
+        "bnb": "BNB (Binance Coin)"
+    }
+    text = f"🪙 **Курсы криптовалют**\n\n"
     for key, coin in data.items():
         if coin:
             emoji = emoji_map.get(key, "🪙")
@@ -519,8 +535,8 @@ async def btc_command(m: types.Message):
             usd = coin.get("usd", 0)
             eur = coin.get("eur", 0)
             rub = coin.get("rub", 0)
-            text += f"{emoji} {name}\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
-    await m.answer(text)
+            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
+    await m.answer(text, parse_mode="Markdown")
 
 # --- ПОИСК ---
 @dp.message(F.text)
@@ -584,7 +600,7 @@ async def reset_menu():
         print(f"❌ Ошибка сброса: {e}")
 
 async def main():
-    await reset_menu()  # Сбрасываем кнопку плеера
+    await reset_menu()
     await set_commands()
     await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
