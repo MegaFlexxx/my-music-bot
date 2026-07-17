@@ -575,7 +575,16 @@ async def ignore_callback(c: types.CallbackQuery):
     await c.answer()
 
 # --- ГЛАВНАЯ ---
+async def reset_menu():
+    """Принудительно сбрасывает кнопку меню"""
+    try:
+        await bot.set_chat_menu_button(menu_button=None)
+        print("✅ Кнопка меню сброшена!")
+    except Exception as e:
+        print(f"❌ Ошибка сброса: {e}")
+
 async def main():
+    await reset_menu()  # Сбрасываем кнопку плеера
     await set_commands()
     await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
