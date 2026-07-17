@@ -34,7 +34,7 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 # --- КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ---
 REQUIRED_CHANNEL_ID = -1001745381023
-CHANNEL_LINK = "https://t.me/shkibidi_gang"  # ТВОЙ КАНАЛ
+CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
 # --- БЕЛЫЙ СПИСОК ---
 WHITELIST = [
@@ -137,7 +137,8 @@ if not PROMO_IMAGES:
         "https://img.icons8.com/fluency/512/music.png",
     ]
 
-async def send_promo(message: types.Message):
+async def send_promo_no_caption(message: types.Message):
+    """Отправляет фото или трек БЕЗ подписи"""
     if not PROMO_ENABLED:
         return
     
@@ -147,17 +148,9 @@ async def send_promo(message: types.Message):
         img_path = random.choice(PROMO_IMAGES)
         try:
             if img_path.startswith("http"):
-                await message.answer_photo(
-                    photo=img_path,
-                    caption="🎵 **Skibidi Sound** — твой лучший выбор!\n\n🔥 Подписывайся: https://t.me/shkibidi_gang",
-                    parse_mode="Markdown"
-                )
+                await message.answer_photo(photo=img_path)
             else:
-                await message.answer_photo(
-                    photo=FSInputFile(img_path),
-                    caption="🎵 **Skibidi Sound** — твой лучший выбор!\n\n🔥 Подписывайся: https://t.me/shkibidi_gang",
-                    parse_mode="Markdown"
-                )
+                await message.answer_photo(photo=FSInputFile(img_path))
         except Exception as e:
             print(f"Ошибка отправки фото: {e}")
     
@@ -167,9 +160,7 @@ async def send_promo(message: types.Message):
             await message.answer_audio(
                 audio=FSInputFile(track["url"]),
                 title=track["title"],
-                performer=track["artist"],
-                caption=f"🎧 **{track['title']}** — {track['artist']}\n\n🔥 Подписывайся: https://t.me/shkibidi_gang",
-                parse_mode="Markdown"
+                performer=track["artist"]
             )
         except Exception as e:
             print(f"Ошибка отправки трека: {e}")
@@ -311,6 +302,7 @@ async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="stats", description="📊 Статистика (админ)"),
+        BotCommand(command="moose", description="🦌 Случайный трек/фото"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -337,12 +329,11 @@ async def start_command(m: types.Message):
         )
         return
     
-    await send_promo(m)
-    
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
-        "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!",
+        "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!\n"
+        "🦌 Или введи `/moose` для случайного контента!",
         parse_mode="Markdown"
     )
 
@@ -375,6 +366,31 @@ async def stats_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
+# --- КОМАНДА /moose ---
+@dp.message(Command("moose"))
+async def moose_command(m: types.Message):
+    """Отправляет случайное промо (фото или трек) без подписи"""
+    update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
+    
+    if not await check_access(m.from_user.id):
+        await m.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
+        return
+    
+    await send_promo_no_caption(m)
+
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
@@ -401,9 +417,6 @@ async def search_command(m: types.Message):
         return
     
     print(f"🔍 Ищу: {m.text}")
-    
-    if random.random() < 0.3:
-        await send_promo(m)
     
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
