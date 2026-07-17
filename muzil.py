@@ -243,40 +243,39 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ CHATGPT (РАБОЧИЙ - ЧЕРЕЗ НЕЙРОСЕТЬ.РУ) ---
+# --- МОДУЛЬ DeepSeek (ЧЕРЕЗ OpenRouter) ---
+OPENROUTER_API_KEY = "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"
+
 async def ask_ai(prompt: str) -> str:
-    """Отправляет запрос к бесплатному ИИ через нейросеть.ру"""
+    """Отправляет запрос к DeepSeek через OpenRouter"""
     try:
-        url = "https://api.neiros.ru/api/gpt"
+        url = "https://openrouter.ai/api/v1/chat/completions"
         payload = {
-            "prompt": prompt,
-            "model": "gpt-3.5-turbo",
+            "model": "deepseek/deepseek-r1:free",
+            "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
             "max_tokens": 1000
         }
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
         
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload, headers=headers, timeout=60) as response:
                 if response.status == 200:
                     data = await response.json()
-                    answer = data.get("response", "")
-                    if answer:
-                        return answer
-                elif response.status == 429:
-                    return "⏳ **Слишком много запросов!**\n💡 Подожди пару минут."
+                    answer = data["choices"][0]["message"]["content"]
+                    return answer
+                else:
+                    error_text = await response.text()
+                    print(f"❌ Ошибка OpenRouter: {response.status} - {error_text}")
+                    return f"❌ Ошибка API: {response.status}"
     except asyncio.TimeoutError:
         return "⏳ **Сервер долго отвечает.**\n💡 Попробуй ещё раз."
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
-    
-    # Резервные ответы
-    backup = [
-        "🤖 **Извини, ИИ сейчас недоступен.**\n\n💡 Попробуй позже или переформулируй вопрос.",
-        "🤖 **Серверы перегружены.**\n\n💡 Попробуй через пару минут.",
-        "🤖 **Не удалось подключиться к ИИ.**\n\n💡 Может быть, проблема с сетью?"
-    ]
-    return random.choice(backup)
+        print(f"❌ Ошибка DeepSeek: {e}")
+        return "🤖 **Ошибка подключения к DeepSeek.**\n💡 Проверь API-ключ."
 
 # --- ПРОМО-МОДУЛЬ ---
 PROMO_ENABLED = True
@@ -431,7 +430,7 @@ async def set_commands():
         BotCommand(command="weather", description="🌦 Погода в городе"),
         BotCommand(command="currency", description="💰 Курс валют"),
         BotCommand(command="btc", description="🪙 Курс криптовалют"),
-        BotCommand(command="ask", description="🤖 Спросить ChatGPT"),
+        BotCommand(command="ask", description="🤖 Спросить DeepSeek"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -456,7 +455,7 @@ async def start_command(m: types.Message):
         "🌦 Или введи `/weather Оренбург` для погоды!\n"
         "💰 Или введи `/currency` для курса валют!\n"
         "🪙 Или введи `/btc` для курса криптовалют!\n"
-        "🤖 Или введи `/ask текст` для ChatGPT!",
+        "🤖 Или введи `/ask текст` для DeepSeek!",
         parse_mode="Markdown"
     )
 
@@ -570,10 +569,10 @@ async def btc_command(m: types.Message):
             text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
-# --- /ask ---
+# --- /ask (DeepSeek) ---
 @dp.message(Command("ask"))
 async def ask_command(m: types.Message):
-    """Задаёт вопрос ChatGPT с защитой от спама"""
+    """Задаёт вопрос DeepSeek с защитой от спама"""
     
     user_id = m.from_user.id
     
@@ -618,7 +617,7 @@ async def ask_command(m: types.Message):
         response = response[:4000] + "...\n\n(Ответ обрезан из-за длины)"
     
     await msg.edit_text(
-        f"🤖 **Ответ ChatGPT:**\n\n{response}\n\n━━━━━━━━━━━━━━━━━━━\n💡 Задай ещё вопрос: `/ask текст`",
+        f"🤖 **DeepSeek отвечает:**\n\n{response}\n\n━━━━━━━━━━━━━━━━━━━\n💡 Задай ещё вопрос: `/ask текст`",
         parse_mode="Markdown"
     )
 
