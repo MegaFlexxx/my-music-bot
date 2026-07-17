@@ -31,14 +31,13 @@ TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 # --- КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ---
-REQUIRED_CHANNEL_ID = -1001745381023  # ЗАМЕНИ НА СВОЙ ID КАНАЛА!
-CHANNEL_LINK = "https://t.me/shkibidi_gang"  # ЗАМЕНИ НА ССЫЛКУ!
+REQUIRED_CHANNEL_ID = -1001745381023
+CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
 # --- БЕЛЫЙ СПИСОК (ТЕ, КТО МОЖЕТ БЕЗ ПОДПИСКИ) ---
 WHITELIST = [
-    1711230756,  # ТВОЙ ID (ЗАМЕНИ!)
-    1425787444,  # ID ДРУГА 1
-    1290535756,  # ID ДРУГА 2
+    1711230756,  # ТЫ
+    1425787444,  # ДРУГ
     # Добавляй сюда ID своих друзей
 ]
 
@@ -53,7 +52,6 @@ user_current_position = {}
 
 # --- ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ ---
 async def check_subscription(user_id: int) -> bool:
-    """Проверяет, подписан ли пользователь на канал"""
     try:
         member = await bot.get_chat_member(REQUIRED_CHANNEL_ID, user_id)
         return member.status in ['member', 'creator', 'administrator']
@@ -63,22 +61,16 @@ async def check_subscription(user_id: int) -> bool:
 
 # --- ФУНКЦИЯ ПРОВЕРКИ ДОСТУПА ---
 async def check_access(user_id: int) -> bool:
-    """Проверяет, есть ли у пользователя доступ (белый список или подписка)"""
-    # Если в белом списке — доступ есть
     if user_id in WHITELIST:
         return True
-    # Иначе проверяем подписку
     return await check_subscription(user_id)
 
-# --- ДЕКОРАТОР ДЛЯ ЗАЩИТЫ КОМАНД ---
-def require_access(handler):
-    """Декоратор для проверки доступа перед выполнением команды"""
+# --- ДЕКОРАТОР ДЛЯ ЗАЩИТЫ ---
+def require_access(func):
     async def wrapper(message: types.Message, *args, **kwargs):
         user_id = message.from_user.id
         
-        # Проверяем доступ
         if not await check_access(user_id):
-            # Отправляем сообщение с просьбой подписаться
             await message.answer(
                 f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
                 f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
@@ -95,8 +87,7 @@ def require_access(handler):
             )
             return
         
-        # Если доступ есть — выполняем команду
-        return await handler(message, *args, **kwargs)
+        return await func(message, *args, **kwargs)
     return wrapper
 
 # --- ПОКАЗ ТРЕКА ---
@@ -110,8 +101,9 @@ async def show_track(message: types.Message, user_id: int, position: int):
     total = len(results)
     artists = ", ".join([a.name for a in track.artists])
     
-    buttons = []
-    buttons.append([types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")])
+    buttons = [
+        [types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")]
+    ]
     
     nav_buttons = []
     if position > 0:
@@ -213,7 +205,7 @@ async def set_commands():
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
-# --- /START (С ПРОВЕРКОЙ ДОСТУПА) ---
+# --- /START ---
 @dp.message(CommandStart())
 @require_access
 async def start_command(m: types.Message):
@@ -224,7 +216,7 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ОБРАБОТЧИК ТЕКСТА (С ПРОВЕРКОЙ ДОСТУПА) ---
+# --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
 @require_access
 async def search_command(m: types.Message):
@@ -246,7 +238,7 @@ async def search_command(m: types.Message):
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (С ПРОВЕРКОЙ ДОСТУПА) ---
+# --- ДАННЫЕ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
 @require_access
 async def handle_web_app_data(message: types.Message):
@@ -299,7 +291,7 @@ async def handle_web_app_data(message: types.Message):
         print(f"❌ Ошибка: {e}")
         await message.answer(f"❌ Ошибка: {str(e)}")
 
-# --- CALLBACK (С ПРОВЕРКОЙ ДОСТУПА) ---
+# --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
 @require_access
 async def download_callback(c: types.CallbackQuery):
