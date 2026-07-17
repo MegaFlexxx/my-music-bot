@@ -30,6 +30,18 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
+# --- КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ---
+REQUIRED_CHANNEL_ID = -1001745381023  # ЗАМЕНИ НА СВОЙ ID КАНАЛА!
+CHANNEL_LINK = "https://t.me/shkibidi_gang"  # ЗАМЕНИ НА ССЫЛКУ!
+
+# --- БЕЛЫЙ СПИСОК (ТЕ, КТО МОЖЕТ БЕЗ ПОДПИСКИ) ---
+WHITELIST = [
+    1711230756,  # ТВОЙ ID (ЗАМЕНИ!)
+    1425787444,  # ID ДРУГА 1
+    1290535756,  # ID ДРУГА 2
+    # Добавляй сюда ID своих друзей
+]
+
 session = AiohttpSession()
 bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
@@ -38,6 +50,54 @@ yandex_client = Client(YANDEX_TOKEN).init()
 # --- ХРАНИЛИЩЕ ---
 user_search_results = {}
 user_current_position = {}
+
+# --- ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ ---
+async def check_subscription(user_id: int) -> bool:
+    """Проверяет, подписан ли пользователь на канал"""
+    try:
+        member = await bot.get_chat_member(REQUIRED_CHANNEL_ID, user_id)
+        return member.status in ['member', 'creator', 'administrator']
+    except Exception as e:
+        print(f"Ошибка проверки подписки: {e}")
+        return False
+
+# --- ФУНКЦИЯ ПРОВЕРКИ ДОСТУПА ---
+async def check_access(user_id: int) -> bool:
+    """Проверяет, есть ли у пользователя доступ (белый список или подписка)"""
+    # Если в белом списке — доступ есть
+    if user_id in WHITELIST:
+        return True
+    # Иначе проверяем подписку
+    return await check_subscription(user_id)
+
+# --- ДЕКОРАТОР ДЛЯ ЗАЩИТЫ КОМАНД ---
+def require_access(handler):
+    """Декоратор для проверки доступа перед выполнением команды"""
+    async def wrapper(message: types.Message, *args, **kwargs):
+        user_id = message.from_user.id
+        
+        # Проверяем доступ
+        if not await check_access(user_id):
+            # Отправляем сообщение с просьбой подписаться
+            await message.answer(
+                f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+                f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+                f"После подписки нажми /start снова.",
+                reply_markup=types.InlineKeyboardMarkup(
+                    inline_keyboard=[[
+                        types.InlineKeyboardButton(
+                            text="📢 Подписаться на канал",
+                            url=CHANNEL_LINK
+                        )
+                    ]]
+                ),
+                parse_mode="Markdown"
+            )
+            return
+        
+        # Если доступ есть — выполняем команду
+        return await handler(message, *args, **kwargs)
+    return wrapper
 
 # --- ПОКАЗ ТРЕКА ---
 async def show_track(message: types.Message, user_id: int, position: int):
@@ -153,8 +213,9 @@ async def set_commands():
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
 
-# --- /START ---
+# --- /START (С ПРОВЕРКОЙ ДОСТУПА) ---
 @dp.message(CommandStart())
+@require_access
 async def start_command(m: types.Message):
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
@@ -163,13 +224,14 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- ОБРАБОТЧИК ТЕКСТА (для обычных сообщений) ---
+# --- ОБРАБОТЧИК ТЕКСТА (С ПРОВЕРКОЙ ДОСТУПА) ---
 @dp.message(F.text)
+@require_access
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
-    print(f"🔍 Ищу из чата: {m.text}")
+    print(f"🔍 Ищу: {m.text}")
     
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
@@ -184,8 +246,9 @@ async def search_command(m: types.Message):
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (web_app_data) ---
+# --- ОБРАБОТЧИК ДАННЫХ ИЗ ПЛЕЕРА (С ПРОВЕРКОЙ ДОСТУПА) ---
 @dp.message(F.web_app_data)
+@require_access
 async def handle_web_app_data(message: types.Message):
     try:
         data = json.loads(message.web_app_data.data)
@@ -198,7 +261,6 @@ async def handle_web_app_data(message: types.Message):
             if not query:
                 return
             
-            # Ищем в Яндекс.Музыке
             res = yandex_client.search(query, type_='track')
             if res.tracks:
                 track = res.tracks.results[0]
@@ -237,8 +299,9 @@ async def handle_web_app_data(message: types.Message):
         print(f"❌ Ошибка: {e}")
         await message.answer(f"❌ Ошибка: {str(e)}")
 
-# --- CALLBACK ---
+# --- CALLBACK (С ПРОВЕРКОЙ ДОСТУПА) ---
 @dp.callback_query(F.data.startswith("down_"))
+@require_access
 async def download_callback(c: types.CallbackQuery):
     await c.answer("🔄 Скачиваю...")
     track_id = c.data.replace("down_", "")
