@@ -217,37 +217,69 @@ async def get_currency_rates(base: str = "USD"):
         print(f"❌ Ошибка курса валют: {e}")
         return None
 
-# --- МОДУЛЬ КРИПТОВАЛЮТ (CoinCap API) ---
+# --- МОДУЛЬ КРИПТОВАЛЮТ (Binance API - НАДЁЖНЫЙ) ---
 async def get_crypto_prices():
-    """Получает курсы криптовалют через CoinCap API"""
+    """Получает курсы криптовалют через Binance API"""
     try:
-        url = "https://api.coincap.io/v2/assets"
-        params = {
-            "ids": "bitcoin,ethereum,solana,toncoin"
-        }
+        url = "https://api.binance.com/api/v3/ticker/price"
         
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=10) as response:
+            async with session.get(url, timeout=10) as response:
                 if response.status != 200:
                     return None
                 data = await response.json()
                 
+                # Создаём словарь для быстрого поиска
+                prices = {}
+                for item in data:
+                    prices[item["symbol"]] = float(item["price"])
+                
+                # Курс RUB/USD (примерный, можно заменить на реальный)
+                usd_to_rub = 88.5
+                usd_to_eur = 0.92
+                
                 result = {}
-                for item in data.get("data", []):
-                    result[item["id"]] = {
-                        "usd": float(item["priceUsd"]),
-                        "eur": float(item["priceUsd"]) * 0.92,
-                        "rub": float(item["priceUsd"]) * 88.5
+                
+                # BTC/USDT
+                if "BTCUSDT" in prices:
+                    btc_usd = prices["BTCUSDT"]
+                    result["bitcoin"] = {
+                        "usd": btc_usd,
+                        "eur": btc_usd * usd_to_eur,
+                        "rub": btc_usd * usd_to_rub
                     }
                 
-                return {
-                    "bitcoin": result.get("bitcoin", {}),
-                    "ethereum": result.get("ethereum", {}),
-                    "solana": result.get("solana", {}),
-                    "toncoin": result.get("toncoin", {})
-                }
+                # ETH/USDT
+                if "ETHUSDT" in prices:
+                    eth_usd = prices["ETHUSDT"]
+                    result["ethereum"] = {
+                        "usd": eth_usd,
+                        "eur": eth_usd * usd_to_eur,
+                        "rub": eth_usd * usd_to_rub
+                    }
+                
+                # SOL/USDT
+                if "SOLUSDT" in prices:
+                    sol_usd = prices["SOLUSDT"]
+                    result["solana"] = {
+                        "usd": sol_usd,
+                        "eur": sol_usd * usd_to_eur,
+                        "rub": sol_usd * usd_to_rub
+                    }
+                
+                # TON/USDT
+                if "TONUSDT" in prices:
+                    ton_usd = prices["TONUSDT"]
+                    result["toncoin"] = {
+                        "usd": ton_usd,
+                        "eur": ton_usd * usd_to_eur,
+                        "rub": ton_usd * usd_to_rub
+                    }
+                
+                return result if result else None
+                
     except Exception as e:
-        print(f"❌ Ошибка CoinCap: {e}")
+        print(f"❌ Ошибка Binance: {e}")
         return None
 
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
