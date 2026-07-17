@@ -403,9 +403,8 @@ async def start_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     await m.answer(
@@ -415,8 +414,7 @@ async def start_command(m: types.Message):
         "🦌 Или введи /moose для случайного контента!\n"
         "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
-        "🪙 Или введи /btc для курса криптовалют!",
-        parse_mode="Markdown"
+        "🪙 Или введи /btc для курса криптовалют!"
     )
 
 @dp.message(Command("stats"))
@@ -441,9 +439,8 @@ async def moose_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     await send_promo_no_caption(m)
@@ -452,73 +449,70 @@ async def moose_command(m: types.Message):
 async def weather_command(m: types.Message):
     args = m.text.split(maxsplit=1)
     if len(args) < 2:
-        await m.answer("🌦 **Укажи город!**\nНапример: `/weather Оренбург` или `/weather Orenburg`", parse_mode="Markdown")
+        await m.answer("🌦 Укажи город!\nНапример: /weather Оренбург или /weather Orenburg")
         return
     city_input = args[1].strip()
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
-    await m.answer(f"🌦 Ищу погоду в **{city_input}**...", parse_mode="Markdown")
+    await m.answer(f"🌦 Ищу погоду в {city_input}...")
     weather = await get_weather_by_city(city_input)
     if not weather:
-        await m.answer(f"❌ Город **{city_input}** не найден.\n💡 Попробуй написать на английском: `/weather Orenburg`", parse_mode="Markdown")
+        await m.answer(f"❌ Город {city_input} не найден.\n💡 Попробуй написать на английском: /weather Orenburg")
         return
     emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
     emoji = emoji_map.get(weather["icon"], "🌡️")
-    text = f"{emoji} **Погода в {weather['city']}**\n\n🌡️ Температура: **{weather['temp']}°C** (ощущается как {weather['feels_like']}°C)\n💧 Влажность: **{weather['humidity']}%**\n💨 Ветер: **{weather['wind']} м/с**\n☁️ {weather['description']}"
-    await m.answer(text, parse_mode="Markdown")
+    text = f"{emoji} Погода в {weather['city']}\n\n🌡️ Температура: {weather['temp']}°C (ощущается как {weather['feels_like']}°C)\n💧 Влажность: {weather['humidity']}%\n💨 Ветер: {weather['wind']} м/с\n☁️ {weather['description']}"
+    await m.answer(text)
 
 @dp.message(Command("currency"))
 async def currency_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     args = m.text.split(maxsplit=1)
     base = args[1].strip().upper() if len(args) > 1 else "USD"
     allowed = ["USD", "EUR", "RUB", "CNY", "GBP", "KZT", "UAH"]
     if base not in allowed:
-        await m.answer(f"❌ Валюта **{base}** не поддерживается.\n💡 Доступные валюты: {', '.join(allowed)}\nПример: `/currency USD`", parse_mode="Markdown")
+        await m.answer(f"❌ Валюта {base} не поддерживается.\n💡 Доступные валюты: {', '.join(allowed)}\nПример: /currency USD")
         return
-    await m.answer(f"💰 Загружаю курсы валют...", parse_mode="Markdown")
+    await m.answer(f"💰 Загружаю курсы валют...")
     data = await get_currency_rates(base)
     if not data:
-        await m.answer(f"❌ Не удалось загрузить курсы валют.\n💡 Попробуй позже.", parse_mode="Markdown")
+        await m.answer(f"❌ Не удалось загрузить курсы валют.\n💡 Попробуй позже.")
         return
     rates = data["rates"]
     emoji_map = {"USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "CNY": "🇨🇳", "GBP": "🇬🇧", "KZT": "🇰🇿", "UAH": "🇺🇦"}
-    text = f"💰 **Курсы валют** (база: {data['base']})\n📅 {data['date']}\n\n"
+    text = f"💰 Курсы валют (база: {data['base']})\n📅 {data['date']}\n\n"
     main_currencies = ["RUB", "EUR", "USD", "CNY", "GBP", "KZT", "UAH"]
     for curr in main_currencies:
         if curr in rates:
             emoji = emoji_map.get(curr, "")
-            text += f"{emoji} **{curr}** — {rates[curr]:.2f}\n"
-    await m.answer(text, parse_mode="Markdown")
+            text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
+    await m.answer(text)
 
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
-    await m.answer("🪙 Загружаю курсы криптовалют...", parse_mode="Markdown")
+    await m.answer("🪙 Загружаю курсы криптовалют...")
     data = await get_crypto_prices()
     if not data:
-        await m.answer(f"❌ Не удалось загрузить курсы криптовалют.\n💡 Попробуй позже.", parse_mode="Markdown")
+        await m.answer(f"❌ Не удалось загрузить курсы криптовалют.\n💡 Попробуй позже.")
         return
     emoji_map = {"bitcoin": "🟠", "ethereum": "🔷", "solana": "🟣", "toncoin": "🔵"}
     name_map = {"bitcoin": "Bitcoin (BTC)", "ethereum": "Ethereum (ETH)", "solana": "Solana (SOL)", "toncoin": "Toncoin (TON)"}
-    text = f"🪙 **Курсы криптовалют**\n\n"
+    text = f"🪙 Курсы криптовалют\n\n"
     for key, coin in data.items():
         if coin:
             emoji = emoji_map.get(key, "🪙")
@@ -526,8 +520,8 @@ async def btc_command(m: types.Message):
             usd = coin.get("usd", 0)
             eur = coin.get("eur", 0)
             rub = coin.get("rub", 0)
-            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
-    await m.answer(text, parse_mode="Markdown")
+            text += f"{emoji} {name}\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
+    await m.answer(text)
 
 # --- ПОИСК ---
 @dp.message(F.text)
@@ -537,9 +531,8 @@ async def search_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     print(f"🔍 Ищу: {m.text}")
@@ -561,9 +554,8 @@ async def handle_web_app_data(message: types.Message):
     update_user_stats(message.from_user.id, username=message.from_user.username, first_name=message.from_user.first_name)
     if not await check_access(message.from_user.id):
         await message.answer(
-            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
-            parse_mode="Markdown"
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     try:
@@ -579,9 +571,8 @@ async def handle_web_app_data(message: types.Message):
                 track = res.tracks.results[0]
                 artists = ", ".join([a.name for a in track.artists])
                 await message.answer(
-                    f"✅ **Нашёл для тебя!**\n\n🎵 **{track.title}** — {artists}\n👇 Нажми кнопку, чтобы скачать",
-                    reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")]]),
-                    parse_mode="Markdown"
+                    f"✅ Нашёл для тебя!\n\n🎵 {track.title} — {artists}\n👇 Нажми кнопку, чтобы скачать",
+                    reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")]])
                 )
             else:
                 await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
