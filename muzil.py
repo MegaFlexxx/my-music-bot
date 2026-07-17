@@ -410,7 +410,6 @@ async def start_command(m: types.Message):
     await m.answer(
         "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
-        "🎮 Или нажми кнопку 🎵 Плеер внизу экрана!\n"
         "🦌 Или введи /moose для случайного контента!\n"
         "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
@@ -619,12 +618,7 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
-    await bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(
-            text="🎵 Плеер",
-            web_app=WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
-        )
-    )
+    # Кнопка плеера УБРАНА
     await set_commands()
     await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
