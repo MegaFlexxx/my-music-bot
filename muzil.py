@@ -243,41 +243,40 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ CHATGPT (БЕСПЛАТНЫЙ) ---
+# --- МОДУЛЬ CHATGPT (РАБОЧИЙ - ЧЕРЕЗ НЕЙРОСЕТЬ.РУ) ---
 async def ask_ai(prompt: str) -> str:
+    """Отправляет запрос к бесплатному ИИ через нейросеть.ру"""
     try:
-        url = "https://api.lilithgames.ru/api/ai/gpt"
-        payload = {"prompt": prompt, "model": "gpt-3.5-turbo", "max_tokens": 1000}
+        url = "https://api.neiros.ru/api/gpt"
+        payload = {
+            "prompt": prompt,
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+        headers = {"Content-Type": "application/json"}
+        
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, timeout=30) as response:
+            async with session.post(url, json=payload, headers=headers, timeout=60) as response:
                 if response.status == 200:
                     data = await response.json()
                     answer = data.get("response", "")
                     if answer:
                         return answer
+                elif response.status == 429:
+                    return "⏳ **Слишком много запросов!**\n💡 Подожди пару минут."
+    except asyncio.TimeoutError:
+        return "⏳ **Сервер долго отвечает.**\n💡 Попробуй ещё раз."
     except Exception as e:
-        print(f"❌ Первый API: {e}")
+        print(f"❌ Ошибка: {e}")
     
-    try:
-        url = "https://api.pawan.krd/v1/chat/completions"
-        payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": prompt}], "temperature": 0.7, "max_tokens": 1000}
-        headers = {"Content-Type": "application/json"}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=30) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    if answer:
-                        return answer
-    except Exception as e:
-        print(f"❌ Второй API: {e}")
-    
-    backup_responses = [
+    # Резервные ответы
+    backup = [
         "🤖 **Извини, ИИ сейчас недоступен.**\n\n💡 Попробуй позже или переформулируй вопрос.",
         "🤖 **Серверы перегружены.**\n\n💡 Попробуй через пару минут.",
         "🤖 **Не удалось подключиться к ИИ.**\n\n💡 Может быть, проблема с сетью?"
     ]
-    return random.choice(backup_responses)
+    return random.choice(backup)
 
 # --- ПРОМО-МОДУЛЬ ---
 PROMO_ENABLED = True
@@ -571,35 +570,25 @@ async def btc_command(m: types.Message):
             text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
-# --- /ask (С ЗАЩИТОЙ ОТ СПАМА) ---
+# --- /ask ---
 @dp.message(Command("ask"))
 async def ask_command(m: types.Message):
     """Задаёт вопрос ChatGPT с защитой от спама"""
     
     user_id = m.from_user.id
     
-    # Проверка подписки
     if not await check_access(user_id):
         await m.answer(
             f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(
-                inline_keyboard=[[
-                    types.InlineKeyboardButton(
-                        text="📢 Подписаться на канал",
-                        url=CHANNEL_LINK
-                    )
-                ]]
-            ),
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
         return
     
-    # Проверяем, есть ли вопрос
     args = m.text.split(maxsplit=1)
     if len(args) < 2:
         await m.answer(
-            "🤖 **Напиши свой вопрос!**\n"
-            "Пример: `/ask Как работает ИИ?`",
+            "🤖 **Напиши свой вопрос!**\nПример: `/ask Как работает ИИ?`",
             parse_mode="Markdown"
         )
         return
@@ -612,32 +601,24 @@ async def ask_command(m: types.Message):
         if seconds_diff < ASK_COOLDOWN:
             remaining = int(ASK_COOLDOWN - seconds_diff)
             await m.answer(
-                f"⏳ **Подожди {remaining} сек.**\n"
-                f"Не флуди, я не успеваю отвечать! 😅",
+                f"⏳ **Подожди {remaining} сек.**\nНе флуди, я не успеваю отвечать! 😅",
                 parse_mode="Markdown"
             )
             return
     
-    # Обновляем время последнего запроса
     user_last_ask[user_id] = now
     
     query = args[1].strip()
     
-    # Сообщение о загрузке
     msg = await m.answer("🤖 **Думаю...**", parse_mode="Markdown")
     
-    # Отправляем запрос к ИИ
     response = await ask_ai(query)
     
-    # Обрезаем длинный ответ
     if len(response) > 4000:
         response = response[:4000] + "...\n\n(Ответ обрезан из-за длины)"
     
     await msg.edit_text(
-        f"🤖 **Ответ ChatGPT:**\n\n"
-        f"{response}\n\n"
-        f"━━━━━━━━━━━━━━━━━━━\n"
-        f"💡 Задай ещё вопрос: `/ask текст`",
+        f"🤖 **Ответ ChatGPT:**\n\n{response}\n\n━━━━━━━━━━━━━━━━━━━\n💡 Задай ещё вопрос: `/ask текст`",
         parse_mode="Markdown"
     )
 
