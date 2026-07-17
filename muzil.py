@@ -4,6 +4,7 @@ import asyncio
 import requests
 import json
 import random
+import aiohttp
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -111,6 +112,35 @@ def get_new_users_today():
         except:
             pass
     return count
+
+# --- МОДУЛЬ ПОГОДЫ ---
+WEATHER_API_KEY = "abb48920329a46d512884f6c84c71a51"
+
+async def get_weather(city: str):
+    """Получает погоду для указанного города"""
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return None
+            data = await response.json()
+            
+            weather_desc = data["weather"][0]["description"].capitalize()
+            temp = round(data["main"]["temp"])
+            feels_like = round(data["main"]["feels_like"])
+            humidity = data["main"]["humidity"]
+            wind_speed = data["wind"]["speed"]
+            
+            return {
+                "city": data["name"],
+                "description": weather_desc,
+                "temp": temp,
+                "feels_like": feels_like,
+                "humidity": humidity,
+                "wind": wind_speed,
+                "icon": data["weather"][0]["icon"]
+            }
 
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
 PROMO_ENABLED = True
@@ -303,6 +333,7 @@ async def set_commands():
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="stats", description="📊 Статистика (админ)"),
         BotCommand(command="moose", description="🦌 Случайный трек/фото"),
+        BotCommand(command="weather", description="🌦 Погода в городе"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -333,7 +364,8 @@ async def start_command(m: types.Message):
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
         "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!\n"
-        "🦌 Или введи `/moose` для случайного контента!",
+        "🦌 Или введи `/moose` для случайного контента!\n"
+        "🌦 Или введи `/weather Оренбург` для погоды!",
         parse_mode="Markdown"
     )
 
@@ -390,6 +422,66 @@ async def moose_command(m: types.Message):
         return
     
     await send_promo_no_caption(m)
+
+# --- КОМАНДА /weather ---
+@dp.message(Command("weather"))
+async def weather_command(m: types.Message):
+    """Показывает погоду в указанном городе"""
+    args = m.text.split(maxsplit=1)
+    if len(args) < 2:
+        await m.answer(
+            "🌦 **Укажи город!**\nНапример: `/weather Оренбург`",
+            parse_mode="Markdown"
+        )
+        return
+    
+    city = args[1].strip()
+    
+    if not await check_access(m.from_user.id):
+        await m.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
+        return
+    
+    await m.answer(f"🌦 Ищу погоду в **{city}**...", parse_mode="Markdown")
+    
+    weather = await get_weather(city)
+    if not weather:
+        await m.answer(
+            f"❌ Город **{city}** не найден. Проверь название.",
+            parse_mode="Markdown"
+        )
+        return
+    
+    emoji_map = {
+        "01d": "☀️", "01n": "🌙", "02d": "⛅", "02n": "☁️",
+        "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️",
+        "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧",
+        "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️",
+        "50d": "🌫", "50n": "🌫"
+    }
+    emoji = emoji_map.get(weather["icon"], "🌡️")
+    
+    text = (
+        f"{emoji} **Погода в {weather['city']}**\n\n"
+        f"🌡️ Температура: **{weather['temp']}°C** (ощущается как {weather['feels_like']}°C)\n"
+        f"💧 Влажность: **{weather['humidity']}%**\n"
+        f"💨 Ветер: **{weather['wind']} м/с**\n"
+        f"☁️ {weather['description']}"
+    )
+    
+    await m.answer(text, parse_mode="Markdown")
 
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
