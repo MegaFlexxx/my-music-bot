@@ -9,7 +9,7 @@ import feedparser
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo, FSInputFile
+from aiogram.types import BotCommand, BotCommandScopeDefault, FSInputFile
 from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
 from mutagen.mp3 import MP3
@@ -547,48 +547,6 @@ async def search_command(m: types.Message):
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- WEB APP DATA ---
-@dp.message(F.web_app_data)
-async def handle_web_app_data(message: types.Message):
-    update_user_stats(message.from_user.id, username=message.from_user.username, first_name=message.from_user.first_name)
-    if not await check_access(message.from_user.id):
-        await message.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
-        )
-        return
-    try:
-        data = json.loads(message.web_app_data.data)
-        action = data.get('action')
-        print(f"📩 Из плеера: {action} {data}")
-        if action == 'search':
-            query = data.get('query')
-            if not query:
-                return
-            res = yandex_client.search(query, type_='track')
-            if res.tracks:
-                track = res.tracks.results[0]
-                artists = ", ".join([a.name for a in track.artists])
-                await message.answer(
-                    f"✅ Нашёл для тебя!\n\n🎵 {track.title} — {artists}\n👇 Нажми кнопку, чтобы скачать",
-                    reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📥 Скачать трек", callback_data=f"down_{track.id}")]])
-                )
-            else:
-                await message.answer("❌ Ничего не найдено. Попробуй изменить запрос.")
-        elif action == 'download':
-            track = data.get('track')
-            artist = data.get('artist')
-            await message.answer(f"📥 Скачиваю: {track} — {artist}")
-        elif action == 'like':
-            track = data.get('track')
-            await message.answer(f"❤️ Лайк: {track}")
-        elif action == 'add_to_playlist':
-            track = data.get('track')
-            await message.answer(f"➕ Добавлено в плейлист: {track}")
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        await message.answer(f"❌ Ошибка: {str(e)}")
-
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
 async def download_callback(c: types.CallbackQuery):
@@ -618,7 +576,6 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
-    # Кнопка плеера УБРАНА
     await set_commands()
     await asyncio.gather(start_web_server(), dp.start_polling(bot))
 
