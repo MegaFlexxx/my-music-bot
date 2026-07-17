@@ -837,4 +837,27 @@ async def nav_callback(c: types.CallbackQuery):
     user_id = int(parts[1])
     position = int(parts[2])
     if c.from_user.id != user_id:
-        await c.answer("❌ Это не твой поиск!", show_
+        await c.answer("❌ Это не твой поиск!", show_alert=True)
+        return
+    user_current_position[c.from_user.id] = position
+    await show_track(c.message, user_id, position)
+    await c.message.delete()
+    await c.answer()
+
+@dp.callback_query(F.data == "ignore")
+async def ignore_callback(c: types.CallbackQuery):
+    await c.answer()
+
+# --- ГЛАВНАЯ ---
+async def main():
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="🎵 Плеер",
+            web_app=WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
+        )
+    )
+    await set_commands()
+    await asyncio.gather(start_web_server(), dp.start_polling(bot))
+
+if __name__ == "__main__":
+    asyncio.run(main())
