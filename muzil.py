@@ -3,10 +3,11 @@ import os
 import asyncio
 import requests
 import json
+import random
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
+from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo, FSInputFile
 from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
 from mutagen.mp3 import MP3
@@ -35,15 +36,15 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 REQUIRED_CHANNEL_ID = -1001745381023
 CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
-# --- БЕЛЫЙ СПИСОК (ТЕ, КТО МОЖЕТ БЕЗ ПОДПИСКИ) ---
+# --- БЕЛЫЙ СПИСОК ---
 WHITELIST = [
     1711230756,  # ТЫ
     1425787444,  # ДРУГ
 ]
 
-# --- СИСТЕМА СТАТИСТИКИ (ТОЛЬКО ДЛЯ ТЕБЯ) ---
+# --- СТАТИСТИКА ---
 STATS_FILE = "user_stats.json"
-ADMIN_IDS = [1711230756]  # ТВОЙ ID
+ADMIN_IDS = [1711230756]
 
 def load_stats():
     if os.path.exists(STATS_FILE):
@@ -110,6 +111,71 @@ def get_new_users_today():
         except:
             pass
     return count
+
+# --- МОДУЛЬ ПРОМО-РЕКЛАМЫ (АВТОМАТИЧЕСКИЙ СБОР ИЗ ПАПОК) ---
+PROMO_ENABLED = True
+
+# АВТОМАТИЧЕСКИЙ СБОР КАРТИНОК
+PROMO_IMAGES = []
+if os.path.exists("promo/images"):
+    for file in os.listdir("promo/images"):
+        if file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+            PROMO_IMAGES.append(f"promo/images/{file}")
+
+# АВТОМАТИЧЕСКИЙ СБОР ТРЕКОВ
+PROMO_TRACKS = []
+if os.path.exists("promo/tracks"):
+    for file in os.listdir("promo/tracks"):
+        if file.lower().endswith('.mp3'):
+            PROMO_TRACKS.append({
+                "title": os.path.splitext(file)[0],
+                "artist": "Skibidi Sound",
+                "url": f"promo/tracks/{file}"
+            })
+
+# ЕСЛИ ПАПКИ ПУСТЫЕ — ИСПОЛЬЗУЕМ ЗАГОТОВКИ
+if not PROMO_IMAGES:
+    PROMO_IMAGES = [
+        "https://img.icons8.com/color/512/telegram-app.png",
+        "https://img.icons8.com/fluency/512/music.png",
+    ]
+
+async def send_promo(message: types.Message):
+    if not PROMO_ENABLED:
+        return
+    
+    promo_type = random.choice(["image", "track"])
+    
+    if promo_type == "image" and PROMO_IMAGES:
+        img_path = random.choice(PROMO_IMAGES)
+        try:
+            if img_path.startswith("http"):
+                await message.answer_photo(
+                    photo=img_path,
+                    caption="🎵 **Skibidi Sound** — твой лучший выбор!\n\n🔥 Подписывайся: https://t.me/shkibidi_gang",
+                    parse_mode="Markdown"
+                )
+            else:
+                await message.answer_photo(
+                    photo=FSInputFile(img_path),
+                    caption="🎵 **Skibidi Sound** — твой лучший выбор!\n\n🔥 Подписывайся: https://t.me/shkibidi_gang",
+                    parse_mode="Markdown"
+                )
+        except Exception as e:
+            print(f"Ошибка отправки фото: {e}")
+    
+    elif promo_type == "track" and PROMO_TRACKS:
+        track = random.choice(PROMO_TRACKS)
+        try:
+            await message.answer_audio(
+                audio=FSInputFile(track["url"]),
+                title=track["title"],
+                performer=track["artist"],
+                caption=f"🎧 **{track['title']}** — {track['artist']}\n\n🔥 Подписывайся: https://t.me/shkibidi_gang",
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            print(f"Ошибка отправки трека: {e}")
 
 # --- ИНИЦИАЛИЗАЦИЯ ---
 session = AiohttpSession()
@@ -255,7 +321,6 @@ async def set_commands():
 # --- /START ---
 @dp.message(CommandStart())
 async def start_command(m: types.Message):
-    # Обновляем статистику
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     
     if not await check_access(m.from_user.id):
@@ -275,6 +340,9 @@ async def start_command(m: types.Message):
         )
         return
     
+    # --- ОТПРАВКА ПРОМО ПРИ СТАРТЕ ---
+    await send_promo(m)
+    
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
@@ -282,7 +350,7 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
-# --- КОМАНДА /stats (ТОЛЬКО ДЛЯ АДМИНА) ---
+# --- КОМАНДА /stats ---
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     if m.from_user.id not in ADMIN_IDS:
@@ -317,7 +385,6 @@ async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
-    # Обновляем статистику
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     
     if not await check_access(m.from_user.id):
@@ -339,6 +406,10 @@ async def search_command(m: types.Message):
     
     print(f"🔍 Ищу: {m.text}")
     
+    # --- ОТПРАВКА ПРОМО (30% ШАНС) ---
+    if random.random() < 0.3:
+        await send_promo(m)
+    
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
         return
@@ -355,7 +426,6 @@ async def search_command(m: types.Message):
 # --- ДАННЫЕ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
-    # Обновляем статистику
     update_user_stats(message.from_user.id, username=message.from_user.username, first_name=message.from_user.first_name)
     
     if not await check_access(message.from_user.id):
