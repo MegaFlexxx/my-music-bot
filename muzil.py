@@ -12,6 +12,7 @@ from yandex_music import Client
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
+from datetime import datetime, timedelta
 
 # --- ПАТЧ ---
 def apply_patch():
@@ -30,16 +31,87 @@ apply_patch()
 TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
-# --- КАНАЛ ---
+# --- КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ---
 REQUIRED_CHANNEL_ID = -1001745381023
 CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
-# --- БЕЛЫЙ СПИСОК ---
+# --- БЕЛЫЙ СПИСОК (ТЕ, КТО МОЖЕТ БЕЗ ПОДПИСКИ) ---
 WHITELIST = [
     1711230756,  # ТЫ
     1425787444,  # ДРУГ
 ]
 
+# --- СИСТЕМА СТАТИСТИКИ (ТОЛЬКО ДЛЯ ТЕБЯ) ---
+STATS_FILE = "user_stats.json"
+ADMIN_IDS = [1711230756]  # ТВОЙ ID
+
+def load_stats():
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_stats(stats):
+    with open(STATS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
+def update_user_stats(user_id, username=None, first_name=None):
+    stats = load_stats()
+    user_id_str = str(user_id)
+    now = datetime.now().isoformat()
+    
+    if user_id_str not in stats:
+        stats[user_id_str] = {
+            "first_seen": now,
+            "last_seen": now,
+            "username": username,
+            "first_name": first_name,
+            "total_requests": 0
+        }
+    else:
+        stats[user_id_str]["last_seen"] = now
+        if username:
+            stats[user_id_str]["username"] = username
+        if first_name:
+            stats[user_id_str]["first_name"] = first_name
+    
+    stats[user_id_str]["total_requests"] += 1
+    save_stats(stats)
+
+def get_total_users():
+    stats = load_stats()
+    return len(stats)
+
+def get_today_users():
+    stats = load_stats()
+    today = datetime.now().date()
+    count = 0
+    for user_id, data in stats.items():
+        try:
+            last_seen = datetime.fromisoformat(data["last_seen"]).date()
+            if last_seen == today:
+                count += 1
+        except:
+            pass
+    return count
+
+def get_new_users_today():
+    stats = load_stats()
+    today = datetime.now().date()
+    count = 0
+    for user_id, data in stats.items():
+        try:
+            first_seen = datetime.fromisoformat(data["first_seen"]).date()
+            if first_seen == today:
+                count += 1
+        except:
+            pass
+    return count
+
+# --- ИНИЦИАЛИЗАЦИЯ ---
 session = AiohttpSession()
 bot = Bot(token=TELEGRAM_TOKEN, session=session)
 dp = Dispatcher()
@@ -48,20 +120,6 @@ yandex_client = Client(YANDEX_TOKEN).init()
 # --- ХРАНИЛИЩЕ ---
 user_search_results = {}
 user_current_position = {}
-
-# --- ПРОВЕРКА, ЧТО БОТ АДМИН ---
-async def check_bot_admin():
-    try:
-        bot_info = await bot.get_chat_member(REQUIRED_CHANNEL_ID, bot.id)
-        if bot_info.status in ['administrator', 'creator']:
-            print(f"✅ Бот админ в канале {CHANNEL_LINK}")
-            return True
-        else:
-            print(f"❌ Бот НЕ админ в канале {CHANNEL_LINK}")
-            return False
-    except Exception as e:
-        print(f"❌ Ошибка проверки: {e}")
-        return False
 
 # --- ФУНКЦИЯ ПРОВЕРКИ ПОДПИСКИ ---
 async def check_subscription(user_id: int) -> bool:
@@ -77,31 +135,6 @@ async def check_access(user_id: int) -> bool:
     if user_id in WHITELIST:
         return True
     return await check_subscription(user_id)
-
-# --- ДЕКОРАТОР ДЛЯ ЗАЩИТЫ (ИСПРАВЛЕННЫЙ) ---
-def require_access(func):
-    async def wrapper(message: types.Message, *args, **kwargs):
-        user_id = message.from_user.id
-        
-        if not await check_access(user_id):
-            await message.answer(
-                f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
-                f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
-                f"После подписки нажми /start снова.",
-                reply_markup=types.InlineKeyboardMarkup(
-                    inline_keyboard=[[
-                        types.InlineKeyboardButton(
-                            text="📢 Подписаться на канал",
-                            url=CHANNEL_LINK
-                        )
-                    ]]
-                ),
-                parse_mode="Markdown"
-            )
-            return
-        
-        return await func(message, *args, **kwargs)
-    return wrapper
 
 # --- ПОКАЗ ТРЕКА ---
 async def show_track(message: types.Message, user_id: int, position: int):
@@ -214,6 +247,7 @@ async def start_web_server():
 async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
+        BotCommand(command="stats", description="📊 Статистика (админ)"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -221,7 +255,9 @@ async def set_commands():
 # --- /START ---
 @dp.message(CommandStart())
 async def start_command(m: types.Message):
-    # Проверяем доступ
+    # Обновляем статистику
+    update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
+    
     if not await check_access(m.from_user.id):
         await m.answer(
             f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
@@ -246,13 +282,44 @@ async def start_command(m: types.Message):
         parse_mode="Markdown"
     )
 
+# --- КОМАНДА /stats (ТОЛЬКО ДЛЯ АДМИНА) ---
+@dp.message(Command("stats"))
+async def stats_command(m: types.Message):
+    if m.from_user.id not in ADMIN_IDS:
+        await m.answer("❌ У тебя нет доступа к этой команде!")
+        return
+    
+    total = get_total_users()
+    today = get_today_users()
+    new_today = get_new_users_today()
+    
+    stats = load_stats()
+    sorted_users = sorted(stats.items(), key=lambda x: x[1]["last_seen"], reverse=True)[:5]
+    
+    text = (
+        f"📊 **Статистика бота**\n\n"
+        f"👥 **Всего пользователей:** {total}\n"
+        f"🆕 **Новых сегодня:** {new_today}\n"
+        f"📆 **Активных сегодня:** {today}\n\n"
+        f"📋 **Последние 5 пользователей:**\n"
+    )
+    
+    for user_id, data in sorted_users:
+        name = data.get("first_name") or data.get("username") or "Аноним"
+        last_seen = datetime.fromisoformat(data["last_seen"]).strftime("%d.%m %H:%M")
+        text += f"• {name} — {last_seen}\n"
+    
+    await m.answer(text, parse_mode="Markdown")
+
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
-    # Проверяем доступ
+    # Обновляем статистику
+    update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
+    
     if not await check_access(m.from_user.id):
         await m.answer(
             f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
@@ -288,7 +355,9 @@ async def search_command(m: types.Message):
 # --- ДАННЫЕ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
 async def handle_web_app_data(message: types.Message):
-    # Проверяем доступ
+    # Обновляем статистику
+    update_user_stats(message.from_user.id, username=message.from_user.username, first_name=message.from_user.first_name)
+    
     if not await check_access(message.from_user.id):
         await message.answer(
             f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
@@ -358,7 +427,6 @@ async def handle_web_app_data(message: types.Message):
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
 async def download_callback(c: types.CallbackQuery):
-    # Проверяем доступ
     if not await check_access(c.from_user.id):
         await c.answer("❌ Доступ запрещён!", show_alert=True)
         return
@@ -386,9 +454,6 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def main():
-    # Проверяем, что бот админ в канале
-    await check_bot_admin()
-    
     await bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(
             text="🎵 Плеер",
