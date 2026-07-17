@@ -186,34 +186,35 @@ async def get_weather_by_city(city: str):
                 "icon": data["weather"][0]["icon"]
             }
 
-# --- МОДУЛЬ НОВОСТЕЙ (RSS) ---
-async def get_news_rss():
-    """Получает новости через RSS ленту Яндекс.Новостей"""
+# --- МОДУЛЬ КУРСА ВАЛЮТ ---
+async def get_currency_rates(base: str = "USD"):
+    """Получает курсы валют через бесплатный API"""
     try:
-        url = "https://news.yandex.ru/index.rss"
+        url = f"https://api.exchangerate-api.com/v4/latest/{base}"
         
         async with aiohttp.ClientSession() as session:
             async with session.get(url, timeout=10) as response:
                 if response.status != 200:
                     return None
+                data = await response.json()
                 
-                text = await response.text()
-                feed = feedparser.parse(text)
+                rates = {
+                    "USD": data["rates"].get("USD", 0),
+                    "EUR": data["rates"].get("EUR", 0),
+                    "RUB": data["rates"].get("RUB", 0),
+                    "CNY": data["rates"].get("CNY", 0),
+                    "GBP": data["rates"].get("GBP", 0),
+                    "KZT": data["rates"].get("KZT", 0),
+                    "UAH": data["rates"].get("UAH", 0),
+                }
                 
-                if not feed.entries:
-                    return None
-                
-                articles = []
-                for item in feed.entries[:5]:
-                    articles.append({
-                        "title": item.get("title", "Без названия"),
-                        "source": "Яндекс.Новости",
-                        "url": item.get("link", "#"),
-                        "description": item.get("summary", "").replace("\n", " ")[:200]
-                    })
-                return articles if articles else None
+                return {
+                    "base": base,
+                    "date": data.get("date", ""),
+                    "rates": rates
+                }
     except Exception as e:
-        print(f"❌ Ошибка получения новостей: {e}")
+        print(f"❌ Ошибка курса валют: {e}")
         return None
 
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
@@ -407,7 +408,7 @@ async def set_commands():
         BotCommand(command="stats", description="📊 Статистика (админ)"),
         BotCommand(command="moose", description="🦌 Случайный трек/фото"),
         BotCommand(command="weather", description="🌦 Погода в городе"),
-        BotCommand(command="news", description="📰 Новости дня"),
+        BotCommand(command="currency", description="💰 Курс валют"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -440,7 +441,7 @@ async def start_command(m: types.Message):
         "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!\n"
         "🦌 Или введи `/moose` для случайного контента!\n"
         "🌦 Или введи `/weather Оренбург` для погоды!\n"
-        "📰 Или введи `/news` для новостей!",
+        "💰 Или введи `/currency` для курса валют!",
         parse_mode="Markdown"
     )
 
@@ -557,9 +558,9 @@ async def weather_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# --- /news (RSS) ---
-@dp.message(Command("news"))
-async def news_command(m: types.Message):
+# --- /currency ---
+@dp.message(Command("currency"))
+async def currency_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
             f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
@@ -577,25 +578,46 @@ async def news_command(m: types.Message):
         )
         return
     
-    await m.answer("📰 Загружаю свежие новости...", parse_mode="Markdown")
+    args = m.text.split(maxsplit=1)
+    base = args[1].strip().upper() if len(args) > 1 else "USD"
     
-    news = await get_news_rss()
-    
-    if not news:
+    allowed = ["USD", "EUR", "RUB", "CNY", "GBP", "KZT", "UAH"]
+    if base not in allowed:
         await m.answer(
-            f"❌ Не удалось загрузить новости.\n"
+            f"❌ Валюта **{base}** не поддерживается.\n"
+            f"💡 Доступные валюты: {', '.join(allowed)}\n"
+            f"Пример: `/currency USD`",
+            parse_mode="Markdown"
+        )
+        return
+    
+    await m.answer(f"💰 Загружаю курсы валют...", parse_mode="Markdown")
+    
+    data = await get_currency_rates(base)
+    if not data:
+        await m.answer(
+            f"❌ Не удалось загрузить курсы валют.\n"
             f"💡 Попробуй позже.",
             parse_mode="Markdown"
         )
         return
     
-    text = f"📰 **Новости дня**\n\n"
-    for i, item in enumerate(news, 1):
-        text += f"{i}. **{item['title']}**\n"
-        text += f"   📌 {item['source']}\n"
-        text += f"   🔗 [Читать далее]({item['url']})\n\n"
+    rates = data["rates"]
     
-    await m.answer(text, parse_mode="Markdown", disable_web_page_preview=True)
+    emoji_map = {
+        "USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺",
+        "CNY": "🇨🇳", "GBP": "🇬🇧", "KZT": "🇰🇿", "UAH": "🇺🇦"
+    }
+    
+    text = f"💰 **Курсы валют** (база: {data['base']})\n📅 {data['date']}\n\n"
+    
+    main_currencies = ["RUB", "EUR", "USD", "CNY", "GBP", "KZT", "UAH"]
+    for curr in main_currencies:
+        if curr in rates:
+            emoji = emoji_map.get(curr, "")
+            text += f"{emoji} **{curr}** — {rates[curr]:.2f}\n"
+    
+    await m.answer(text, parse_mode="Markdown")
 
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
