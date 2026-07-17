@@ -116,15 +116,58 @@ def get_new_users_today():
 # --- МОДУЛЬ ПОГОДЫ ---
 WEATHER_API_KEY = "abb48920329a46d512884f6c84c71a51"
 
-async def get_weather(city: str):
-    """Получает погоду для указанного города"""
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+CITY_IDS = {
+    "оренбург": 515853,
+    "orenburg": 515853,
+    "москва": 524901,
+    "moscow": 524901,
+    "санкт-петербург": 498817,
+    "saint petersburg": 498817,
+    "новосибирск": 1496747,
+    "екатеринбург": 1486209,
+    "казань": 551487,
+    "нижний новгород": 520555,
+    "челябинск": 1508291,
+    "омск": 1496153,
+    "самара": 499099,
+    "ростов-на-дону": 501175,
+    "уфа": 479561,
+    "красноярск": 1502026,
+    "пермь": 511196,
+    "воронеж": 472045,
+    "волгоград": 472757,
+    "краснодар": 542420,
+    "сочи": 491422,
+    "лондон": 2643743,
+    "london": 2643743,
+    "париж": 2988507,
+    "paris": 2988507,
+    "берлин": 2950159,
+    "berlin": 2950159,
+    "нью-йорк": 5128581,
+    "new york": 5128581,
+}
+
+async def get_weather_by_city(city: str):
+    """Получает погоду по названию города"""
+    city_lower = city.lower().strip()
+    
+    if city_lower in CITY_IDS:
+        city_id = CITY_IDS[city_lower]
+        url = f"http://api.openweathermap.org/data/2.5/weather?id={city_id}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+    else:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
     
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                return None
-            data = await response.json()
+                url2 = f"http://api.openweathermap.org/data/2.5/weather?q={city},RU&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+                async with session.get(url2) as response2:
+                    if response2.status != 200:
+                        return None
+                    data = await response2.json()
+            else:
+                data = await response.json()
             
             weather_desc = data["weather"][0]["description"].capitalize()
             temp = round(data["main"]["temp"])
@@ -141,6 +184,40 @@ async def get_weather(city: str):
                 "wind": wind_speed,
                 "icon": data["weather"][0]["icon"]
             }
+
+# --- МОДУЛЬ НОВОСТЕЙ ---
+NEWS_API_KEY = "55694a956f114166986675e14b31b4c2"
+
+async def get_news(category: str = None, country: str = "ru"):
+    """Получает топ-5 новостей через NewsAPI"""
+    
+    url = "https://newsapi.org/v2/top-headlines"
+    params = {
+        "country": country,
+        "pageSize": 5,
+        "apiKey": NEWS_API_KEY
+    }
+    if category:
+        params["category"] = category
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            if response.status != 200:
+                return None
+            data = await response.json()
+            
+            if data.get("status") != "ok" or not data.get("articles"):
+                return None
+            
+            articles = []
+            for item in data["articles"][:5]:
+                articles.append({
+                    "title": item.get("title", "Без названия"),
+                    "source": item.get("source", {}).get("name", "Неизвестный источник"),
+                    "url": item.get("url", "#"),
+                    "description": item.get("description", "")
+                })
+            return articles
 
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
 PROMO_ENABLED = True
@@ -168,7 +245,6 @@ if not PROMO_IMAGES:
     ]
 
 async def send_promo_no_caption(message: types.Message):
-    """Отправляет фото или трек БЕЗ подписи"""
     if not PROMO_ENABLED:
         return
     
@@ -334,6 +410,7 @@ async def set_commands():
         BotCommand(command="stats", description="📊 Статистика (админ)"),
         BotCommand(command="moose", description="🦌 Случайный трек/фото"),
         BotCommand(command="weather", description="🌦 Погода в городе"),
+        BotCommand(command="news", description="📰 Новости дня"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -365,11 +442,12 @@ async def start_command(m: types.Message):
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
         "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!\n"
         "🦌 Или введи `/moose` для случайного контента!\n"
-        "🌦 Или введи `/weather Оренбург` для погоды!",
+        "🌦 Или введи `/weather Оренбург` для погоды!\n"
+        "📰 Или введи `/news` для новостей!",
         parse_mode="Markdown"
     )
 
-# --- КОМАНДА /stats ---
+# --- /stats ---
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     if m.from_user.id not in ADMIN_IDS:
@@ -398,10 +476,9 @@ async def stats_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# --- КОМАНДА /moose ---
+# --- /moose ---
 @dp.message(Command("moose"))
 async def moose_command(m: types.Message):
-    """Отправляет случайное промо (фото или трек) без подписи"""
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     
     if not await check_access(m.from_user.id):
@@ -423,19 +500,18 @@ async def moose_command(m: types.Message):
     
     await send_promo_no_caption(m)
 
-# --- КОМАНДА /weather ---
+# --- /weather ---
 @dp.message(Command("weather"))
 async def weather_command(m: types.Message):
-    """Показывает погоду в указанном городе"""
     args = m.text.split(maxsplit=1)
     if len(args) < 2:
         await m.answer(
-            "🌦 **Укажи город!**\nНапример: `/weather Оренбург`",
+            "🌦 **Укажи город!**\nНапример: `/weather Оренбург` или `/weather Orenburg`",
             parse_mode="Markdown"
         )
         return
     
-    city = args[1].strip()
+    city_input = args[1].strip()
     
     if not await check_access(m.from_user.id):
         await m.answer(
@@ -454,12 +530,13 @@ async def weather_command(m: types.Message):
         )
         return
     
-    await m.answer(f"🌦 Ищу погоду в **{city}**...", parse_mode="Markdown")
+    await m.answer(f"🌦 Ищу погоду в **{city_input}**...", parse_mode="Markdown")
     
-    weather = await get_weather(city)
+    weather = await get_weather_by_city(city_input)
     if not weather:
         await m.answer(
-            f"❌ Город **{city}** не найден. Проверь название.",
+            f"❌ Город **{city_input}** не найден.\n"
+            f"💡 Попробуй написать на английском: `/weather Orenburg`",
             parse_mode="Markdown"
         )
         return
@@ -482,6 +559,50 @@ async def weather_command(m: types.Message):
     )
     
     await m.answer(text, parse_mode="Markdown")
+
+# --- /news ---
+@dp.message(Command("news"))
+async def news_command(m: types.Message):
+    if not await check_access(m.from_user.id):
+        await m.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
+        return
+    
+    await m.answer("📰 Загружаю свежие новости...", parse_mode="Markdown")
+    
+    args = m.text.split(maxsplit=1)
+    category = args[1].strip() if len(args) > 1 else None
+    
+    news = await get_news(category)
+    if not news:
+        await m.answer(
+            f"❌ Не удалось загрузить новости.\n"
+            f"💡 Попробуй позже или укажи категорию:\n"
+            f"`/news technology`\n"
+            f"Доступные категории: business, entertainment, general, health, science, sports, technology",
+            parse_mode="Markdown"
+        )
+        return
+    
+    text = f"📰 **Новости дня**\n\n"
+    for i, item in enumerate(news, 1):
+        text += f"{i}. **{item['title']}**\n"
+        text += f"   📌 {item['source']}\n"
+        text += f"   🔗 [Читать далее]({item['url']})\n\n"
+    
+    await m.answer(text, parse_mode="Markdown", disable_web_page_preview=True)
 
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
