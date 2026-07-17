@@ -274,10 +274,10 @@ async def ask_ai(prompt: str) -> str:
                 else:
                     error_text = await response.text()
                     print(f"❌ Ошибка Алисы: {response.status} - {error_text}")
-                    return "🤖 **Алиса временно недоступна.**\n💡 Попробуй позже."
+                    return "🤖 Алиса временно недоступна.\n💡 Попробуй позже."
     except Exception as e:
         print(f"❌ Ошибка: {e}")
-        return "🤖 **Ошибка подключения к Алисе.**\n💡 Проверь API-ключ."
+        return "🤖 Ошибка подключения к Алисе.\n💡 Проверь API-ключ."
 
 # --- ПРОМО-МОДУЛЬ ---
 PROMO_ENABLED = True
@@ -444,20 +444,20 @@ async def start_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
         return
     await m.answer(
-        "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
+        "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
-        "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!\n"
-        "🦌 Или введи `/moose` для случайного контента!\n"
-        "🌦 Или введи `/weather Оренбург` для погоды!\n"
-        "💰 Или введи `/currency` для курса валют!\n"
-        "🪙 Или введи `/btc` для курса криптовалют!\n"
-        "🤖 Или введи `/ask текст` для Алисы!",
+        "🎮 Или нажми кнопку 🎵 Плеер внизу экрана!\n"
+        "🦌 Или введи /moose для случайного контента!\n"
+        "🌦 Или введи /weather Оренбург для погоды!\n"
+        "💰 Или введи /currency для курса валют!\n"
+        "🪙 Или введи /btc для курса криптовалют!\n"
+        "🤖 Или введи /ask текст для Алисы!",
         parse_mode="Markdown"
     )
 
@@ -483,7 +483,7 @@ async def moose_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
@@ -499,7 +499,7 @@ async def weather_command(m: types.Message):
     city_input = args[1].strip()
     if not await check_access(m.from_user.id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
@@ -518,7 +518,7 @@ async def weather_command(m: types.Message):
 async def currency_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
@@ -548,7 +548,7 @@ async def currency_command(m: types.Message):
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
@@ -580,7 +580,7 @@ async def ask_command(m: types.Message):
     
     if not await check_access(user_id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
@@ -631,7 +631,7 @@ async def search_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
@@ -655,7 +655,7 @@ async def handle_web_app_data(message: types.Message):
     update_user_stats(message.from_user.id, username=message.from_user.username, first_name=message.from_user.first_name)
     if not await check_access(message.from_user.id):
         await message.answer(
-            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]]),
             parse_mode="Markdown"
         )
