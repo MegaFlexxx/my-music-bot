@@ -5,6 +5,7 @@ import requests
 import json
 import random
 import aiohttp
+import feedparser
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -185,39 +186,35 @@ async def get_weather_by_city(city: str):
                 "icon": data["weather"][0]["icon"]
             }
 
-# --- МОДУЛЬ НОВОСТЕЙ ---
-NEWS_API_KEY = "55694a956f114166986675e14b31b4c2"
-
-async def get_news(category: str = None, country: str = "ru"):
-    """Получает топ-5 новостей через NewsAPI"""
-    
-    url = "https://newsapi.org/v2/top-headlines"
-    params = {
-        "country": country,
-        "pageSize": 5,
-        "apiKey": NEWS_API_KEY
-    }
-    if category:
-        params["category"] = category
-    
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, params=params) as response:
-            if response.status != 200:
-                return None
-            data = await response.json()
-            
-            if data.get("status") != "ok" or not data.get("articles"):
-                return None
-            
-            articles = []
-            for item in data["articles"][:5]:
-                articles.append({
-                    "title": item.get("title", "Без названия"),
-                    "source": item.get("source", {}).get("name", "Неизвестный источник"),
-                    "url": item.get("url", "#"),
-                    "description": item.get("description", "")
-                })
-            return articles
+# --- МОДУЛЬ НОВОСТЕЙ (RSS) ---
+async def get_news_rss():
+    """Получает новости через RSS ленту Яндекс.Новостей"""
+    try:
+        url = "https://news.yandex.ru/index.rss"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=10) as response:
+                if response.status != 200:
+                    return None
+                
+                text = await response.text()
+                feed = feedparser.parse(text)
+                
+                if not feed.entries:
+                    return None
+                
+                articles = []
+                for item in feed.entries[:5]:
+                    articles.append({
+                        "title": item.get("title", "Без названия"),
+                        "source": "Яндекс.Новости",
+                        "url": item.get("link", "#"),
+                        "description": item.get("summary", "").replace("\n", " ")[:200]
+                    })
+                return articles if articles else None
+    except Exception as e:
+        print(f"❌ Ошибка получения новостей: {e}")
+        return None
 
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
 PROMO_ENABLED = True
@@ -560,7 +557,7 @@ async def weather_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
-# --- /news ---
+# --- /news (RSS) ---
 @dp.message(Command("news"))
 async def news_command(m: types.Message):
     if not await check_access(m.from_user.id):
@@ -582,16 +579,12 @@ async def news_command(m: types.Message):
     
     await m.answer("📰 Загружаю свежие новости...", parse_mode="Markdown")
     
-    args = m.text.split(maxsplit=1)
-    category = args[1].strip() if len(args) > 1 else None
+    news = await get_news_rss()
     
-    news = await get_news(category)
     if not news:
         await m.answer(
             f"❌ Не удалось загрузить новости.\n"
-            f"💡 Попробуй позже или укажи категорию:\n"
-            f"`/news technology`\n"
-            f"Доступные категории: business, entertainment, general, health, science, sports, technology",
+            f"💡 Попробуй позже.",
             parse_mode="Markdown"
         )
         return
