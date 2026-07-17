@@ -217,6 +217,32 @@ async def get_currency_rates(base: str = "USD"):
         print(f"❌ Ошибка курса валют: {e}")
         return None
 
+# --- МОДУЛЬ КРИПТОВАЛЮТ ---
+async def get_crypto_prices():
+    """Получает курсы криптовалют через бесплатный API"""
+    try:
+        url = "https://api.coingecko.com/api/v3/simple/price"
+        params = {
+            "ids": "bitcoin,ethereum,solana,the-open-network",
+            "vs_currencies": "usd,eur,rub"
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, timeout=10) as response:
+                if response.status != 200:
+                    return None
+                data = await response.json()
+                
+                return {
+                    "bitcoin": data.get("bitcoin", {}),
+                    "ethereum": data.get("ethereum", {}),
+                    "solana": data.get("solana", {}),
+                    "toncoin": data.get("the-open-network", {})
+                }
+    except Exception as e:
+        print(f"❌ Ошибка криптовалют: {e}")
+        return None
+
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
 PROMO_ENABLED = True
 
@@ -409,6 +435,7 @@ async def set_commands():
         BotCommand(command="moose", description="🦌 Случайный трек/фото"),
         BotCommand(command="weather", description="🌦 Погода в городе"),
         BotCommand(command="currency", description="💰 Курс валют"),
+        BotCommand(command="btc", description="🪙 Курс криптовалют"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
     print("✅ Меню команд установлено!")
@@ -441,7 +468,8 @@ async def start_command(m: types.Message):
         "🎮 Или нажми кнопку **🎵 Плеер** внизу экрана!\n"
         "🦌 Или введи `/moose` для случайного контента!\n"
         "🌦 Или введи `/weather Оренбург` для погоды!\n"
-        "💰 Или введи `/currency` для курса валют!",
+        "💰 Или введи `/currency` для курса валют!\n"
+        "🪙 Или введи `/btc` для курса криптовалют!",
         parse_mode="Markdown"
     )
 
@@ -619,6 +647,68 @@ async def currency_command(m: types.Message):
     
     await m.answer(text, parse_mode="Markdown")
 
+# --- /btc ---
+@dp.message(Command("btc"))
+async def btc_command(m: types.Message):
+    if not await check_access(m.from_user.id):
+        await m.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
+        return
+    
+    await m.answer("🪙 Загружаю курсы криптовалют...", parse_mode="Markdown")
+    
+    data = await get_crypto_prices()
+    if not data:
+        await m.answer(
+            f"❌ Не удалось загрузить курсы криптовалют.\n"
+            f"💡 Попробуй позже.",
+            parse_mode="Markdown"
+        )
+        return
+    
+    emoji_map = {
+        "bitcoin": "🟠",
+        "ethereum": "🔷",
+        "solana": "🟣",
+        "toncoin": "🔵"
+    }
+    
+    name_map = {
+        "bitcoin": "Bitcoin (BTC)",
+        "ethereum": "Ethereum (ETH)",
+        "solana": "Solana (SOL)",
+        "toncoin": "Toncoin (TON)"
+    }
+    
+    text = f"🪙 **Курсы криптовалют**\n\n"
+    
+    for key, coin in data.items():
+        if coin:
+            emoji = emoji_map.get(key, "🪙")
+            name = name_map.get(key, key.capitalize())
+            usd = coin.get("usd", 0)
+            eur = coin.get("eur", 0)
+            rub = coin.get("rub", 0)
+            
+            text += f"{emoji} **{name}**\n"
+            text += f"   🇺🇸 ${usd:,.2f}\n"
+            text += f"   🇪🇺 €{eur:,.2f}\n"
+            text += f"   🇷🇺 {rub:,.0f} ₽\n\n"
+    
+    await m.answer(text, parse_mode="Markdown")
+
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
@@ -747,27 +837,4 @@ async def nav_callback(c: types.CallbackQuery):
     user_id = int(parts[1])
     position = int(parts[2])
     if c.from_user.id != user_id:
-        await c.answer("❌ Это не твой поиск!", show_alert=True)
-        return
-    user_current_position[c.from_user.id] = position
-    await show_track(c.message, user_id, position)
-    await c.message.delete()
-    await c.answer()
-
-@dp.callback_query(F.data == "ignore")
-async def ignore_callback(c: types.CallbackQuery):
-    await c.answer()
-
-# --- ГЛАВНАЯ ---
-async def main():
-    await bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(
-            text="🎵 Плеер",
-            web_app=WebAppInfo(url="https://megaflexxx.github.io/my-music-bot/")
-        )
-    )
-    await set_commands()
-    await asyncio.gather(start_web_server(), dp.start_polling(bot))
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        await c.answer("❌ Это не твой поиск!", show_
