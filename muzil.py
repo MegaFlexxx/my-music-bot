@@ -58,7 +58,6 @@ async def check_bot_admin():
             return True
         else:
             print(f"❌ Бот НЕ админ в канале {CHANNEL_LINK}")
-            print(f"   Статус бота: {bot_info.status}")
             return False
     except Exception as e:
         print(f"❌ Ошибка проверки: {e}")
@@ -68,7 +67,6 @@ async def check_bot_admin():
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(REQUIRED_CHANNEL_ID, user_id)
-        print(f"🔍 Проверка пользователя {user_id}: статус {member.status}")
         return member.status in ['member', 'creator', 'administrator']
     except Exception as e:
         print(f"❌ Ошибка проверки подписки: {e}")
@@ -76,24 +74,14 @@ async def check_subscription(user_id: int) -> bool:
 
 # --- ФУНКЦИЯ ПРОВЕРКИ ДОСТУПА ---
 async def check_access(user_id: int) -> bool:
-    # Проверяем белый список
     if user_id in WHITELIST:
-        print(f"✅ Пользователь {user_id} в белом списке")
         return True
-    
-    # Проверяем подписку
-    is_subscribed = await check_subscription(user_id)
-    if is_subscribed:
-        print(f"✅ Пользователь {user_id} подписан на канал")
-    else:
-        print(f"❌ Пользователь {user_id} НЕ подписан")
-    return is_subscribed
+    return await check_subscription(user_id)
 
-# --- ДЕКОРАТОР ---
+# --- ДЕКОРАТОР ДЛЯ ЗАЩИТЫ (ИСПРАВЛЕННЫЙ) ---
 def require_access(func):
     async def wrapper(message: types.Message, *args, **kwargs):
         user_id = message.from_user.id
-        print(f"🔑 Проверка доступа для пользователя {user_id}")
         
         if not await check_access(user_id):
             await message.answer(
@@ -232,8 +220,25 @@ async def set_commands():
 
 # --- /START ---
 @dp.message(CommandStart())
-@require_access
 async def start_command(m: types.Message):
+    # Проверяем доступ
+    if not await check_access(m.from_user.id):
+        await m.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
+        return
+    
     await m.answer(
         "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
@@ -243,9 +248,26 @@ async def start_command(m: types.Message):
 
 # --- ТЕКСТОВЫЙ ПОИСК ---
 @dp.message(F.text)
-@require_access
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
+        return
+    
+    # Проверяем доступ
+    if not await check_access(m.from_user.id):
+        await m.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
         return
     
     print(f"🔍 Ищу: {m.text}")
@@ -265,8 +287,25 @@ async def search_command(m: types.Message):
 
 # --- ДАННЫЕ ИЗ ПЛЕЕРА ---
 @dp.message(F.web_app_data)
-@require_access
 async def handle_web_app_data(message: types.Message):
+    # Проверяем доступ
+    if not await check_access(message.from_user.id):
+        await message.answer(
+            f"🔒 **Для доступа к боту нужно подписаться на наш канал!**\n\n"
+            f"👇 Нажми на кнопку ниже, чтобы подписаться:\n"
+            f"После подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    types.InlineKeyboardButton(
+                        text="📢 Подписаться на канал",
+                        url=CHANNEL_LINK
+                    )
+                ]]
+            ),
+            parse_mode="Markdown"
+        )
+        return
+    
     try:
         data = json.loads(message.web_app_data.data)
         action = data.get('action')
@@ -318,8 +357,12 @@ async def handle_web_app_data(message: types.Message):
 
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
-@require_access
 async def download_callback(c: types.CallbackQuery):
+    # Проверяем доступ
+    if not await check_access(c.from_user.id):
+        await c.answer("❌ Доступ запрещён!", show_alert=True)
+        return
+    
     await c.answer("🔄 Скачиваю...")
     track_id = c.data.replace("down_", "")
     await download_and_send(c.message, track_id)
