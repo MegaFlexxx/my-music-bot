@@ -217,14 +217,13 @@ async def get_currency_rates(base: str = "USD"):
         print(f"❌ Ошибка курса валют: {e}")
         return None
 
-# --- МОДУЛЬ КРИПТОВАЛЮТ ---
+# --- МОДУЛЬ КРИПТОВАЛЮТ (CoinCap API) ---
 async def get_crypto_prices():
-    """Получает курсы криптовалют через бесплатный API"""
+    """Получает курсы криптовалют через CoinCap API"""
     try:
-        url = "https://api.coingecko.com/api/v3/simple/price"
+        url = "https://api.coincap.io/v2/assets"
         params = {
-            "ids": "bitcoin,ethereum,solana,the-open-network",
-            "vs_currencies": "usd,eur,rub"
+            "ids": "bitcoin,ethereum,solana,toncoin"
         }
         
         async with aiohttp.ClientSession() as session:
@@ -233,14 +232,22 @@ async def get_crypto_prices():
                     return None
                 data = await response.json()
                 
+                result = {}
+                for item in data.get("data", []):
+                    result[item["id"]] = {
+                        "usd": float(item["priceUsd"]),
+                        "eur": float(item["priceUsd"]) * 0.92,
+                        "rub": float(item["priceUsd"]) * 88.5
+                    }
+                
                 return {
-                    "bitcoin": data.get("bitcoin", {}),
-                    "ethereum": data.get("ethereum", {}),
-                    "solana": data.get("solana", {}),
-                    "toncoin": data.get("the-open-network", {})
+                    "bitcoin": result.get("bitcoin", {}),
+                    "ethereum": result.get("ethereum", {}),
+                    "solana": result.get("solana", {}),
+                    "toncoin": result.get("toncoin", {})
                 }
     except Exception as e:
-        print(f"❌ Ошибка криптовалют: {e}")
+        print(f"❌ Ошибка CoinCap: {e}")
         return None
 
 # --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
