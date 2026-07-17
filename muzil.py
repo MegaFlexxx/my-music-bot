@@ -34,7 +34,7 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 # --- КАНАЛ ДЛЯ ПРОВЕРКИ ПОДПИСКИ ---
 REQUIRED_CHANNEL_ID = -1001745381023
-CHANNEL_LINK = "https://t.me/shkibidi_gang"
+CHANNEL_LINK = "https://t.me/shkibidi_gang"  # ТВОЙ КАНАЛ
 
 # --- БЕЛЫЙ СПИСОК ---
 WHITELIST = [
@@ -112,17 +112,15 @@ def get_new_users_today():
             pass
     return count
 
-# --- МОДУЛЬ ПРОМО-РЕКЛАМЫ (АВТОМАТИЧЕСКИЙ СБОР ИЗ ПАПОК) ---
+# --- МОДУЛЬ ПРОМО-РЕКЛАМЫ ---
 PROMO_ENABLED = True
 
-# АВТОМАТИЧЕСКИЙ СБОР КАРТИНОК
 PROMO_IMAGES = []
 if os.path.exists("promo/images"):
     for file in os.listdir("promo/images"):
         if file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
             PROMO_IMAGES.append(f"promo/images/{file}")
 
-# АВТОМАТИЧЕСКИЙ СБОР ТРЕКОВ
 PROMO_TRACKS = []
 if os.path.exists("promo/tracks"):
     for file in os.listdir("promo/tracks"):
@@ -133,7 +131,6 @@ if os.path.exists("promo/tracks"):
                 "url": f"promo/tracks/{file}"
             })
 
-# ЕСЛИ ПАПКИ ПУСТЫЕ — ИСПОЛЬЗУЕМ ЗАГОТОВКИ
 if not PROMO_IMAGES:
     PROMO_IMAGES = [
         "https://img.icons8.com/color/512/telegram-app.png",
@@ -340,7 +337,6 @@ async def start_command(m: types.Message):
         )
         return
     
-    # --- ОТПРАВКА ПРОМО ПРИ СТАРТЕ ---
     await send_promo(m)
     
     await m.answer(
@@ -406,7 +402,6 @@ async def search_command(m: types.Message):
     
     print(f"🔍 Ищу: {m.text}")
     
-    # --- ОТПРАВКА ПРОМО (30% ШАНС) ---
     if random.random() < 0.3:
         await send_promo(m)
     
