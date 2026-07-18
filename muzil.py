@@ -16,7 +16,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 from datetime import datetime, timedelta
-from supabase import create_client, Client
+from supabase import create_client  # ИСПРАВЛЕНО!
 
 # --- ПАТЧ ---
 def apply_patch():
@@ -54,10 +54,9 @@ ADMIN_IDS = [
 # --- ПОДКЛЮЧЕНИЕ К SUPABASE ---
 SUPABASE_URL = "https://eeiphgkfywnfuwzfmgjq.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlaXBoZ2tmeXduZnV3emZtZ2pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzgzNjUsImV4cCI6MjA5OTk1NDM2NX0.cuON3iG2Erva-FfVrGc_uEV_t7l1XON3-AWQApcrSx8"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)  # ИСПРАВЛЕНО!
 
 def load_stats():
-    """Загружает статистику из Supabase"""
     try:
         response = supabase.table("users_stats").select("*").execute()
         stats = {}
@@ -75,7 +74,6 @@ def load_stats():
         return {}
 
 def save_stats(stats):
-    """Сохраняет статистику в Supabase"""
     try:
         for user_id, data in stats.items():
             supabase.table("users_stats").upsert({
@@ -448,7 +446,7 @@ async def start_command(m: types.Message):
         "🪙 Или введи /btc для курса криптовалют!"
     )
 
-# --- /stats (ТОЛЬКО ДЛЯ АДМИНОВ) ---
+# --- /stats ---
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     if m.from_user.id not in ADMIN_IDS:
@@ -529,7 +527,6 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
-# --- /btc (С BNB) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
