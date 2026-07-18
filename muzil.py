@@ -44,12 +44,9 @@ WHITELIST = [
     1425787444,  # ДРУГ
 ]
 
-# --- СТАТИСТИКА (ЛОКАЛЬНЫЙ ФАЙЛ) ---
+# --- СТАТИСТИКА ---
 STATS_FILE = "user_stats.json"
-ADMIN_IDS = [
-    1711230756,  # ТЫ
-    1425787444,  # ДРУГ
-]
+ADMIN_IDS = [1711230756]
 
 def load_stats():
     if os.path.exists(STATS_FILE):
@@ -502,6 +499,7 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
+# --- /btc (С BNB) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
@@ -594,6 +592,7 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def reset_menu():
+    """Принудительно сбрасывает кнопку меню"""
     try:
         await bot.set_chat_menu_button(menu_button=None)
         print("✅ Кнопка меню сброшена!")
