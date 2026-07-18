@@ -16,6 +16,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from aiohttp import web
 from datetime import datetime, timedelta
+from supabase import create_client, Client
 
 # --- ПАТЧ ---
 def apply_patch():
@@ -38,32 +39,56 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 REQUIRED_CHANNEL_ID = -1001745381023
 CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
-# --- БЕЛЫЙ СПИСОК (ДЛЯ ДОСТУПА БЕЗ ПОДПИСКИ) ---
+# --- БЕЛЫЙ СПИСОК ---
 WHITELIST = [
     1711230756,  # ТЫ
     1425787444,  # ДРУГ
 ]
 
 # --- АДМИНЫ (ДЛЯ СТАТИСТИКИ) ---
-STATS_FILE = "user_stats.json"
 ADMIN_IDS = [
     1711230756,  # ТЫ
-    1425787444,  # ДРУГ  (теперь может смотреть статистику)
-    # Добавляй сюда ID других друзей
+    1425787444,  # ДРУГ
 ]
 
+# --- ПОДКЛЮЧЕНИЕ К SUPABASE ---
+SUPABASE_URL = "https://eeiphgkfywnfuwzfmgjq.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlaXBoZ2tmeXduZnV3emZtZ2pxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzgzNjUsImV4cCI6MjA5OTk1NDM2NX0.cuON3iG2Erva-FfVrGc_uEV_t7l1XON3-AWQApcrSx8"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 def load_stats():
-    if os.path.exists(STATS_FILE):
-        try:
-            with open(STATS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
+    """Загружает статистику из Supabase"""
+    try:
+        response = supabase.table("users_stats").select("*").execute()
+        stats = {}
+        for item in response.data:
+            stats[item["user_id"]] = {
+                "first_seen": item["first_seen"],
+                "last_seen": item["last_seen"],
+                "username": item.get("username"),
+                "first_name": item.get("first_name"),
+                "total_requests": item.get("total_requests", 0)
+            }
+        return stats
+    except Exception as e:
+        print(f"❌ Ошибка загрузки статистики: {e}")
+        return {}
 
 def save_stats(stats):
-    with open(STATS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, ensure_ascii=False, indent=2)
+    """Сохраняет статистику в Supabase"""
+    try:
+        for user_id, data in stats.items():
+            supabase.table("users_stats").upsert({
+                "user_id": user_id,
+                "first_seen": data["first_seen"],
+                "last_seen": data["last_seen"],
+                "username": data.get("username"),
+                "first_name": data.get("first_name"),
+                "total_requests": data.get("total_requests", 0)
+            }).execute()
+        print("✅ Статистика сохранена в Supabase")
+    except Exception as e:
+        print(f"❌ Ошибка сохранения: {e}")
 
 def update_user_stats(user_id, username=None, first_name=None):
     stats = load_stats()
@@ -423,7 +448,7 @@ async def start_command(m: types.Message):
         "🪙 Или введи /btc для курса криптовалют!"
     )
 
-# --- /stats (ДОСТУП ТОЛЬКО ДЛЯ АДМИНОВ) ---
+# --- /stats (ТОЛЬКО ДЛЯ АДМИНОВ) ---
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     if m.from_user.id not in ADMIN_IDS:
@@ -597,7 +622,6 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def reset_menu():
-    """Принудительно сбрасывает кнопку меню"""
     try:
         await bot.set_chat_menu_button(menu_button=None)
         print("✅ Кнопка меню сброшена!")
