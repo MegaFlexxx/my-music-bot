@@ -209,49 +209,42 @@ async def get_currency_rates(base: str = "USD"):
         print(f"❌ Ошибка курса валют: {e}")
         return None
 
-# --- МОДУЛЬ КРИПТОВАЛЮТ (CoinCap + Binance для BNB) ---
+# --- МОДУЛЬ КРИПТОВАЛЮТ (BINANCE) ---
 async def get_crypto_prices():
     try:
-        # Основные криптовалюты через CoinCap
-        url = "https://api.coincap.io/v2/assets"
-        params = {"ids": "bitcoin,ethereum,solana,toncoin"}
-        
+        url = "https://api.binance.com/api/v3/ticker/price"
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=15) as response:
+            async with session.get(url, timeout=10) as response:
                 if response.status != 200:
+                    print(f"❌ Binance ошибка: {response.status}")
                     return None
                 data = await response.json()
+                prices = {item["symbol"]: float(item["price"]) for item in data}
                 
                 usd_to_rub = 88.5
                 usd_to_eur = 0.92
                 result = {}
                 
-                for item in data["data"]:
-                    asset_id = item["id"]
-                    price_usd = float(item["priceUsd"])
-                    result[asset_id] = {"usd": price_usd, "eur": price_usd * usd_to_eur, "rub": price_usd * usd_to_rub}
+                if "BTCUSDT" in prices:
+                    btc_usd = prices["BTCUSDT"]
+                    result["bitcoin"] = {"usd": btc_usd, "eur": btc_usd * usd_to_eur, "rub": btc_usd * usd_to_rub}
+                if "ETHUSDT" in prices:
+                    eth_usd = prices["ETHUSDT"]
+                    result["ethereum"] = {"usd": eth_usd, "eur": eth_usd * usd_to_eur, "rub": eth_usd * usd_to_rub}
+                if "SOLUSDT" in prices:
+                    sol_usd = prices["SOLUSDT"]
+                    result["solana"] = {"usd": sol_usd, "eur": sol_usd * usd_to_eur, "rub": sol_usd * usd_to_rub}
+                if "TONUSDT" in prices:
+                    ton_usd = prices["TONUSDT"]
+                    result["toncoin"] = {"usd": ton_usd, "eur": ton_usd * usd_to_eur, "rub": ton_usd * usd_to_rub}
+                if "BNBUSDT" in prices:
+                    bnb_usd = prices["BNBUSDT"]
+                    result["bnb"] = {"usd": bnb_usd, "eur": bnb_usd * usd_to_eur, "rub": bnb_usd * usd_to_rub}
                 
-                # BNB через Binance (так как в CoinCap его нет в бесплатном API)
-                try:
-                    async with aiohttp.ClientSession() as session2:
-                        async with session2.get("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", timeout=10) as response2:
-                            if response2.status == 200:
-                                bnb_data = await response2.json()
-                                bnb_usd = float(bnb_data["price"])
-                                result["bnb"] = {"usd": bnb_usd, "eur": bnb_usd * usd_to_eur, "rub": bnb_usd * usd_to_rub}
-                except:
-                    pass
-                
-                return {
-                    "bitcoin": result.get("bitcoin", {}),
-                    "ethereum": result.get("ethereum", {}),
-                    "solana": result.get("solana", {}),
-                    "toncoin": result.get("toncoin", {}),
-                    "bnb": result.get("bnb", {})
-                }
-                
+                print(f"✅ Binance: BTC={prices.get('BTCUSDT', 'нет')}")
+                return result if result else None
     except Exception as e:
-        print(f"❌ Ошибка криптовалют: {e}")
+        print(f"❌ Ошибка Binance: {e}")
         return None
 
 # --- ПРОМО-МОДУЛЬ ---
@@ -511,7 +504,7 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
-# --- /btc ---
+# --- /btc (BINANCE) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
