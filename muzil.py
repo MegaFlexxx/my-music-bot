@@ -38,18 +38,17 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 REQUIRED_CHANNEL_ID = -1001745381023
 CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
-# --- БЕЛЫЙ СПИСОК (ДЛЯ ДОСТУПА БЕЗ ПОДПИСКИ) ---
+# --- БЕЛЫЙ СПИСОК ---
 WHITELIST = [
     1711230756,  # ТЫ
     1425787444,  # ДРУГ
 ]
 
-# --- АДМИНЫ (ДЛЯ СТАТИСТИКИ) ---
+# --- СТАТИСТИКА (ЛОКАЛЬНЫЙ ФАЙЛ) ---
 STATS_FILE = "user_stats.json"
 ADMIN_IDS = [
     1711230756,  # ТЫ
-    1425787444,  # ДРУГ  (теперь может смотреть статистику)
-    # Добавляй сюда ID других друзей
+    1425787444,  # ДРУГ
 ]
 
 def load_stats():
@@ -423,7 +422,6 @@ async def start_command(m: types.Message):
         "🪙 Или введи /btc для курса криптовалют!"
     )
 
-# --- /stats (ДОСТУП ТОЛЬКО ДЛЯ АДМИНОВ) ---
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     if m.from_user.id not in ADMIN_IDS:
@@ -504,7 +502,6 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
-# --- /btc (С BNB) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
@@ -597,7 +594,6 @@ async def ignore_callback(c: types.CallbackQuery):
 
 # --- ГЛАВНАЯ ---
 async def reset_menu():
-    """Принудительно сбрасывает кнопку меню"""
     try:
         await bot.set_chat_menu_button(menu_button=None)
         print("✅ Кнопка меню сброшена!")
