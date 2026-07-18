@@ -38,15 +38,19 @@ YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 REQUIRED_CHANNEL_ID = -1001745381023
 CHANNEL_LINK = "https://t.me/shkibidi_gang"
 
-# --- БЕЛЫЙ СПИСОК ---
+# --- БЕЛЫЙ СПИСОК (ДЛЯ ДОСТУПА БЕЗ ПОДПИСКИ) ---
 WHITELIST = [
     1711230756,  # ТЫ
     1425787444,  # ДРУГ
 ]
 
-# --- СТАТИСТИКА ---
+# --- АДМИНЫ (ДЛЯ СТАТИСТИКИ) ---
 STATS_FILE = "user_stats.json"
-ADMIN_IDS = [1711230756]
+ADMIN_IDS = [
+    1711230756,  # ТЫ
+    1425787444,  # ДРУГ  (теперь может смотреть статистику)
+    # Добавляй сюда ID других друзей
+]
 
 def load_stats():
     if os.path.exists(STATS_FILE):
@@ -419,6 +423,7 @@ async def start_command(m: types.Message):
         "🪙 Или введи /btc для курса криптовалют!"
     )
 
+# --- /stats (ДОСТУП ТОЛЬКО ДЛЯ АДМИНОВ) ---
 @dp.message(Command("stats"))
 async def stats_command(m: types.Message):
     if m.from_user.id not in ADMIN_IDS:
