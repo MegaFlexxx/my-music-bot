@@ -216,7 +216,6 @@ async def get_crypto_prices():
         async with aiohttp.ClientSession() as session:
             async with session.get(url, timeout=10) as response:
                 if response.status != 200:
-                    print(f"❌ Binance ошибка: {response.status}")
                     return None
                 data = await response.json()
                 prices = {item["symbol"]: float(item["price"]) for item in data}
@@ -234,14 +233,13 @@ async def get_crypto_prices():
                 if "SOLUSDT" in prices:
                     sol_usd = prices["SOLUSDT"]
                     result["solana"] = {"usd": sol_usd, "eur": sol_usd * usd_to_eur, "rub": sol_usd * usd_to_rub}
-                if "TONUSDT" in prices:
-                    ton_usd = prices["TONUSDT"]
-                    result["toncoin"] = {"usd": ton_usd, "eur": ton_usd * usd_to_eur, "rub": ton_usd * usd_to_rub}
+                if "GRAMUSDT" in prices:  # ТЕПЕРЬ GRAM!
+                    gram_usd = prices["GRAMUSDT"]
+                    result["gram"] = {"usd": gram_usd, "eur": gram_usd * usd_to_eur, "rub": gram_usd * usd_to_rub}
                 if "BNBUSDT" in prices:
                     bnb_usd = prices["BNBUSDT"]
                     result["bnb"] = {"usd": bnb_usd, "eur": bnb_usd * usd_to_eur, "rub": bnb_usd * usd_to_rub}
                 
-                print(f"✅ Binance: BTC={prices.get('BTCUSDT', 'нет')}")
                 return result if result else None
     except Exception as e:
         print(f"❌ Ошибка Binance: {e}")
@@ -504,7 +502,7 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
-# --- /btc (BINANCE) ---
+# --- /btc (С GRAM) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
@@ -522,14 +520,14 @@ async def btc_command(m: types.Message):
         "bitcoin": "🟠",
         "ethereum": "🔷",
         "solana": "🟣",
-        "toncoin": "🔵",
+        "gram": "🔵",      # Вместо toncoin
         "bnb": "🟡"
     }
     name_map = {
         "bitcoin": "Bitcoin (BTC)",
         "ethereum": "Ethereum (ETH)",
         "solana": "Solana (SOL)",
-        "toncoin": "Toncoin (TON)",
+        "gram": "Gram (GRAM)",  # Вместо Toncoin (TON)
         "bnb": "BNB (Binance Coin)"
     }
     text = f"🪙 **Курсы криптовалют**\n\n"
