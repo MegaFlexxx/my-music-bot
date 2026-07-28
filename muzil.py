@@ -6,6 +6,8 @@ import json
 import random
 import aiohttp
 import feedparser
+import re
+import yt_dlp
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -233,7 +235,7 @@ async def get_crypto_prices():
                 if "SOLUSDT" in prices:
                     sol_usd = prices["SOLUSDT"]
                     result["solana"] = {"usd": sol_usd, "eur": sol_usd * usd_to_eur, "rub": sol_usd * usd_to_rub}
-                if "GRAMUSDT" in prices:  # ТЕПЕРЬ GRAM!
+                if "GRAMUSDT" in prices:
                     gram_usd = prices["GRAMUSDT"]
                     result["gram"] = {"usd": gram_usd, "eur": gram_usd * usd_to_eur, "rub": gram_usd * usd_to_rub}
                 if "BNBUSDT" in prices:
@@ -243,6 +245,38 @@ async def get_crypto_prices():
                 return result if result else None
     except Exception as e:
         print(f"❌ Ошибка Binance: {e}")
+        return None
+
+# --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK ---
+async def download_tiktok(url: str) -> str:
+    """Скачивает видео из TikTok по ссылке"""
+    try:
+        ydl_opts = {
+            'outtmpl': 'downloads/%(id)s.%(ext)s',
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+            'format': 'bestvideo+bestaudio/best',
+            'merge_output_format': 'mp4',
+        }
+        
+        if not os.path.exists('downloads'):
+            os.makedirs('downloads')
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+            
+            if os.path.exists(filename):
+                return filename
+            else:
+                for ext in ['.mp4', '.webm', '.mkv']:
+                    alt_name = filename.rsplit('.', 1)[0] + ext
+                    if os.path.exists(alt_name):
+                        return alt_name
+                return None
+    except Exception as e:
+        print(f"❌ Ошибка скачивания TikTok: {e}")
         return None
 
 # --- ПРОМО-МОДУЛЬ ---
@@ -329,7 +363,7 @@ async def show_track(message: types.Message, user_id: int, position: int):
         reply_markup=reply_markup
     )
 
-# --- СКАЧИВАНИЕ ---
+# --- СКАЧИВАНИЕ МУЗЫКИ ---
 async def download_and_send(message: types.Message, track_id: str):
     msg = await message.answer("📥 Ищу трек...")
     try:
@@ -419,7 +453,8 @@ async def start_command(m: types.Message):
         "🦌 Или введи /moose для случайного контента!\n"
         "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
-        "🪙 Или введи /btc для курса криптовалют!"
+        "🪙 Или введи /btc для курса криптовалют!\n"
+        "📱 Или отправь ссылку на TikTok — я скачаю видео!"
     )
 
 @dp.message(Command("stats"))
@@ -502,7 +537,6 @@ async def currency_command(m: types.Message):
             text += f"{emoji} {curr} — {rates[curr]:.2f}\n"
     await m.answer(text)
 
-# --- /btc (С GRAM) ---
 @dp.message(Command("btc"))
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
@@ -520,14 +554,14 @@ async def btc_command(m: types.Message):
         "bitcoin": "🟠",
         "ethereum": "🔷",
         "solana": "🟣",
-        "gram": "🔵",      # Вместо toncoin
+        "gram": "🔵",
         "bnb": "🟡"
     }
     name_map = {
         "bitcoin": "Bitcoin (BTC)",
         "ethereum": "Ethereum (ETH)",
         "solana": "Solana (SOL)",
-        "gram": "Gram (GRAM)",  # Вместо Toncoin (TON)
+        "gram": "Gram (GRAM)",
         "bnb": "BNB (Binance Coin)"
     }
     text = f"🪙 **Курсы криптовалют**\n\n"
@@ -541,11 +575,38 @@ async def btc_command(m: types.Message):
             text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
-# --- ПОИСК ---
+# --- ПОИСК (С TIKTOK) ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
+    
+    # --- ПРОВЕРКА НА TIKTOK ---
+    tiktok_patterns = [
+        r'tiktok\.com',
+        r'vm\.tiktok\.com',
+        r'vt\.tiktok\.com',
+        r'www\.tiktok\.com'
+    ]
+    
+    for pattern in tiktok_patterns:
+        if re.search(pattern, m.text, re.IGNORECASE):
+            await m.answer("📥 Скачиваю видео из TikTok...")
+            filename = await download_tiktok(m.text)
+            if filename and os.path.exists(filename):
+                try:
+                    await m.answer_video(
+                        video=FSInputFile(filename),
+                        caption="🎬 Видео из TikTok\n\n🔥 Скачано ботом Skibidi_sound!"
+                    )
+                    os.remove(filename)
+                except Exception as e:
+                    await m.answer(f"❌ Ошибка отправки видео: {str(e)}")
+            else:
+                await m.answer("❌ Не удалось скачать видео. Попробуй другую ссылку.")
+            return
+    
+    # --- ОБЫЧНЫЙ ПОИСК МУЗЫКИ ---
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
