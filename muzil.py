@@ -247,83 +247,6 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ СКАЧИВАНИЯ YOUTUBE ---
-async def download_youtube(url: str, quality: str = "720p") -> tuple:
-    """Скачивает YouTube видео с выбором качества"""
-    try:
-        formats = {
-            "720p": {
-                'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]',
-                'label': '720p (HD)'
-            },
-            "480p": {
-                'format': 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]',
-                'label': '480p (SD)'
-            },
-            "360p": {
-                'format': 'bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]',
-                'label': '360p (Low)'
-            },
-            "audio": {
-                'format': 'bestaudio/best',
-                'label': 'Только аудио (MP3)'
-            }
-        }
-        
-        ydl_opts = {
-            'outtmpl': 'downloads/%(title)s_%(id)s.%(ext)s',
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': False,
-            'merge_output_format': 'mp4',
-            'format': formats[quality]['format'],
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }] if quality == "audio" else []
-        }
-        
-        if not os.path.exists('downloads'):
-            os.makedirs('downloads')
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
-            
-            if quality == "audio":
-                filename = filename.rsplit('.', 1)[0] + '.mp3'
-            
-            if os.path.exists(filename):
-                return filename, info.get('title', 'Видео')
-            return None, None
-            
-    except Exception as e:
-        print(f"❌ Ошибка YouTube: {e}")
-        return None, None
-
-async def get_video_info(url: str) -> dict:
-    """Получает информацию о видео"""
-    try:
-        ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': True,
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            return {
-                'title': info.get('title', 'Без названия'),
-                'channel': info.get('uploader', 'Неизвестный канал'),
-                'duration': info.get('duration', 0),
-                'thumbnail': info.get('thumbnail', ''),
-                'view_count': info.get('view_count', 0)
-            }
-    except Exception as e:
-        print(f"❌ Ошибка получения инфо: {e}")
-        return None
-
 # --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK ---
 async def download_tiktok(url: str) -> str:
     """Скачивает видео из TikTok по ссылке"""
@@ -353,7 +276,7 @@ async def download_tiktok(url: str) -> str:
                         return alt_name
                 return None
     except Exception as e:
-        print(f"❌ Ошибка TikTok: {e}")
+        print(f"❌ Ошибка скачивания TikTok: {e}")
         return None
 
 # --- ПРОМО-МОДУЛЬ ---
@@ -470,7 +393,7 @@ async def download_and_send(message: types.Message, track_id: str):
         file_size = os.path.getsize(f_name) / (1024 * 1024)
         size_str = f"{file_size:.1f} MB"
         caption = (
-            f"🔥 {track_title}\n🎤 Исполнитель: {artists}\n⏱ Длительность: {duration_str}\n💿 Размер: {size_str}\n\n🎧 Skibidi_sound бахает для тебя!"
+            f"🔥 {track_title}\n🎤 Исполнитель: {artists}\n⏱️ Длительность: {duration_str}\n💿 Размер: {size_str}\n\n🎧 Skibidi_sound бахает для тебя!"
         )
         await message.answer_audio(
             audio=types.FSInputFile(f_name),
@@ -531,7 +454,7 @@ async def start_command(m: types.Message):
         "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
         "🪙 Или введи /btc для курса криптовалют!\n"
-        "📱 Или отправь ссылку на YouTube или TikTok — я скачаю!"
+        "📱 Или отправь ссылку на TikTok — я скачаю видео!"
     )
 
 @dp.message(Command("stats"))
@@ -580,9 +503,9 @@ async def weather_command(m: types.Message):
     if not weather:
         await m.answer(f"❌ Город {city_input} не найден.\n💡 Попробуй написать на английском: /weather Orenburg")
         return
-    emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
-    emoji = emoji_map.get(weather["icon"], "🌡️")
-    text = f"{emoji} Погода в {weather['city']}\n\n🌡️ Температура: {weather['temp']}°C (ощущается как {weather['feels_like']}°C)\n💧 Влажность: {weather['humidity']}%\n💨 Ветер: {weather['wind']} м/с\n☁️ {weather['description']}"
+    emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
+    emoji = emoji_map.get(weather["icon"], "🌡")
+    text = f"{emoji} Погода в {weather['city']}\n\n🌡 Температура: {weather['temp']}°C (ощущается как {weather['feels_like']}°C)\n💧 Влажность: {weather['humidity']}%\n💨 Ветер: {weather['wind']} м/с\n☁️ {weather['description']}"
     await m.answer(text)
 
 @dp.message(Command("currency"))
@@ -652,60 +575,11 @@ async def btc_command(m: types.Message):
             text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
-# --- ПОИСК (С YOUTUBE И TIKTOK) ---
+# --- ПОИСК (С TIKTOK) ---
 @dp.message(F.text)
 async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
-    
-    text_lower = m.text.lower()
-    
-    # --- ПРОВЕРКА НА YOUTUBE ---
-    youtube_patterns = [
-        r'youtube\.com/watch\?v=',
-        r'youtu\.be/',
-        r'youtube\.com/shorts/',
-        r'm\.youtube\.com/'
-    ]
-    
-    for pattern in youtube_patterns:
-        if re.search(pattern, text_lower, re.IGNORECASE):
-            await m.answer("🎬 Получаю информацию о видео...")
-            
-            info = await get_video_info(m.text)
-            if not info:
-                await m.answer("❌ Не удалось получить информацию о видео.")
-                return
-            
-            duration = info['duration']
-            minutes = duration // 60
-            seconds = duration % 60
-            duration_str = f"{minutes}:{seconds:02d}"
-            
-            quality_buttons = [
-                [
-                    types.InlineKeyboardButton(text="720p (HD)", callback_data=f"yt_720p_{m.text}"),
-                    types.InlineKeyboardButton(text="480p (SD)", callback_data=f"yt_480p_{m.text}")
-                ],
-                [
-                    types.InlineKeyboardButton(text="360p (Low)", callback_data=f"yt_360p_{m.text}"),
-                    types.InlineKeyboardButton(text="🎵 Только аудио", callback_data=f"yt_audio_{m.text}")
-                ],
-                [types.InlineKeyboardButton(text="❌ Отмена", callback_data="ignore")]
-            ]
-            
-            reply_markup = types.InlineKeyboardMarkup(inline_keyboard=quality_buttons)
-            
-            await m.answer(
-                f"🎬 **{info['title']}**\n"
-                f"👤 Канал: {info['channel']}\n"
-                f"⏱ Длительность: {duration_str}\n"
-                f"👁 Просмотров: {info['view_count']:,}\n\n"
-                f"📥 Выбери качество для скачивания:",
-                parse_mode="Markdown",
-                reply_markup=reply_markup
-            )
-            return
     
     # --- ПРОВЕРКА НА TIKTOK ---
     tiktok_patterns = [
@@ -716,7 +590,7 @@ async def search_command(m: types.Message):
     ]
     
     for pattern in tiktok_patterns:
-        if re.search(pattern, text_lower, re.IGNORECASE):
+        if re.search(pattern, m.text, re.IGNORECASE):
             await m.answer("📥 Скачиваю видео из TikTok...")
             filename = await download_tiktok(m.text)
             if filename and os.path.exists(filename):
@@ -753,52 +627,7 @@ async def search_command(m: types.Message):
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
-# --- CALLBACK: YOUTUBE ---
-@dp.callback_query(F.data.startswith("yt_"))
-async def youtube_callback(c: types.CallbackQuery):
-    parts = c.data.split("_")
-    quality = parts[1]
-    url = "_".join(parts[2:])
-    
-    await c.answer(f"📥 Скачиваю {quality}...")
-    
-    quality_labels = {
-        "720p": "720p (HD)",
-        "480p": "480p (SD)",
-        "360p": "360p (Low)",
-        "audio": "🎵 Только аудио"
-    }
-    
-    await c.message.edit_text(
-        f"⏳ Скачиваю видео в качестве **{quality_labels[quality]}**...\n"
-        f"🎬 Это может занять некоторое время.",
-        parse_mode="Markdown"
-    )
-    
-    filename, title = await download_youtube(url, quality)
-    
-    if filename and os.path.exists(filename):
-        try:
-            if quality == "audio":
-                await c.message.reply_audio(
-                    audio=FSInputFile(filename),
-                    title=title,
-                    performer="YouTube",
-                    caption=f"🎵 **{title}**\n\n🔥 Скачано ботом Skibidi_sound!"
-                )
-            else:
-                await c.message.reply_video(
-                    video=FSInputFile(filename),
-                    caption=f"🎬 **{title}**\n\n🔥 Скачано ботом Skibidi_sound!"
-                )
-            os.remove(filename)
-            await c.message.delete()
-        except Exception as e:
-            await c.message.edit_text(f"❌ Ошибка отправки: {str(e)}")
-    else:
-        await c.message.edit_text("❌ Не удалось скачать видео. Попробуй позже.")
-
-# --- CALLBACK: МУЗЫКА ---
+# --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
 async def download_callback(c: types.CallbackQuery):
     if not await check_access(c.from_user.id):
