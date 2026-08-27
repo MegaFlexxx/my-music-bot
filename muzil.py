@@ -7,11 +7,10 @@ import random
 import aiohttp
 import feedparser
 import re
-import yt_dlp
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import BotCommand, BotCommandScopeDefault, FSInputFile
+from aiogram.types import BotCommand, BotCommandScopeDefault, FSInputFile, WebAppInfo
 from aiogram.client.session.aiohttp import AiohttpSession
 from yandex_music import Client
 from mutagen.mp3 import MP3
@@ -35,6 +34,9 @@ apply_patch()
 # --- КОНФИГ ---
 TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU" 
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
+
+# ⚠️ ЗАМЕНИ ЭТОТ URL НА СВОЙ РЕАЛЬНЫЙ АДРЕС RENDER (например: https://my-music-bot-bzq4.onrender.com)
+RENDER_URL = "https://my-music-bot-bzq4.onrender.com" 
 
 # --- КАНАЛ ---
 REQUIRED_CHANNEL_ID = -1001745381023
@@ -123,35 +125,20 @@ def get_new_users_today():
 WEATHER_API_KEY = "abb48920329a46d512884f6c84c71a51"
 
 CITY_IDS = {
-    "оренбург": 515853,
-    "orenburg": 515853,
-    "москва": 524901,
-    "moscow": 524901,
-    "санкт-петербург": 498817,
-    "saint petersburg": 498817,
-    "новосибирск": 1496747,
-    "екатеринбург": 1486209,
-    "казань": 551487,
-    "нижний новгород": 520555,
-    "челябинск": 1508291,
-    "омск": 1496153,
-    "самара": 499099,
-    "ростов-на-дону": 501175,
-    "уфа": 479561,
-    "красноярск": 1502026,
-    "пермь": 511196,
-    "воронеж": 472045,
-    "волгоград": 472757,
-    "краснодар": 542420,
-    "сочи": 491422,
-    "лондон": 2643743,
-    "london": 2643743,
-    "париж": 2988507,
-    "paris": 2988507,
-    "берлин": 2950159,
-    "berlin": 2950159,
-    "нью-йорк": 5128581,
-    "new york": 5128581,
+    "оренбург": 515853, "orenburg": 515853,
+    "москва": 524901, "moscow": 524901,
+    "санкт-петербург": 498817, "saint petersburg": 498817,
+    "новосибирск": 1496747, "екатеринбург": 1486209,
+    "казань": 551487, "нижний новгород": 520555,
+    "челябинск": 1508291, "омск": 1496153,
+    "самара": 499099, "ростов-на-дону": 501175,
+    "уфа": 479561, "красноярск": 1502026,
+    "пермь": 511196, "воронеж": 472045,
+    "волгоград": 472757, "краснодар": 542420,
+    "сочи": 491422, "лондон": 2643743, "london": 2643743,
+    "париж": 2988507, "paris": 2988507,
+    "берлин": 2950159, "berlin": 2950159,
+    "нью-йорк": 5128581, "new york": 5128581,
 }
 
 async def get_weather_by_city(city: str):
@@ -179,12 +166,9 @@ async def get_weather_by_city(city: str):
             humidity = data["main"]["humidity"]
             wind_speed = data["wind"]["speed"]
             return {
-                "city": data["name"],
-                "description": weather_desc,
-                "temp": temp,
-                "feels_like": feels_like,
-                "humidity": humidity,
-                "wind": wind_speed,
+                "city": data["name"], "description": weather_desc,
+                "temp": temp, "feels_like": feels_like,
+                "humidity": humidity, "wind": wind_speed,
                 "icon": data["weather"][0]["icon"]
             }
 
@@ -198,12 +182,9 @@ async def get_currency_rates(base: str = "USD"):
                     return None
                 data = await response.json()
                 rates = {
-                    "USD": data["rates"].get("USD", 0),
-                    "EUR": data["rates"].get("EUR", 0),
-                    "RUB": data["rates"].get("RUB", 0),
-                    "CNY": data["rates"].get("CNY", 0),
-                    "GBP": data["rates"].get("GBP", 0),
-                    "KZT": data["rates"].get("KZT", 0),
+                    "USD": data["rates"].get("USD", 0), "EUR": data["rates"].get("EUR", 0),
+                    "RUB": data["rates"].get("RUB", 0), "CNY": data["rates"].get("CNY", 0),
+                    "GBP": data["rates"].get("GBP", 0), "KZT": data["rates"].get("KZT", 0),
                     "UAH": data["rates"].get("UAH", 0),
                 }
                 return {"base": base, "date": data.get("date", ""), "rates": rates}
@@ -247,36 +228,32 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK ---
+# --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK (РАБОЧИЙ ЧЕРЕЗ API) ---
 async def download_tiktok(url: str) -> str:
-    """Скачивает видео из TikTok по ссылке"""
+    """Скачивает видео из TikTok через API. Никаких boolean в params!"""
     try:
-        ydl_opts = {
-            'outtmpl': 'downloads/%(id)s.%(ext)s',
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': False,
-            'format': 'bestvideo+bestaudio/best',
-            'merge_output_format': 'mp4',
-        }
+        api_url = "https://api.tikwm.com/api/?hd=1"
+        params = {"url": url}
         
-        if not os.path.exists('downloads'):
-            os.makedirs('downloads')
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
-            
-            if os.path.exists(filename):
-                return filename
-            else:
-                for ext in ['.mp4', '.webm', '.mkv']:
-                    alt_name = filename.rsplit('.', 1)[0] + ext
-                    if os.path.exists(alt_name):
-                        return alt_name
-                return None
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data.get('code') == 0:
+                        video_url = data['data']['play'] 
+                        
+                        async with session.get(video_url) as video_resp:
+                            if video_resp.status == 200:
+                                if not os.path.exists('downloads'):
+                                    os.makedirs('downloads')
+                                
+                                filename = f"downloads/tiktok_{random.randint(10000, 99999)}.mp4"
+                                with open(filename, 'wb') as f:
+                                    f.write(await video_resp.read())
+                                return filename
+        return None
     except Exception as e:
-        print(f"❌ Ошибка скачивания TikTok: {e}")
+        print(f"❌ Ошибка скачивания TikTok через API: {e}")
         return None
 
 # --- ПРОМО-МОДУЛЬ ---
@@ -413,15 +390,21 @@ async def download_and_send(message: types.Message, track_id: str):
 async def handle(request): 
     return web.Response(text="Бот активен")
 
+async def handle_app(request):
+    # Отдаём наш HTML файл для Web App
+    return web.FileResponse('index.html')
+
 async def start_web_server():
     app = web.Application()
     app.add_routes([web.get('/', handle)])
+    app.add_routes([web.get('/app', handle_app)]) # <-- ДОБАВЛЕНО ДЛЯ WEB APP
     runner = web.AppRunner(app)
     await runner.setup()
     port = int(os.environ.get('PORT', 8080))
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
     print(f"✅ Веб-сервер на порту {port}")
+    print(f"✅ Web App доступен по адресу: {RENDER_URL}/app")
 
 # --- МЕНЮ ---
 async def set_commands():
@@ -437,7 +420,6 @@ async def set_commands():
     print("✅ Меню команд установлено!")
 
 # --- КОМАНДЫ ---
-
 @dp.message(CommandStart())
 async def start_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
@@ -447,14 +429,18 @@ async def start_command(m: types.Message):
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
+    
+    # Кнопка для открытия Web App
+    web_app_button = types.InlineKeyboardButton(
+        text="🚀 Открыть меню (Web App)", 
+        web_app=WebAppInfo(url=f"{RENDER_URL}/app")
+    )
+    
     await m.answer(
-        "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
-        "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
-        "🦌 Или введи /moose для случайного контента!\n"
-        "🌦 Или введи /weather Оренбург для погоды!\n"
-        "💰 Или введи /currency для курса валют!\n"
-        "🪙 Или введи /btc для курса криптовалют!\n"
-        "📱 Или отправь ссылку на TikTok — я скачаю видео!"
+        "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
+        "👇 Жми на кнопку ниже, чтобы открыть крутое меню, или просто напиши мне!",
+        parse_mode="Markdown",
+        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[web_app_button]])
     )
 
 @dp.message(Command("stats"))
@@ -551,18 +537,11 @@ async def btc_command(m: types.Message):
         await m.answer(f"❌ Не удалось загрузить курсы криптовалют.\n💡 Попробуй позже.")
         return
     emoji_map = {
-        "bitcoin": "🟠",
-        "ethereum": "🔷",
-        "solana": "🟣",
-        "gram": "🔵",
-        "bnb": "🟡"
+        "bitcoin": "🟠", "ethereum": "🔷", "solana": "🟣", "gram": "🔵", "bnb": "🟡"
     }
     name_map = {
-        "bitcoin": "Bitcoin (BTC)",
-        "ethereum": "Ethereum (ETH)",
-        "solana": "Solana (SOL)",
-        "gram": "Gram (GRAM)",
-        "bnb": "BNB (Binance Coin)"
+        "bitcoin": "Bitcoin (BTC)", "ethereum": "Ethereum (ETH)", "solana": "Solana (SOL)",
+        "gram": "Gram (GRAM)", "bnb": "BNB (Binance Coin)"
     }
     text = f"🪙 **Курсы криптовалют**\n\n"
     for key, coin in data.items():
@@ -581,12 +560,8 @@ async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
-    # --- ПРОВЕРКА НА TIKTOK ---
     tiktok_patterns = [
-        r'tiktok\.com',
-        r'vm\.tiktok\.com',
-        r'vt\.tiktok\.com',
-        r'www\.tiktok\.com'
+        r'tiktok\.com', r'vm\.tiktok\.com', r'vt\.tiktok\.com', r'www\.tiktok\.com'
     ]
     
     for pattern in tiktok_patterns:
@@ -606,7 +581,6 @@ async def search_command(m: types.Message):
                 await m.answer("❌ Не удалось скачать видео. Попробуй другую ссылку.")
             return
     
-    # --- ОБЫЧНЫЙ ПОИСК МУЗЫКИ ---
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
@@ -626,6 +600,14 @@ async def search_command(m: types.Message):
         await show_track(m, user_id, 0)
     else:
         await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
+
+# --- ОБРАБОТКА ДАННЫХ ИЗ WEB APP ---
+@dp.message(F.web_app_data)
+async def web_app_data_handler(message: types.Message):
+    data = message.web_app_data.data
+    # Имитируем, что юзер написал эту команду, и передаём управление в search_command
+    message.text = data
+    await search_command(message)
 
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
