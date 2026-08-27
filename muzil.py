@@ -36,7 +36,7 @@ TELEGRAM_TOKEN = "8632244991:AAETPh8Qsyae-d-Zos5d_QBdua6wEdFR3IU"
 YANDEX_TOKEN = "y0__wgBEJT5nK4GGN74BiCym9WjGDDFi8SaCKwoXV-dgMoPE14J0dZHJkGMOiQG"
 
 # ⚠️ ЗАМЕНИ ЭТОТ URL НА СВОЙ РЕАЛЬНЫЙ АДРЕС RENDER
-RENDER_URL = "https://my-music-bot-bzq4.onrender.com" 
+RENDER_URL = "https://my-music-bot-bzg4.onrender.com" 
 
 # --- КАНАЛ ---
 REQUIRED_CHANNEL_ID = -1001745381023
