@@ -436,10 +436,10 @@ async def start_command(m: types.Message):
         web_app=WebAppInfo(url=f"{RENDER_URL}/app")
     )
     
+    # ИСПРАВЛЕНО: убрали parse_mode и **, чтобы подчёркивание в Skibidi_sound не ломало парсер Телеграма
     await m.answer(
-        "🎵 **Skibidi_sound** — твой музыкальный помощник!\n\n"
+        "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
         "👇 Жми на кнопку ниже, чтобы открыть крутое меню, или просто напиши мне!",
-        parse_mode="Markdown",
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[web_app_button]])
     )
 
