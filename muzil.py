@@ -7,6 +7,7 @@ import random
 import aiohttp
 import feedparser
 import re
+import yt_dlp
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -122,20 +123,35 @@ def get_new_users_today():
 WEATHER_API_KEY = "abb48920329a46d512884f6c84c71a51"
 
 CITY_IDS = {
-    "оренбург": 515853, "orenburg": 515853,
-    "москва": 524901, "moscow": 524901,
-    "санкт-петербург": 498817, "saint petersburg": 498817,
-    "новосибирск": 1496747, "екатеринбург": 1486209,
-    "казань": 551487, "нижний новгород": 520555,
-    "челябинск": 1508291, "омск": 1496153,
-    "самара": 499099, "ростов-на-дону": 501175,
-    "уфа": 479561, "красноярск": 1502026,
-    "пермь": 511196, "воронеж": 472045,
-    "волгоград": 472757, "краснодар": 542420,
-    "сочи": 491422, "лондон": 2643743, "london": 2643743,
-    "париж": 2988507, "paris": 2988507,
-    "берлин": 2950159, "berlin": 2950159,
-    "нью-йорк": 5128581, "new york": 5128581,
+    "оренбург": 515853,
+    "orenburg": 515853,
+    "москва": 524901,
+    "moscow": 524901,
+    "санкт-петербург": 498817,
+    "saint petersburg": 498817,
+    "новосибирск": 1496747,
+    "екатеринбург": 1486209,
+    "казань": 551487,
+    "нижний новгород": 520555,
+    "челябинск": 1508291,
+    "омск": 1496153,
+    "самара": 499099,
+    "ростов-на-дону": 501175,
+    "уфа": 479561,
+    "красноярск": 1502026,
+    "пермь": 511196,
+    "воронеж": 472045,
+    "волгоград": 472757,
+    "краснодар": 542420,
+    "сочи": 491422,
+    "лондон": 2643743,
+    "london": 2643743,
+    "париж": 2988507,
+    "paris": 2988507,
+    "берлин": 2950159,
+    "berlin": 2950159,
+    "нью-йорк": 5128581,
+    "new york": 5128581,
 }
 
 async def get_weather_by_city(city: str):
@@ -163,9 +179,12 @@ async def get_weather_by_city(city: str):
             humidity = data["main"]["humidity"]
             wind_speed = data["wind"]["speed"]
             return {
-                "city": data["name"], "description": weather_desc,
-                "temp": temp, "feels_like": feels_like,
-                "humidity": humidity, "wind": wind_speed,
+                "city": data["name"],
+                "description": weather_desc,
+                "temp": temp,
+                "feels_like": feels_like,
+                "humidity": humidity,
+                "wind": wind_speed,
                 "icon": data["weather"][0]["icon"]
             }
 
@@ -179,9 +198,12 @@ async def get_currency_rates(base: str = "USD"):
                     return None
                 data = await response.json()
                 rates = {
-                    "USD": data["rates"].get("USD", 0), "EUR": data["rates"].get("EUR", 0),
-                    "RUB": data["rates"].get("RUB", 0), "CNY": data["rates"].get("CNY", 0),
-                    "GBP": data["rates"].get("GBP", 0), "KZT": data["rates"].get("KZT", 0),
+                    "USD": data["rates"].get("USD", 0),
+                    "EUR": data["rates"].get("EUR", 0),
+                    "RUB": data["rates"].get("RUB", 0),
+                    "CNY": data["rates"].get("CNY", 0),
+                    "GBP": data["rates"].get("GBP", 0),
+                    "KZT": data["rates"].get("KZT", 0),
                     "UAH": data["rates"].get("UAH", 0),
                 }
                 return {"base": base, "date": data.get("date", ""), "rates": rates}
@@ -225,33 +247,36 @@ async def get_crypto_prices():
         print(f"❌ Ошибка Binance: {e}")
         return None
 
-# --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK (ЯДЕРНЫЙ ВАРИАНТ, БЕЗ BOOL) ---
+# --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK ---
 async def download_tiktok(url: str) -> str:
-    """Скачивает видео из TikTok через API. Никаких boolean в params!"""
+    """Скачивает видео из TikTok по ссылке"""
     try:
-        # Передаем hd прямо в URL, чтобы aiohttp не парился с типами
-        api_url = "https://api.tikwm.com/api/?hd=1"
-        params = {"url": url} # Только чистая строка
+        ydl_opts = {
+            'outtmpl': 'downloads/%(id)s.%(ext)s',
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+            'format': 'bestvideo+bestaudio/best',
+            'merge_output_format': 'mp4',
+        }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, params=params) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if data.get('code') == 0:
-                        video_url = data['data']['play'] 
-                        
-                        async with session.get(video_url) as video_resp:
-                            if video_resp.status == 200:
-                                if not os.path.exists('downloads'):
-                                    os.makedirs('downloads')
-                                
-                                filename = f"downloads/tiktok_{random.randint(10000, 99999)}.mp4"
-                                with open(filename, 'wb') as f:
-                                    f.write(await video_resp.read())
-                                return filename
-        return None
+        if not os.path.exists('downloads'):
+            os.makedirs('downloads')
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+            
+            if os.path.exists(filename):
+                return filename
+            else:
+                for ext in ['.mp4', '.webm', '.mkv']:
+                    alt_name = filename.rsplit('.', 1)[0] + ext
+                    if os.path.exists(alt_name):
+                        return alt_name
+                return None
     except Exception as e:
-        print(f"❌ Ошибка скачивания TikTok через API: {e}")
+        print(f"❌ Ошибка скачивания TikTok: {e}")
         return None
 
 # --- ПРОМО-МОДУЛЬ ---
@@ -333,7 +358,7 @@ async def show_track(message: types.Message, user_id: int, position: int):
     buttons.append([types.InlineKeyboardButton(text=f"📌 {position+1}/{total}", callback_data="ignore")])
     reply_markup = types.InlineKeyboardMarkup(inline_keyboard=buttons)
     await message.answer(
-        f" **{track.title}**\n **Исполнитель:** {artists}\n **Результат {position+1} из {total}**\n\n👇 Нажми на кнопку, чтобы скачать",
+        f"🎵 **{track.title}**\n👤 **Исполнитель:** {artists}\n📌 **Результат {position+1} из {total}**\n\n👇 Нажми на кнопку, чтобы скачать",
         parse_mode="Markdown",
         reply_markup=reply_markup
     )
@@ -353,13 +378,13 @@ async def download_and_send(message: types.Message, track_id: str):
             full_cover_url = cover_url if cover_url.startswith('http') else "https:" + cover_url
             with open(c_name, 'wb') as f: 
                 f.write(requests.get(full_cover_url, timeout=10).content)
-        Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
-        audio = MP3(f_name, ID3=ID3)
-        if audio.tags is None: 
-            audio.add_tags(ID3=ID3)
-        with open(c_name, 'rb') as img:
-            audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
-        audio.save(v2_version=3)
+            Image.open(c_name).convert('RGB').resize((400, 400)).save(c_name, "JPEG", quality=85)
+            audio = MP3(f_name, ID3=ID3)
+            if audio.tags is None: 
+                audio.add_tags(ID3=ID3)
+            with open(c_name, 'rb') as img:
+                audio.tags.add(APIC(encoding=3, mime='image/jpeg', type=3, desc='Cover', data=img.read()))
+            audio.save(v2_version=3)
         artists = ", ".join([a.name for a in track.artists])
         track_title = track.title
         duration_sec = track.duration_ms // 1000
@@ -402,8 +427,8 @@ async def start_web_server():
 async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
-        BotCommand(command="stats", description=" Статистика (админ)"),
-        BotCommand(command="moose", description=" Случайный трек/фото"),
+        BotCommand(command="stats", description="📊 Статистика (админ)"),
+        BotCommand(command="moose", description="🦌 Случайный трек/фото"),
         BotCommand(command="weather", description="🌦 Погода в городе"),
         BotCommand(command="currency", description="💰 Курс валют"),
         BotCommand(command="btc", description="🪙 Курс криптовалют"),
@@ -412,22 +437,23 @@ async def set_commands():
     print("✅ Меню команд установлено!")
 
 # --- КОМАНДЫ ---
+
 @dp.message(CommandStart())
 async def start_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text=" Подписаться на канал", url=CHANNEL_LINK)]])
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     await m.answer(
         "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
-        " Отправь название трека или исполнителя, и я найду музыку!\n"
+        "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
         "🦌 Или введи /moose для случайного контента!\n"
-        " Или введи /weather Оренбург для погоды!\n"
+        "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
-        " Или введи /btc для курса криптовалют!\n"
+        "🪙 Или введи /btc для курса криптовалют!\n"
         "📱 Или отправь ссылку на TikTok — я скачаю видео!"
     )
 
@@ -441,7 +467,7 @@ async def stats_command(m: types.Message):
     new_today = get_new_users_today()
     stats = load_stats()
     sorted_users = sorted(stats.items(), key=lambda x: x[1]["last_seen"], reverse=True)[:5]
-    text = f"📊 **Статистика бота**\n\n👥 **Всего пользователей:** {total}\n **Новых сегодня:** {new_today}\n **Активных сегодня:** {today}\n\n📋 **Последние 5 пользователей:**\n"
+    text = f"📊 **Статистика бота**\n\n👥 **Всего пользователей:** {total}\n🆕 **Новых сегодня:** {new_today}\n📆 **Активных сегодня:** {today}\n\n📋 **Последние 5 пользователей:**\n"
     for user_id, data in sorted_users:
         name = data.get("first_name") or data.get("username") or "Аноним"
         last_seen = datetime.fromisoformat(data["last_seen"]).strftime("%d.%m %H:%M")
@@ -453,7 +479,7 @@ async def moose_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
@@ -469,7 +495,7 @@ async def weather_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
             "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text=" Подписаться на канал", url=CHANNEL_LINK)]])
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     await m.answer(f"🌦 Ищу погоду в {city_input}...")
@@ -477,7 +503,7 @@ async def weather_command(m: types.Message):
     if not weather:
         await m.answer(f"❌ Город {city_input} не найден.\n💡 Попробуй написать на английском: /weather Orenburg")
         return
-    emoji_map = {"01d": "️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
+    emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
     emoji = emoji_map.get(weather["icon"], "🌡")
     text = f"{emoji} Погода в {weather['city']}\n\n🌡 Температура: {weather['temp']}°C (ощущается как {weather['feels_like']}°C)\n💧 Влажность: {weather['humidity']}%\n💨 Ветер: {weather['wind']} м/с\n☁️ {weather['description']}"
     await m.answer(text)
@@ -499,7 +525,7 @@ async def currency_command(m: types.Message):
     await m.answer(f"💰 Загружаю курсы валют...")
     data = await get_currency_rates(base)
     if not data:
-        await m.answer(f" Не удалось загрузить курсы валют.\n💡 Попробуй позже.")
+        await m.answer(f"❌ Не удалось загрузить курсы валют.\n💡 Попробуй позже.")
         return
     rates = data["rates"]
     emoji_map = {"USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "CNY": "🇨🇳", "GBP": "🇬🇧", "KZT": "🇰🇿", "UAH": "🇺🇦"}
@@ -525,11 +551,18 @@ async def btc_command(m: types.Message):
         await m.answer(f"❌ Не удалось загрузить курсы криптовалют.\n💡 Попробуй позже.")
         return
     emoji_map = {
-        "bitcoin": "🟠", "ethereum": "", "solana": "🟣", "gram": "🔵", "bnb": ""
+        "bitcoin": "🟠",
+        "ethereum": "🔷",
+        "solana": "🟣",
+        "gram": "🔵",
+        "bnb": "🟡"
     }
     name_map = {
-        "bitcoin": "Bitcoin (BTC)", "ethereum": "Ethereum (ETH)", "solana": "Solana (SOL)",
-        "gram": "Gram (GRAM)", "bnb": "BNB (Binance Coin)"
+        "bitcoin": "Bitcoin (BTC)",
+        "ethereum": "Ethereum (ETH)",
+        "solana": "Solana (SOL)",
+        "gram": "Gram (GRAM)",
+        "bnb": "BNB (Binance Coin)"
     }
     text = f"🪙 **Курсы криптовалют**\n\n"
     for key, coin in data.items():
@@ -539,7 +572,7 @@ async def btc_command(m: types.Message):
             usd = coin.get("usd", 0)
             eur = coin.get("eur", 0)
             rub = coin.get("rub", 0)
-            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
+            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
 # --- ПОИСК (С TIKTOK) ---
@@ -548,8 +581,12 @@ async def search_command(m: types.Message):
     if m.text.startswith('/'):
         return
     
+    # --- ПРОВЕРКА НА TIKTOK ---
     tiktok_patterns = [
-        r'tiktok\.com', r'vm\.tiktok\.com', r'vt\.tiktok\.com', r'www\.tiktok\.com'
+        r'tiktok\.com',
+        r'vm\.tiktok\.com',
+        r'vt\.tiktok\.com',
+        r'www\.tiktok\.com'
     ]
     
     for pattern in tiktok_patterns:
@@ -560,7 +597,7 @@ async def search_command(m: types.Message):
                 try:
                     await m.answer_video(
                         video=FSInputFile(filename),
-                        caption=" Видео из TikTok\n\n🔥 Скачано ботом Skibidi_sound!"
+                        caption="🎬 Видео из TikTok\n\n🔥 Скачано ботом Skibidi_sound!"
                     )
                     os.remove(filename)
                 except Exception as e:
@@ -569,10 +606,11 @@ async def search_command(m: types.Message):
                 await m.answer("❌ Не удалось скачать видео. Попробуй другую ссылку.")
             return
     
+    # --- ОБЫЧНЫЙ ПОИСК МУЗЫКИ ---
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
@@ -622,7 +660,7 @@ async def reset_menu():
         await bot.set_chat_menu_button(menu_button=None)
         print("✅ Кнопка меню сброшена!")
     except Exception as e:
-        print(f" Ошибка сброса: {e}")
+        print(f"❌ Ошибка сброса: {e}")
 
 async def main():
     await reset_menu()
