@@ -7,7 +7,6 @@ import random
 import aiohttp
 import feedparser
 import re
-import yt_dlp
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandStart
@@ -244,7 +243,7 @@ async def get_crypto_prices():
                 
                 return result if result else None
     except Exception as e:
-        print(f" Ошибка Binance: {e}")
+        print(f"❌ Ошибка Binance: {e}")
         return None
 
 # --- МОДУЛЬ СКАЧИВАНИЯ TIKTOK (ЧЕРЕЗ API, РАБОТАЕТ НА RENDER) ---
@@ -255,7 +254,7 @@ async def download_tiktok(url: str) -> str:
         params = {
             "url": url,
             "hd": 1,
-            "cookie": True
+            "cookie": "true"  # ← ИСПРАВЛЕНО: строка вместо boolean
         }
         
         async with aiohttp.ClientSession() as session:
@@ -398,7 +397,7 @@ async def download_and_send(message: types.Message, track_id: str):
         file_size = os.path.getsize(f_name) / (1024 * 1024)
         size_str = f"{file_size:.1f} MB"
         caption = (
-            f" {track_title}\n🎤 Исполнитель: {artists}\n⏱️ Длительность: {duration_str}\n💿 Размер: {size_str}\n\n🎧 Skibidi_sound бахает для тебя!"
+            f"🔥 {track_title}\n🎤 Исполнитель: {artists}\n⏱️ Длительность: {duration_str}\n💿 Размер: {size_str}\n\n🎧 Skibidi_sound бахает для тебя!"
         )
         await message.answer_audio(
             audio=types.FSInputFile(f_name),
@@ -432,10 +431,10 @@ async def start_web_server():
 async def set_commands():
     commands = [
         BotCommand(command="start", description="🚀 Запустить бота"),
-        BotCommand(command="stats", description="📊 Статистика (админ)"),
-        BotCommand(command="moose", description="🦌 Случайный трек/фото"),
+        BotCommand(command="stats", description=" Статистика (админ)"),
+        BotCommand(command="moose", description=" Случайный трек/фото"),
         BotCommand(command="weather", description="🌦 Погода в городе"),
-        BotCommand(command="currency", description=" Курс валют"),
+        BotCommand(command="currency", description="💰 Курс валют"),
         BotCommand(command="btc", description="🪙 Курс криптовалют"),
     ]
     await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
@@ -456,10 +455,10 @@ async def start_command(m: types.Message):
         "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
         "🔥 Отправь название трека или исполнителя, и я найду музыку!\n"
         "🦌 Или введи /moose для случайного контента!\n"
-        " Или введи /weather Оренбург для погоды!\n"
+        "🌦 Или введи /weather Оренбург для погоды!\n"
         "💰 Или введи /currency для курса валют!\n"
         "🪙 Или введи /btc для курса криптовалют!\n"
-        " Или отправь ссылку на TikTok — я скачаю видео!"
+        "📱 Или отправь ссылку на TikTok — я скачаю видео!"
     )
 
 @dp.message(Command("stats"))
@@ -472,7 +471,7 @@ async def stats_command(m: types.Message):
     new_today = get_new_users_today()
     stats = load_stats()
     sorted_users = sorted(stats.items(), key=lambda x: x[1]["last_seen"], reverse=True)[:5]
-    text = f" **Статистика бота**\n\n👥 **Всего пользователей:** {total}\n🆕 **Новых сегодня:** {new_today}\n📆 **Активных сегодня:** {today}\n\n📋 **Последние 5 пользователей:**\n"
+    text = f"📊 **Статистика бота**\n\n **Всего пользователей:** {total}\n **Новых сегодня:** {new_today}\n📆 **Активных сегодня:** {today}\n\n📋 **Последние 5 пользователей:**\n"
     for user_id, data in sorted_users:
         name = data.get("first_name") or data.get("username") or "Аноним"
         last_seen = datetime.fromisoformat(data["last_seen"]).strftime("%d.%m %H:%M")
@@ -494,12 +493,12 @@ async def moose_command(m: types.Message):
 async def weather_command(m: types.Message):
     args = m.text.split(maxsplit=1)
     if len(args) < 2:
-        await m.answer("🌦 Укажи город!\nНапример: /weather Оренбург или /weather Orenburg")
+        await m.answer(" Укажи город!\nНапример: /weather Оренбург или /weather Orenburg")
         return
     city_input = args[1].strip()
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
@@ -508,7 +507,7 @@ async def weather_command(m: types.Message):
     if not weather:
         await m.answer(f" Город {city_input} не найден.\n Попробуй написать на английском: /weather Orenburg")
         return
-    emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
+    emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "", "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
     emoji = emoji_map.get(weather["icon"], "🌡")
     text = f"{emoji} Погода в {weather['city']}\n\n Температура: {weather['temp']}°C (ощущается как {weather['feels_like']}°C)\n💧 Влажность: {weather['humidity']}%\n💨 Ветер: {weather['wind']} м/с\n☁️ {weather['description']}"
     await m.answer(text)
@@ -517,15 +516,15 @@ async def weather_command(m: types.Message):
 async def currency_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
-            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text=" Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     args = m.text.split(maxsplit=1)
     base = args[1].strip().upper() if len(args) > 1 else "USD"
     allowed = ["USD", "EUR", "RUB", "CNY", "GBP", "KZT", "UAH"]
     if base not in allowed:
-        await m.answer(f"❌ Валюта {base} не поддерживается.\n Доступные валюты: {', '.join(allowed)}\nПример: /currency USD")
+        await m.answer(f"❌ Валюта {base} не поддерживается.\n💡 Доступные валюты: {', '.join(allowed)}\nПример: /currency USD")
         return
     await m.answer(f"💰 Загружаю курсы валют...")
     data = await get_currency_rates(base)
@@ -533,8 +532,8 @@ async def currency_command(m: types.Message):
         await m.answer(f"❌ Не удалось загрузить курсы валют.\n💡 Попробуй позже.")
         return
     rates = data["rates"]
-    emoji_map = {"USD": "🇺🇸", "EUR": "🇪", "RUB": "🇷", "CNY": "🇨", "GBP": "🇬", "KZT": "🇰🇿", "UAH": "🇦"}
-    text = f" Курсы валют (база: {data['base']})\n📅 {data['date']}\n\n"
+    emoji_map = {"USD": "🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "CNY": "🇨🇳", "GBP": "🇬🇧", "KZT": "🇿", "UAH": "🇦"}
+    text = f"💰 Курсы валют (база: {data['base']})\n📅 {data['date']}\n\n"
     main_currencies = ["RUB", "EUR", "USD", "CNY", "GBP", "KZT", "UAH"]
     for curr in main_currencies:
         if curr in rates:
@@ -546,7 +545,7 @@ async def currency_command(m: types.Message):
 async def btc_command(m: types.Message):
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
@@ -560,7 +559,7 @@ async def btc_command(m: types.Message):
         "ethereum": "🔷",
         "solana": "🟣",
         "gram": "🔵",
-        "bnb": ""
+        "bnb": "🟡"
     }
     name_map = {
         "bitcoin": "Bitcoin (BTC)",
@@ -577,7 +576,7 @@ async def btc_command(m: types.Message):
             usd = coin.get("usd", 0)
             eur = coin.get("eur", 0)
             rub = coin.get("rub", 0)
-            text += f"{emoji} **{name}**\n   🇺 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷 {rub:,.0f} ₽\n\n"
+            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
 # --- ПОИСК (С TIKTOK) ---
@@ -602,7 +601,7 @@ async def search_command(m: types.Message):
                 try:
                     await m.answer_video(
                         video=FSInputFile(filename),
-                        caption=" Видео из TikTok\n\n🔥 Скачано ботом Skibidi_sound!"
+                        caption="🎬 Видео из TikTok\n\n🔥 Скачано ботом Skibidi_sound!"
                     )
                     os.remove(filename)
                 except Exception as e:
@@ -615,11 +614,11 @@ async def search_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
-    print(f" Ищу: {m.text}")
+    print(f"🔍 Ищу: {m.text}")
     if "/track/" in m.text:
         await download_and_send(m, m.text.split("/track/")[1].split("?")[0])
         return
@@ -630,7 +629,7 @@ async def search_command(m: types.Message):
         user_current_position[user_id] = 0
         await show_track(m, user_id, 0)
     else:
-        await m.answer(" Ничего не найдено. Попробуй написать по-другому.")
+        await m.answer("❌ Ничего не найдено. Попробуй написать по-другому.")
 
 # --- CALLBACK ---
 @dp.callback_query(F.data.startswith("down_"))
@@ -665,7 +664,7 @@ async def reset_menu():
         await bot.set_chat_menu_button(menu_button=None)
         print("✅ Кнопка меню сброшена!")
     except Exception as e:
-        print(f" Ошибка сброса: {e}")
+        print(f"❌ Ошибка сброса: {e}")
 
 async def main():
     await reset_menu()
