@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skibidi Sound</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: radial-gradient(circle at top, #1a0033, #000);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 20px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #b026ff, #00f0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(176, 38, 255, 0.5);
+            letter-spacing: 2px;
+        }
+        .header p {
+            color: #888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            background: rgba(176, 38, 255, 0.2);
+            border-color: #b026ff;
+            box-shadow: 0 0 15px rgba(176, 38, 255, 0.4);
+        }
+        .btn-icon { font-size: 32px; }
+        .btn-text { font-size: 14px; font-weight: 600; color: #eee; }
+        
+        .full-width { grid-column: span 2; }
+        
+        .footer {
+            margin-top: auto;
+            padding-top: 30px;
+            color: #555;
+            font-size: 12px;
+            text-align: center;
+        }
+        .glitch {
+            animation: glitch 3s infinite;
+        }
+        @keyframes glitch {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            52% { opacity: 0.2; }
+            54% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="glitch">SKIBIDI SOUND</h1>
+        <p>Big Penis Bro Gang 💀🥀</p>
+    </div>
+
+    <div class="grid">
+        <div class="btn" onclick="sendCommand('/moose')">
+            <span class="btn-icon">🦌</span>
+            <span class="btn-text">Рандом</span>
+        </div>
+        <div class="btn" onclick="sendCommand('/weather')">
+            <span class="btn-icon">🌦</span>
+            <span class="btn-text">Погода</span>
+        </div>
+        <div class="btn" onclick="sendCommand('/currency')">
+            <span class="btn-icon">💰</span>
+            <span class="btn-text">Валюты</span>
+        </div>
+        <div class="btn" onclick="sendCommand('/btc')">
+            <span class="btn-icon"></span>
+            <span class="btn-text">Крипта</span>
+        </div>
+        <div class="btn full-width" onclick="sendCommand('/stats')">
+            <span class="btn-icon">📊</span>
+            <span class="btn-text">Статистика (Админ)</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        v1.0 // Render // Python
+    </div>
+
+    <script>
+        // Инициализация Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Разворачиваем на весь экран
+
+        // Адаптация под тему телеграма (на всякий случай, хотя у нас свой дизайн)
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#0a0a0a';
+
+        function sendCommand(command) {
+            // Вибрация при нажатии (если поддерживается)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+            
+            // Отправляем текст боту и закрываем окно
+            tg.sendData(command);
+        }
+    </script>
+</body>
+</html>
