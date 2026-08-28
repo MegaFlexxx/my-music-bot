@@ -10,11 +10,18 @@
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
+        /* ✅ НОВЫЙ ХРОМ-ФОН: Жидкий металл + анимация */
         body {
-            background: #000;
-            background-image: 
-                radial-gradient(circle at 20% 50%, rgba(120, 120, 120, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(150, 150, 150, 0.05) 0%, transparent 50%);
+            background: linear-gradient(
+                135deg,
+                #0a0a0a 0%,
+                #1a1a1a 25%,
+                #2a2a2a 50%,
+                #1a1a1a 75%,
+                #0a0a0a 100%
+            );
+            background-size: 400% 400%;
+            animation: chromeFlow 15s ease infinite;
             color: #fff;
             min-height: 100vh;
             display: flex;
@@ -23,9 +30,30 @@
             padding: 20px;
             font-family: 'Segoe UI', sans-serif;
             overflow-x: hidden;
+            position: relative;
         }
 
-        /* SCANLINES EFFECT - оптимизировано через will-change */
+        @keyframes chromeFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ✅ ШУМ ДЛЯ ТЕКСТУРЫ МЕТАЛЛА */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        /* SCANLINES EFFECT */
         body::before {
             content: '';
             position: fixed;
@@ -54,16 +82,15 @@
         .player-container {
             width: 100%;
             max-width: 450px;
-            /* ✅ ОПТИМИЗАЦИЯ 1: убран backdrop-filter, заменён на простой градиент */
             background: linear-gradient(180deg, #1e1e1e 0%, #0a0a0a 100%);
             border: 2px solid rgba(200, 200, 200, 0.3);
             padding: 40px 30px;
-            /* ✅ Уменьшены box-shadow для производительности */
             box-shadow: 
                 0 0 30px rgba(255, 255, 255, 0.08),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
             position: relative;
             overflow: hidden;
+            z-index: 2; /* ✅ Поверх шума */
         }
 
         .player-container::before {
@@ -448,7 +475,6 @@
             transition: all 0.5s ease;
         }
 
-        /* ✅ ОПТИМИЗАЦИЯ 2: объединённая анимация rotate + pulse */
         .cover.playing {
             animation: rotateAndPulse 20s linear infinite;
             border-radius: 50%;
@@ -727,7 +753,7 @@
 </head>
 <body>
     <div class="player-container">
-        <div class="chain-decoration">⛓⛓</div>
+        <div class="chain-decoration">⛓</div>
         
         <div class="header">
             <h1>Chrome Reaper</h1>
@@ -736,7 +762,7 @@
 
         <div class="search-container">
             <input type="text" class="search-input" id="searchQuery" placeholder="⚡ SEARCH: artist or track name">
-            <button class="search-btn" id="searchBtn" onclick="searchTracks()">⚡ Search</button>
+            <button class="search-btn" id="searchBtn" onclick="searchTracks()"> Search</button>
         </div>
 
         <div class="search-results" id="searchResults"></div>
@@ -813,14 +839,12 @@
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
-        // ✅ ОПТИМИЗАЦИЯ 3: Debounce для поиска
         let searchTimeout = null;
         function debouncedSearch() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => searchTracks(), 500);
         }
 
-        // ✅ ОПТИМИЗАЦИЯ 4: Кэш обложек в памяти
         const coverCache = new Map();
 
         function setCover(url) {
@@ -896,7 +920,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
@@ -934,10 +958,10 @@
                 }
                 
             } catch (err) {
-                alert(' Error: ' + err.message);
+                alert('⚡ Error: ' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = ' LOAD TRACK';
+                loadBtn.textContent = '⚡ LOAD TRACK';
                 loadBtn.classList.remove('loading');
             }
         }
@@ -980,11 +1004,11 @@
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '';
+                playBtn.textContent = '⏸';
                 cover.classList.add('playing');
                 
             } catch (err) {
-                alert('⚡ Error:\n' + err.message);
+                alert(' Error:\n' + err.message);
             } finally {
                 loadBtn.disabled = false;
                 loadBtn.textContent = '⚡ LOAD TRACK';
@@ -1037,7 +1061,6 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // ✅ ОПТИМИЗАЦИЯ 3: Debounce на ввод поиска
         document.getElementById('searchQuery').addEventListener('input', debouncedSearch);
         document.getElementById('searchQuery').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -1046,7 +1069,6 @@
             }
         });
 
-        // ✅ ОПТИМИЗАЦИЯ 5: Предзагрузка аудио
         audio.preload = 'auto';
         audio.addEventListener('loadedmetadata', () => {
             document.getElementById('duration').textContent = formatTime(audio.duration);
