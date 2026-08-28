@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skibidi Player</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: linear-gradient(180deg, #1a0033, #0a0a0a);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .player {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .cover {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            border-radius: 16px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            box-shadow: 0 10px 40px rgba(176, 38, 255, 0.3);
+            animation: rotate 20s linear infinite;
+            animation-play-state: paused;
+        }
+        .cover.playing {
+            animation-play-state: running;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .input-section {
+            margin-bottom: 25px;
+        }
+        .input-section input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        .input-section input:focus {
+            border-color: #b026ff;
+        }
+        .input-section button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .input-section button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(176, 38, 255, 0.4);
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+            word-break: break-word;
+        }
+        .artist {
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 20px;
+            color: #fff;
+        }
+        .btn:hover {
+            background: rgba(176, 38, 255, 0.4);
+            transform: scale(1.1);
+        }
+        .btn.play {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            font-size: 30px;
+        }
+        .progress-container {
+            margin-bottom: 15px;
+        }
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #b026ff, #00f0ff);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        .time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .volume {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .volume input {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+        .volume input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #b026ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="player">
+        <div class="input-section">
+            <input type="text" id="trackUrl" placeholder="🔗 Вставь ссылку на MP3">
+            <input type="text" id="trackTitle" placeholder="Название трека">
+            <input type="text" id="trackArtist" placeholder="Исполнитель">
+            <button onclick="loadCustomTrack()">▶️ Загрузить трек</button>
+        </div>
+
+        <div class="cover" id="cover">🎵</div>
+        <div class="title" id="title">Skibidi Sound</div>
+        <div class="artist" id="artist">Вставь ссылку на трек</div>
+        
+        <div class="controls">
+            <button class="btn" onclick="togglePlay()" id="playBtn">▶️</button>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress" onclick="seek(event)">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="time">
+                <span id="currentTime">0:00</span>
+                <span id="duration">0:00</span>
+            </div>
+        </div>
+        
+        <div class="volume">
+            <span>🔊</span>
+            <input type="range" min="0" max="100" value="70" onchange="setVolume(this.value)">
+        </div>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const progressBar = document.getElementById('progressBar');
+        const cover = document.getElementById('cover');
+        
+        let isPlaying = false;
+
+        function loadCustomTrack() {
+            const url = document.getElementById('trackUrl').value;
+            const title = document.getElementById('trackTitle').value || 'Unknown Track';
+            const artist = document.getElementById('trackArtist').value || 'Unknown Artist';
+            
+            if (!url) {
+                alert('❌ Вставь ссылку на MP3 файл!');
+                return;
+            }
+            
+            document.getElementById('title').textContent = title;
+            document.getElementById('artist').textContent = artist;
+            audio.src = url;
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+            
+            // Автоматически начинаем играть
+            audio.play();
+            isPlaying = true;
+            playBtn.textContent = '⏸';
+            cover.classList.add('playing');
+        }
+
+        function togglePlay() {
+            if (!audio.src) {
+                alert('❌ Сначала загрузи трек!');
+                return;
+            }
+            
+            if (isPlaying) {
+                audio.pause();
+                playBtn.textContent = '▶️';
+                cover.classList.remove('playing');
+            } else {
+                audio.play();
+                playBtn.textContent = '⏸';
+                cover.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+
+        function seek(event) {
+            if (!audio.duration) return;
+            const progress = event.offsetX / event.target.offsetWidth;
+            audio.currentTime = progress * audio.duration;
+        }
+
+        function setVolume(value) {
+            audio.volume = value / 100;
+        }
+
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = progress + '%';
+                document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+                document.getElementById('duration').textContent = formatTime(audio.duration);
+            }
+        });
+
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            playBtn.textContent = '▶️';
+            cover.classList.remove('playing');
+            progressBar.style.width = '0%';
+        });
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        setVolume(70);
+    </script>
+</body>
+</html>
