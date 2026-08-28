@@ -252,7 +252,7 @@ async def download_tiktok(url: str) -> str:
                                 return filename
         return None
     except Exception as e:
-        print(f"❌ Ошибка скачивания TikTok через API: {e}")
+        print(f" Ошибка скачивания TikTok через API: {e}")
         return None
 
 # --- ПРОМО-МОДУЛЬ ---
@@ -386,7 +386,7 @@ async def download_and_send(message: types.Message, track_id: str):
         await msg.edit_text(f"❌ Ошибка: {str(e)}")
 
 # ============================================================
-# 🔥🔥 ВЕБ-СЕРВЕР С НОВЫМ API ДЛЯ ЯНДЕКС МУЗЫКИ 🔥🔥🔥
+# 🔥🔥 ВЕБ-СЕРВЕР С НОВЫМ API ДЛЯ ЯНДЕКС МУЗЫКИ 🔥🔥
 # ============================================================
 async def handle(request): 
     return web.Response(text="Бот активен")
@@ -397,7 +397,7 @@ async def handle_app(request):
 async def handle_player(request):
     return web.FileResponse('player.html')
 
-# 🔥 НОВЫЙ API ДЛЯ ПОЛУЧЕНИЯ ПРЯМОЙ ССЫЛКИ ЯНДЕКС МУЗЫКИ 🔥
+# 🔥 НОВЫЙ API ДЛЯ ПОЛУЧЕНИЯ ПРЯМОЙ ССЫЛКИ ЯНДЕКС МУЗЫКИ (С ОБЛОЖКОЙ) 🔥
 async def resolve_yandex(request):
     url = request.query.get('url', '')
     
@@ -417,11 +417,17 @@ async def resolve_yandex(request):
             direct_link = sorted(info, key=lambda x: x.bitrate_in_kbps, reverse=True)[0].get_direct_link()
             artists = ", ".join([a.name for a in track.artists])
             
+            #  ПОЛУЧАЕМ ОБЛОЖКУ 🔥
+            cover_url = track.get_cover_url('400x400')
+            if cover_url and not cover_url.startswith('http'):
+                cover_url = "https:" + cover_url
+            
             return web.json_response({
                 'success': True,
                 'direct_url': direct_link,
                 'title': track.title,
-                'artist': artists
+                'artist': artists,
+                'cover_url': cover_url  # <-- ДОБАВЛЕНО
             })
         else:
             return web.json_response({'error': 'Не удалось получить ссылку на трек'}, status=404)
@@ -470,7 +476,7 @@ async def web_app_data_handler(message: types.Message):
     if data == '/moose':
         await moose_command(message)
     elif data == '/weather':
-        await message.answer("🌦 Напиши город, например: Оренбург")
+        await message.answer(" Напиши город, например: Оренбург")
     elif data == '/currency':
         await currency_command(message)
     elif data == '/btc':
@@ -486,20 +492,19 @@ async def start_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
-            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
+            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text=" Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
     
     web_app_button = types.InlineKeyboardButton(
-        text="🚀 Открыть меню (Web App)", 
+        text=" Открыть меню (Web App)", 
         web_app=WebAppInfo(url=f"{RENDER_URL}/app")
     )
     
-    # ИСПРАВЛЕНО: убрали parse_mode и **, чтобы подчёркивание в Skibidi_sound не ломало парсер
     await m.answer(
         "🎵 Skibidi_sound — твой музыкальный помощник!\n\n"
-        "👇 Жми на кнопку ниже, чтобы открыть крутое меню, или просто напиши мне!",
+        " Жми на кнопку ниже, чтобы открыть крутое меню, или просто напиши мне!",
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[web_app_button]])
     )
 
@@ -513,7 +518,7 @@ async def stats_command(m: types.Message):
     new_today = get_new_users_today()
     stats = load_stats()
     sorted_users = sorted(stats.items(), key=lambda x: x[1]["last_seen"], reverse=True)[:5]
-    text = f"📊 **Статистика бота**\n\n👥 **Всего пользователей:** {total}\n🆕 **Новых сегодня:** {new_today}\n📆 **Активных сегодня:** {today}\n\n📋 **Последние 5 пользователей:**\n"
+    text = f"📊 **Статистика бота**\n\n **Всего пользователей:** {total}\n🆕 **Новых сегодня:** {new_today}\n📆 **Активных сегодня:** {today}\n\n📋 **Последние 5 пользователей:**\n"
     for user_id, data in sorted_users:
         name = data.get("first_name") or data.get("username") or "Аноним"
         last_seen = datetime.fromisoformat(data["last_seen"]).strftime("%d.%m %H:%M")
@@ -525,7 +530,7 @@ async def moose_command(m: types.Message):
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
     if not await check_access(m.from_user.id):
         await m.answer(
-            "🔒 Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
+            " Для доступа к боту нужно подписаться на наш канал!\n\n👇 Нажми на кнопку ниже, чтобы подписаться:\nПосле подписки нажми /start снова.",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[types.InlineKeyboardButton(text="📢 Подписаться на канал", url=CHANNEL_LINK)]])
         )
         return
@@ -549,7 +554,7 @@ async def weather_command(m: types.Message):
     if not weather:
         await m.answer(f"❌ Город {city_input} не найден.\n💡 Попробуй написать на английском: /weather Orenburg")
         return
-    emoji_map = {"01d": "☀️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
+    emoji_map = {"01d": "️", "01n": "🌙", "02d": "⛅️", "02n": "☁️", "03d": "☁️", "03n": "☁️", "04d": "☁️", "04n": "☁️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌧", "11d": "⛈", "11n": "", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"}
     emoji = emoji_map.get(weather["icon"], "🌡")
     text = f"{emoji} Погода в {weather['city']}\n\n🌡 Температура: {weather['temp']}°C (ощущается как {weather['feels_like']}°C)\n💧 Влажность: {weather['humidity']}%\n💨 Ветер: {weather['wind']} м/с\n☁️ {weather['description']}"
     await m.answer(text)
@@ -571,7 +576,7 @@ async def currency_command(m: types.Message):
     await m.answer(f"💰 Загружаю курсы валют...")
     data = await get_currency_rates(base)
     if not data:
-        await m.answer(f"❌ Не удалось загрузить курсы валют.\n💡 Попробуй позже.")
+        await m.answer(f" Не удалось загрузить курсы валют.\n💡 Попробуй позже.")
         return
     rates = data["rates"]
     emoji_map = {"USD": "🇺🇸", "EUR": "🇪🇺", "RUB": "🇷🇺", "CNY": "🇨🇳", "GBP": "🇬🇧", "KZT": "🇰🇿", "UAH": "🇺🇦"}
@@ -611,7 +616,7 @@ async def btc_command(m: types.Message):
             usd = coin.get("usd", 0)
             eur = coin.get("eur", 0)
             rub = coin.get("rub", 0)
-            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪🇺 €{eur:,.2f}\n   🇷🇺 {rub:,.0f} ₽\n\n"
+            text += f"{emoji} **{name}**\n   🇺🇸 ${usd:,.2f}\n   🇪 €{eur:,.2f}\n   🇺 {rub:,.0f} ₽\n\n"
     await m.answer(text, parse_mode="Markdown")
 
 # --- ПОИСК (С TIKTOK) ---
@@ -632,13 +637,13 @@ async def search_command(m: types.Message):
                 try:
                     await m.answer_video(
                         video=FSInputFile(filename),
-                        caption="🎬 Видео из TikTok\n\n🔥 Скачано ботом Skibidi_sound!"
+                        caption="🎬 Видео из TikTok\n\n Скачано ботом Skibidi_sound!"
                     )
                     os.remove(filename)
                 except Exception as e:
                     await m.answer(f"❌ Ошибка отправки видео: {str(e)}")
             else:
-                await m.answer("❌ Не удалось скачать видео. Попробуй другую ссылку.")
+                await m.answer(" Не удалось скачать видео. Попробуй другую ссылку.")
             return
     
     update_user_stats(m.from_user.id, username=m.from_user.username, first_name=m.from_user.first_name)
