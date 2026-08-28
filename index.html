@@ -26,6 +26,7 @@
             font-family: 'Segoe UI', sans-serif;
             overflow-x: hidden;
             position: relative;
+            transition: background 1s ease;
         }
 
         @keyframes chromeFlow {
@@ -59,6 +60,7 @@
             padding: 40px 30px;
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             position: relative; overflow: hidden; z-index: 2;
+            transition: border-color 1s ease, box-shadow 1s ease;
         }
 
         .player-container::before {
@@ -72,12 +74,13 @@
         .header { text-align: center; margin-bottom: 35px; position: relative; }
 
         .header h1 {
-            font-family: 'Metal Mania', cursive; /* Оставили для заголовка */
+            font-family: 'Metal Mania', cursive;
             font-size: 42px; font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
             background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 10%, #909090 25%, #505050 40%, #202020 50%, #505050 60%, #909090 75%, #e0e0e0 90%, #ffffff 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)) drop-shadow(0 0 20px rgba(255,255,255,0.3)) drop-shadow(0 2px 4px rgba(0,0,0,0.9));
             position: relative; animation: glitch 3s infinite;
+            transition: all 1s ease;
         }
 
         @keyframes glitch {
@@ -89,7 +92,7 @@
         }
 
         .header h1::after {
-            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
@@ -111,7 +114,7 @@
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 100%);
             border: 1px solid rgba(150, 150, 150, 0.3); color: #fff; font-size: 13px; outline: none; margin-bottom: 12px;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1); transition: all 0.3s ease;
-            font-family: 'Share Tech Mono', monospace; /* ✅ Новый шрифт для ввода */
+            font-family: 'Share Tech Mono', monospace;
             letter-spacing: 1px;
         }
 
@@ -166,9 +169,8 @@
             background: linear-gradient(180deg, rgba(40,40,40,0.8) 0%, rgba(20,20,20,0.9) 100%);
             border: 1px solid rgba(100, 100, 100, 0.2); border-left: 3px solid transparent;
             cursor: pointer; transition: all 0.3s ease; margin-bottom: 1px; position: relative; overflow: hidden;
-            /* ✅ Применяем анимацию */
             animation: searchItemSlideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            opacity: 0; /* Начальное состояние для анимации */
+            opacity: 0;
         }
 
         .result-item::before {
@@ -202,12 +204,12 @@
             font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 5px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             text-transform: uppercase; letter-spacing: 1px;
-            font-family: 'Orbitron', sans-serif; /* ✅ Новый шрифт для названий */
+            font-family: 'Orbitron', sans-serif;
         }
 
         .result-item .artist {
             font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            font-family: 'Share Tech Mono', monospace; /* ✅ Новый шрифт для исполнителей */
+            font-family: 'Share Tech Mono', monospace;
         }
 
         .result-item .duration {
@@ -236,7 +238,7 @@
         .cover .default-icon { font-size: 100px; position: absolute; filter: grayscale(100%) brightness(2); opacity: 0.4; }
 
         .track-title { 
-            font-family: 'Orbitron', sans-serif; /* ✅ Orbitron для названия трека */
+            font-family: 'Orbitron', sans-serif;
             font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; word-break: break-word;
             background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -246,7 +248,7 @@
         .track-artist { 
             font-size: 13px; color: #777; text-align: center; margin-bottom: 35px;
             letter-spacing: 3px; text-transform: uppercase; font-weight: 600;
-            font-family: 'Share Tech Mono', monospace; /* ✅ Mono для исполнителя */
+            font-family: 'Share Tech Mono', monospace;
         }
 
         .play-btn {
@@ -334,7 +336,7 @@
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p>⚡ Big Penis Bro Gang ️</p>
+            <p>⚡ Big Penis Bro Gang ☠️</p>
         </div>
 
         <div class="search-container">
@@ -434,6 +436,12 @@
             const searchBtn = document.getElementById('searchBtn');
             const resultsDiv = document.getElementById('searchResults');
             
+            // ✅ ПРОВЕРКА НА ПОСХАЛКУ
+            if (query === '1488') {
+                activateReaperMode();
+                return;
+            }
+            
             if (!query) {
                 alert('⚡ Enter track name or artist!');
                 return;
@@ -454,7 +462,6 @@
                         const item = document.createElement('div');
                         item.className = 'result-item';
                         item.onclick = () => selectTrack(track);
-                        // ✅ ЗАДЕРЖКА АНИМАЦИИ ДЛЯ КАЖДОГО ЭЛЕМЕНТА
                         item.style.animationDelay = `${index * 0.08}s`;
                         
                         const duration = `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}`;
@@ -486,7 +493,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ️</div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
@@ -517,7 +524,7 @@
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '⏸';
+                    playBtn.textContent = '';
                     cover.classList.add('playing');
                 } else {
                     throw new Error(data.error || 'Failed to load track');
@@ -641,6 +648,96 @@
         });
 
         setVolume(70);
+
+        // ✅ ФУНКЦИЯ АКТИВАЦИИ REAPER MODE
+        function activateReaperMode() {
+            const body = document.body;
+            const headerH1 = document.querySelector('.header h1');
+            const searchBtn = document.getElementById('searchBtn');
+            const loadBtn = document.getElementById('loadBtn');
+            const progressBar = document.querySelector('.progress-bar');
+            const playBtn = document.querySelector('.play-btn');
+            
+            // Меняем фон на чёрно-красный
+            body.style.background = `
+                radial-gradient(circle at 50% 50%, rgba(255,0,0,0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0000 0%, #1a0000 25%, #2a0000 50%, #1a0000 75%, #0a0000 100%)
+            `;
+            body.style.backgroundSize = '400% 400%';
+            
+            // Ускоряем анимацию фона
+            body.style.animation = 'chromeFlow 5s ease infinite';
+            
+            // Загружаем шрифт Nosifer динамически
+            const nosiferLink = document.createElement('link');
+            nosiferLink.href = 'https://fonts.googleapis.com/css2?family=Nosifer&display=swap';
+            nosiferLink.rel = 'stylesheet';
+            document.head.appendChild(nosiferLink);
+            
+            setTimeout(() => {
+                headerH1.style.fontFamily = "'Nosifer', cursive";
+                headerH1.textContent = 'CHROME REAPER';
+                headerH1.style.color = '#ff003c';
+                headerH1.style.textShadow = '0 0 20px rgba(255,0,0,0.8), 0 0 40px rgba(255,0,0,0.4)';
+            }, 100);
+            
+            // Добавляем надпись REAPER MODE ACTIVATED
+            const reaperMsg = document.createElement('div');
+            reaperMsg.id = 'reaperMsg';
+            reaperMsg.textContent = '️ REAPER MODE ACTIVATED ☠️';
+            reaperMsg.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                font-family: 'Nosifer', cursive; font-size: 24px; color: #ff003c;
+                text-shadow: 0 0 30px rgba(255,0,0,0.9); z-index: 1000;
+                animation: reaperPulse 1s ease-in-out infinite; pointer-events: none;
+                background: rgba(0,0,0,0.8); padding: 20px 40px; border: 2px solid #ff003c;
+                border-radius: 10px;
+            `;
+            document.body.appendChild(reaperMsg);
+            
+            // Добавляем анимацию пульсации сообщения
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes reaperPulse {
+                    0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.05); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Делаем все элементы красными
+            searchBtn.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
+            loadBtn.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
+            progressBar.style.background = 'linear-gradient(90deg, #ff003c, #aa0028, #ff003c)';
+            playBtn.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
+            
+            // Вибрация при активации
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+            
+            // Через 30 секунд возвращаем всё назад
+            setTimeout(() => {
+                body.style.background = '';
+                body.style.animation = 'chromeFlow 15s ease infinite';
+                headerH1.style.fontFamily = "'Metal Mania', cursive";
+                headerH1.textContent = 'Chrome Reaper';
+                headerH1.style.color = '';
+                headerH1.style.textShadow = '';
+                
+                searchBtn.style.background = '';
+                loadBtn.style.background = '';
+                progressBar.style.background = '';
+                playBtn.style.background = '';
+                
+                if (document.getElementById('reaperMsg')) {
+                    document.getElementById('reaperMsg').remove();
+                }
+                
+                // Удаляем Nosifer шрифт
+                if (nosiferLink.parentNode) nosiferLink.remove();
+                if (style.parentNode) style.remove();
+                
+            }, 30000); // 30 секунд
+        }
     </script>
 </body>
 </html>
