@@ -3,258 +3,582 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skibidi Chrome Player</title>
+    <title>Chrome Reaper Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            background: #050505;
+            background: #000;
             background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
+                radial-gradient(circle at 20% 50%, rgba(120, 120, 120, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(150, 150, 150, 0.05) 0%, transparent 50%);
             color: #fff;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         .player-container {
             width: 100%;
-            max-width: 400px;
-            background: rgba(20, 20, 20, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            margin-bottom: 20px;
+            max-width: 450px;
+            background: linear-gradient(180deg, rgba(30,30,30,0.9) 0%, rgba(10,10,10,0.95) 100%);
+            border: 2px solid rgba(200, 200, 200, 0.3);
+            border-radius: 0;
+            padding: 40px 30px;
+            box-shadow: 
+                0 0 60px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 100px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
         }
 
-        .header { text-align: center; margin-bottom: 25px; }
+        .player-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+        }
+
+        .header { 
+            text-align: center; 
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        /* CHROME REAPER LOGO STYLE */
         .header h1 {
-            font-size: 26px; font-weight: 900; letter-spacing: 3px;
+            font-family: 'Metal Mania', cursive;
+            font-size: 42px;
+            font-weight: 400;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            background: linear-gradient(180deg, #ffffff 0%, #d4d4d4 40%, #777777 50%, #d4d4d4 60%, #ffffff 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
-        }
-        .header p { color: #666; font-size: 11px; margin-top: 8px; letter-spacing: 1px; text-transform: uppercase; }
-
-        /* ПОИСК */
-        .search-container {
-            margin-bottom: 20px;
-        }
-        .search-input {
-            width: 100%;
-            padding: 14px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 14px;
-            outline: none;
+            background: linear-gradient(
+                180deg, 
+                #ffffff 0%, 
+                #e0e0e0 10%, 
+                #909090 25%, 
+                #505050 40%, 
+                #202020 50%,
+                #505050 60%,
+                #909090 75%,
+                #e0e0e0 90%,
+                #ffffff 100%
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: 
+                drop-shadow(0 0 10px rgba(255,255,255,0.5))
+                drop-shadow(0 0 20px rgba(255,255,255,0.3))
+                drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            position: relative;
+            text-shadow: 
+                2px 2px 0px #000,
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
             margin-bottom: 10px;
-            transition: all 0.3s ease;
         }
-        .search-input:focus {
-            border-color: rgba(255, 255, 255, 0.5);
-            background: rgba(0, 0, 0, 0.8);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+
+        .header h1::after {
+            content: '️';
+            position: absolute;
+            top: 50%;
+            right: -40px;
+            transform: translateY(-50%);
+            font-size: 30px;
+            filter: grayscale(100%) brightness(1.5);
+            opacity: 0.8;
         }
-        .search-input::placeholder { color: #555; }
-        .search-btn {
+
+        .header h1::before {
+            content: '⛓';
+            position: absolute;
+            top: -15px;
+            left: -30px;
+            font-size: 25px;
+            filter: grayscale(100%) brightness(1.3);
+            opacity: 0.6;
+        }
+        
+        .header p { 
+            color: #666; 
+            font-size: 11px; 
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        /* CHROME INPUTS */
+        .search-container {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .search-input, .player-input {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #333 0%, #555 50%, #333 100%);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            padding: 16px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 100%);
+            border: 1px solid rgba(150, 150, 150, 0.3);
+            border-radius: 0;
             color: #fff;
-            font-weight: 700;
             font-size: 13px;
+            outline: none;
+            margin-bottom: 12px;
+            box-shadow: 
+                inset 0 2px 10px rgba(0,0,0,0.8),
+                0 1px 0 rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
             letter-spacing: 1px;
+        }
+
+        .search-input:focus, .player-input:focus {
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 
+                inset 0 2px 15px rgba(0,0,0,0.9),
+                0 0 20px rgba(255,255,255,0.2),
+                0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .search-input::placeholder, .player-input::placeholder { 
+            color: #555;
+            font-style: italic;
+        }
+
+        /* CHROME BUTTONS */
+        .search-btn, .load-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(
+                180deg,
+                #ffffff 0%,
+                #c0c0c0 20%,
+                #808080 40%,
+                #606060 50%,
+                #808080 60%,
+                #c0c0c0 80%,
+                #ffffff 100%
+            );
+            border: none;
+            border-radius: 0;
+            color: #000;
+            font-weight: 900;
+            font-size: 14px;
+            letter-spacing: 4px;
             text-transform: uppercase;
             cursor: pointer;
-            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            box-shadow: 
+                0 4px 15px rgba(0,0,0,0.6),
+                inset 0 1px 0 rgba(255,255,255,0.9),
+                0 0 30px rgba(255,255,255,0.2);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .search-btn:active { transform: scale(0.98); }
-        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* РЕЗУЛЬТАТЫ ПОИСКА */
+        .search-btn::before, .load-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            transition: left 0.5s;
+        }
+
+        .search-btn:hover::before, .load-btn:hover::before {
+            left: 100%;
+        }
+
+        .search-btn:active, .load-btn:active {
+            transform: scale(0.98);
+            box-shadow: 
+                0 2px 10px rgba(0,0,0,0.8),
+                inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .search-btn:disabled, .load-btn:disabled { 
+            opacity: 0.4; 
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        /* SEARCH RESULTS */
         .search-results {
             max-height: 300px;
             overflow-y: auto;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             display: none;
+            border: 1px solid rgba(150, 150, 150, 0.2);
+            background: rgba(0,0,0,0.5);
         }
-        .search-results.active { display: block; }
+
+        .search-results.active { 
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .result-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin-bottom: 8px;
+            gap: 15px;
+            padding: 15px;
+            background: linear-gradient(180deg, rgba(40,40,40,0.8) 0%, rgba(20,20,20,0.9) 100%);
+            border: 1px solid rgba(100, 100, 100, 0.2);
+            border-left: 3px solid transparent;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 1px;
         }
+
         .result-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateX(5px);
+            background: linear-gradient(180deg, rgba(60,60,60,0.9) 0%, rgba(40,40,40,0.95) 100%);
+            border-left-color: rgba(255,255,255,0.5);
+            transform: translateX(8px);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.5);
         }
+
         .result-item img {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
+            width: 55px;
+            height: 55px;
+            border-radius: 0;
             object-fit: cover;
-            background: #222;
+            background: #1a1a1a;
+            border: 2px solid rgba(150,150,150,0.3);
+            filter: grayscale(100%) contrast(1.2);
         }
+
         .result-item .default-cover {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #333, #555);
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border: 2px solid rgba(150,150,150,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 24px;
+            filter: grayscale(100%);
         }
+
         .result-item .info {
             flex: 1;
             min-width: 0;
         }
+
         .result-item .title {
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
             color: #fff;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
         .result-item .artist {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .result-item .duration {
             font-size: 11px;
             color: #666;
+            font-family: 'Courier New', monospace;
         }
 
-        .player-input {
-            width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
-            color: #fff; font-size: 14px; outline: none; margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        .player-input:focus { border-color: rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.8); }
-        .player-input::placeholder { color: #555; }
-        
-        .load-btn {
-            width: 100%; padding: 14px;
-            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
-            border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px;
-            color: #000; font-weight: 800; font-size: 14px; letter-spacing: 1px;
-            text-transform: uppercase; cursor: pointer; margin-bottom: 30px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
-        }
-        .load-btn:active { transform: scale(0.98); filter: brightness(0.9); }
-        .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
+        /* CHROME COVER */
         .cover-container {
-            width: 100%; aspect-ratio: 1; margin-bottom: 25px;
-            display: flex; align-items: center; justify-content: center; position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
+
         .cover {
-            width: 100%; height: 100%;
-            background: linear-gradient(135deg, #2a2a2a 0%, #4a4a4a 25%, #1a1a1a 50%, #3a3a3a 75%, #0a0a0a 100%);
-            border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 80px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            overflow: hidden; position: relative; transition: all 0.5s ease;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                135deg, 
+                #1a1a1a 0%, 
+                #2a2a2a 25%, 
+                #0a0a0a 50%, 
+                #2a2a2a 75%, 
+                #0a0a0a 100%
+            );
+            border: 3px solid rgba(200, 200, 200, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            box-shadow: 
+                0 10px 50px rgba(0, 0, 0, 0.9),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 100px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            position: relative;
+            transition: all 0.5s ease;
         }
+
         .cover.playing {
             animation: rotate 20s linear infinite;
             border-radius: 50%;
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 
+                0 0 80px rgba(255, 255, 255, 0.3),
+                inset 0 0 60px rgba(0, 0, 0, 0.9),
+                0 0 150px rgba(255, 255, 255, 0.2);
         }
-        .cover img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
-        .cover .default-icon { font-size: 80px; position: absolute; filter: grayscale(100%) brightness(1.5); opacity: 0.5; }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
-        .track-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 5px; word-break: break-word; color: #fff; }
-        .track-artist { font-size: 13px; color: #888; text-align: center; margin-bottom: 30px; letter-spacing: 0.5px; }
-        
+
+        .cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.3) brightness(0.9);
+        }
+
+        .cover .default-icon {
+            font-size: 100px;
+            position: absolute;
+            filter: grayscale(100%) brightness(2);
+            opacity: 0.4;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* CHROME TEXT */
+        .track-title { 
+            font-family: 'Metal Mania', cursive;
+            font-size: 28px;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 8px;
+            word-break: break-word;
+            background: linear-gradient(
+                180deg,
+                #ffffff 0%,
+                #c0c0c0 50%,
+                #808080 100%
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            letter-spacing: 2px;
+        }
+
+        .track-artist { 
+            font-size: 13px;
+            color: #777;
+            text-align: center;
+            margin-bottom: 35px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* CHROME PLAY BUTTON */
         .play-btn {
-            width: 70px; height: 70px;
-            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
-            border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
-            font-size: 30px; color: #000; cursor: pointer; display: block; margin: 0 auto 30px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.15), inset 0 2px 0 rgba(255,255,255,0.8);
-            display: flex; align-items: center; justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(
+                180deg,
+                #ffffff 0%,
+                #d0d0d0 20%,
+                #909090 40%,
+                #707070 50%,
+                #909090 60%,
+                #d0d0d0 80%,
+                #ffffff 100%
+            );
+            border: none;
+            border-radius: 50%;
+            font-size: 35px;
+            color: #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 35px;
+            box-shadow: 
+                0 5px 25px rgba(0,0,0,0.7),
+                inset 0 2px 0 rgba(255,255,255,0.9),
+                0 0 40px rgba(255,255,255,0.3);
+            transition: all 0.2s ease;
+            position: relative;
         }
-        .play-btn:active { transform: scale(0.95); filter: brightness(0.9); }
-        
-        .progress { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; cursor: pointer; margin-bottom: 10px; }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #ffffff, #aaaaaa); width: 0%; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-        .time { display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-bottom: 25px; font-variant-numeric: tabular-nums; }
-        
-        .volume { display: flex; align-items: center; gap: 15px; }
-        .volume-icon { color: #888; font-size: 16px; }
-        .volume input { flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; outline: none; }
+
+        .play-btn::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 50% 50% 0 0;
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+            box-shadow: 
+                0 3px 15px rgba(0,0,0,0.8),
+                inset 0 2px 10px rgba(0,0,0,0.4);
+        }
+
+        /* PROGRESS BAR */
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+            border: 1px solid rgba(150, 150, 150, 0.3);
+            border-radius: 0;
+            overflow: hidden;
+            cursor: pointer;
+            margin-bottom: 12px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                #ffffff 0%,
+                #c0c0c0 50%,
+                #808080 100%
+            );
+            width: 0%;
+            box-shadow: 
+                0 0 15px rgba(255,255,255,0.6),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: width 0.1s ease;
+        }
+
+        .time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        /* VOLUME */
+        .volume {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(150, 150, 150, 0.2);
+        }
+
+        .volume-icon {
+            color: #888;
+            font-size: 18px;
+            filter: grayscale(100%);
+        }
+
+        .volume input {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 5px;
+            background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+            border: 1px solid rgba(150, 150, 150, 0.3);
+            border-radius: 0;
+            outline: none;
+        }
+
         .volume input::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 14px; height: 14px;
-            background: linear-gradient(135deg, #fff, #aaa); border-radius: 50%; cursor: pointer;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(
+                180deg,
+                #ffffff 0%,
+                #c0c0c0 50%,
+                #808080 100%
+            );
+            border-radius: 0;
+            cursor: pointer;
+            box-shadow: 
+                0 0 10px rgba(255,255,255,0.6),
+                inset 0 1px 0 rgba(255,255,255,0.9);
+            border: 1px solid rgba(0,0,0,0.5);
+        }
+
+        /* DECORATIVE CHAINS */
+        .chain-decoration {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 30px;
+            opacity: 0.4;
+            filter: grayscale(100%) brightness(1.5);
+            letter-spacing: 10px;
+            user-select: none;
         }
     </style>
 </head>
 <body>
-    <!-- ПОИСК -->
-    <div class="player-container">
+    <div class="player-container" style="position: relative;">
+        <div class="chain-decoration">⛓⛓</div>
+        
         <div class="header">
-            <h1>SKIBIDI PLAYER</h1>
-            <p>Big Penis Bro Gang 💀</p>
+            <h1>Chrome Reaper</h1>
+            <p>⚡ Big Penis Bro Gang </p>
         </div>
 
         <div class="search-container">
-            <input type="text" class="search-input" id="searchQuery" placeholder="🔍 Поиск: название или исполнитель">
-            <button class="search-btn" id="searchBtn" onclick="searchTracks()">Искать</button>
+            <input type="text" class="search-input" id="searchQuery" placeholder="⚡ SEARCH: artist or track name">
+            <button class="search-btn" id="searchBtn" onclick="searchTracks()">⚡ Search</button>
         </div>
 
         <div class="search-results" id="searchResults"></div>
-    </div>
 
-    <!-- ПЛЕЕР -->
-    <div class="player-container">
-        <input type="text" class="player-input" id="trackUrl" placeholder="🔗 Или вставь ссылку на Яндекс/MP3">
-        <input type="text" class="player-input" id="trackTitle" placeholder="Название (необязательно)">
-        <input type="text" class="player-input" id="trackArtist" placeholder="Исполнитель (необязательно)">
-        <button class="load-btn" id="loadBtn" onclick="loadTrack()">Загрузить трек</button>
+        <input type="text" class="player-input" id="trackUrl" placeholder="⚡ Or paste Yandex/MP3 link">
+        <input type="text" class="player-input" id="trackTitle" placeholder="Track name (optional)">
+        <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
+        <button class="load-btn" id="loadBtn" onclick="loadTrack()">⚡ Load Track</button>
 
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon"></span>
+                <span class="default-icon" id="defaultIcon">☠️</span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
         
-        <div class="track-title" id="title">Skibidi Sound</div>
-        <div class="track-artist" id="artist">Вставь ссылку или найди трек</div>
+        <div class="track-title" id="title">Chrome Reaper</div>
+        <div class="track-artist" id="artist">Insert link or search above</div>
         
         <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
         
@@ -299,19 +623,18 @@
             }
         }
 
-        // 🔥 ПОИСК ТРЕКОВ 🔥
         async function searchTracks() {
             const query = document.getElementById('searchQuery').value.trim();
             const searchBtn = document.getElementById('searchBtn');
             const resultsDiv = document.getElementById('searchResults');
             
             if (!query) {
-                alert('❌ Введите название трека или исполнителя!');
+                alert('⚡ Enter track name or artist!');
                 return;
             }
             
             searchBtn.disabled = true;
-            searchBtn.textContent = 'ПОИСК...';
+            searchBtn.textContent = 'SEARCHING...';
             resultsDiv.classList.remove('active');
             
             try {
@@ -339,7 +662,7 @@
                             `;
                         } else {
                             item.innerHTML = `
-                                <div class="default-cover">🎵</div>
+                                <div class="default-cover">☠️</div>
                                 <div class="info">
                                     <div class="title">${track.title}</div>
                                     <div class="artist">${track.artist}</div>
@@ -355,25 +678,23 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">Ничего не найдено </div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found </div>';
                     resultsDiv.classList.add('active');
                 }
                 
             } catch (err) {
-                alert('❌ Ошибка поиска: ' + err.message);
+                alert('⚡ Search error: ' + err.message);
             } finally {
                 searchBtn.disabled = false;
-                searchBtn.textContent = 'ИСКАТЬ';
+                searchBtn.textContent = '⚡ SEARCH';
             }
         }
 
-        // 🔥 ВЫБОР ТРЕКА ИЗ ПОИСКА 🔥
         async function selectTrack(track) {
             loadBtn.disabled = true;
-            loadBtn.textContent = 'ЗАГРУЗКА...';
+            loadBtn.textContent = 'LOADING...';
             
             try {
-                // Получаем прямую ссылку на трек через API
                 const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${track.id}`);
                 const data = await response.json();
                 
@@ -390,14 +711,14 @@
                     playBtn.textContent = '⏸';
                     cover.classList.add('playing');
                 } else {
-                    throw new Error(data.error || 'Не удалось загрузить трек');
+                    throw new Error(data.error || 'Failed to load track');
                 }
                 
             } catch (err) {
-                alert(' Ошибка: ' + err.message);
+                alert('⚡ Error: ' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = 'ЗАГРУЗИТЬ ТРЕК';
+                loadBtn.textContent = ' LOAD TRACK';
             }
         }
 
@@ -407,12 +728,12 @@
             let artist = document.getElementById('trackArtist').value.trim();
             
             if (!url) {
-                alert(' Вставь ссылку на трек!');
+                alert('⚡ Paste track link!');
                 return;
             }
             
             loadBtn.disabled = true;
-            loadBtn.textContent = 'ЗАГРУЗКА...';
+            loadBtn.textContent = 'LOADING...';
 
             try {
                 if (url.includes('music.yandex.ru')) {
@@ -425,7 +746,7 @@
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
                     } else {
-                        throw new Error(data.error || 'Не удалось получить трек');
+                        throw new Error(data.error || 'Failed to get track');
                     }
                 } else {
                     audio.src = url;
@@ -442,15 +763,15 @@
                 cover.classList.add('playing');
                 
             } catch (err) {
-                alert('❌ Ошибка:\n' + err.message);
+                alert('⚡ Error:\n' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = 'ЗАГРУЗИТЬ ТРЕК';
+                loadBtn.textContent = '⚡ LOAD TRACK';
             }
         }
 
         function togglePlay() {
-            if (!audio.src) { alert('❌ Сначала загрузи трек!'); return; }
+            if (!audio.src) { alert('⚡ Load track first!'); return; }
             
             if (isPlaying) {
                 audio.pause();
@@ -494,7 +815,6 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // Поиск по Enter
         document.getElementById('searchQuery').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') searchTracks();
         });
