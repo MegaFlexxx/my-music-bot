@@ -8,149 +8,277 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
-            background: #0a0a0a;
+            background: radial-gradient(circle at top, #1a0033, #000);
             color: #fff;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
-            background: radial-gradient(circle at top, #1a0033, #000);
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            margin-top: 20px;
-        }
+        .header { text-align: center; margin-bottom: 30px; margin-top: 20px; }
         .header h1 {
-            font-size: 28px;
-            font-weight: 800;
+            font-size: 28px; font-weight: 800;
             background: linear-gradient(90deg, #b026ff, #00f0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(176, 38, 255, 0.5);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             letter-spacing: 2px;
         }
-        .header p {
-            color: #888;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 100%;
-            max-width: 400px;
-        }
+        .header p { color: #888; font-size: 14px; margin-top: 5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 400px; }
         .btn {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 20px 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+            padding: 20px 10px; text-align: center; cursor: pointer;
+            transition: all 0.3s ease; display: flex; flex-direction: column;
+            align-items: center; gap: 10px;
         }
-        .btn:active {
-            transform: scale(0.95);
-            background: rgba(176, 38, 255, 0.2);
-            border-color: #b026ff;
-            box-shadow: 0 0 15px rgba(176, 38, 255, 0.4);
-        }
+        .btn:active { transform: scale(0.95); background: rgba(176, 38, 255, 0.2); border-color: #b026ff; }
         .btn-icon { font-size: 32px; }
         .btn-text { font-size: 14px; font-weight: 600; color: #eee; }
-        
         .full-width { grid-column: span 2; }
+        .footer { margin-top: auto; padding-top: 30px; color: #555; font-size: 12px; text-align: center; }
+
+        .player-section {
+            display: none; width: 100%; max-width: 400px;
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px;
+            padding: 25px; margin-top: 20px;
+        }
+        .player-section.active { display: block; }
+        .player-input {
+            width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
+            color: #fff; font-size: 14px; outline: none; margin-bottom: 10px;
+        }
+        .player-input:focus { border-color: #b026ff; }
+        .player-input::placeholder { color: #666; }
+        .load-btn {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            border: none; border-radius: 12px; color: #fff; font-weight: 700;
+            cursor: pointer; margin-bottom: 20px; transition: all 0.3s ease;
+        }
+        .load-btn:active { transform: scale(0.98); }
+        .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        .footer {
-            margin-top: auto;
-            padding-top: 30px;
-            color: #555;
-            font-size: 12px;
-            text-align: center;
+        .cover {
+            width: 100%; aspect-ratio: 1;
+            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            border-radius: 16px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 80px; box-shadow: 0 10px 40px rgba(176, 38, 255, 0.3);
+            animation: rotate 20s linear infinite; animation-play-state: paused;
         }
-        .glitch {
-            animation: glitch 3s infinite;
+        .cover.playing { animation-play-state: running; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .track-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 5px; word-break: break-word; }
+        .track-artist { font-size: 14px; color: #888; text-align: center; margin-bottom: 20px; }
+        .play-btn {
+            width: 70px; height: 70px; background: linear-gradient(135deg, #b026ff, #00f0ff);
+            border: none; border-radius: 50%; font-size: 30px; color: #fff;
+            cursor: pointer; display: block; margin: 0 auto 20px; transition: all 0.3s ease;
         }
-        @keyframes glitch {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-            52% { opacity: 0.2; }
-            54% { opacity: 1; }
+        .play-btn:active { transform: scale(0.95); }
+        .progress {
+            width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px; overflow: hidden; cursor: pointer; margin-bottom: 8px;
         }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #b026ff, #00f0ff); width: 0%; }
+        .time { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 15px; }
+        .volume { display: flex; align-items: center; gap: 10px; }
+        .volume input {
+            flex: 1; -webkit-appearance: none; height: 4px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 2px; outline: none;
+        }
+        .volume input::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px;
+            background: #b026ff; border-radius: 50%; cursor: pointer;
+        }
+        .back-btn {
+            width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
+            color: #fff; font-weight: 600; cursor: pointer; margin-top: 20px;
+        }
+        .back-btn:active { background: rgba(176, 38, 255, 0.3); }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 class="glitch">SKIBIDI SOUND</h1>
-        <p>Big Penis Bro Gang 💀🥀</p>
+    <div id="mainMenu">
+        <div class="header">
+            <h1>SKIBIDI SOUND</h1>
+            <p>Big Penis Bro Gang 💀🥀</p>
+        </div>
+        <div class="grid">
+            <div class="btn" onclick="sendCommand('/moose')"><span class="btn-icon">🦌</span><span class="btn-text">Рандом</span></div>
+            <div class="btn" onclick="sendCommand('/weather')"><span class="btn-icon"></span><span class="btn-text">Погода</span></div>
+            <div class="btn" onclick="sendCommand('/currency')"><span class="btn-icon">💰</span><span class="btn-text">Валюты</span></div>
+            <div class="btn" onclick="sendCommand('/btc')"><span class="btn-icon">🪙</span><span class="btn-text">Крипта</span></div>
+            <div class="btn full-width" onclick="showPlayer()"><span class="btn-icon">🎵</span><span class="btn-text">Плеер</span></div>
+            <div class="btn full-width" onclick="sendCommand('/stats')"><span class="btn-icon">📊</span><span class="btn-text">Статистика (Админ)</span></div>
+        </div>
+        <div class="footer">v2.0 // Render // Python</div>
     </div>
 
-    <div class="grid">
-        <div class="btn" onclick="sendCommand('/moose')">
-            <span class="btn-icon">🦌</span>
-            <span class="btn-text">Рандом</span>
+    <div id="playerSection" class="player-section">
+        <div class="header">
+            <h1>🎵 ПЛЕЕР</h1>
+            <p>Ссылка на Яндекс Музыку или прямой MP3</p>
         </div>
-        <div class="btn" onclick="sendCommand('/weather')">
-            <span class="btn-icon">🌦</span>
-            <span class="btn-text">Погода</span>
+
+        <input type="text" class="player-input" id="trackUrl" placeholder="🔗 Ссылка на трек">
+        <input type="text" class="player-input" id="trackTitle" placeholder="Название (авто для Яндекса)">
+        <input type="text" class="player-input" id="trackArtist" placeholder="Исполнитель (авто для Яндекса)">
+        <button class="load-btn" id="loadBtn" onclick="loadTrack()">▶️ Загрузить трек</button>
+
+        <div class="cover" id="cover">🎵</div>
+        <div class="track-title" id="title">Skibidi Sound</div>
+        <div class="track-artist" id="artist">Вставь ссылку выше</div>
+        
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶️</button>
+        
+        <div class="progress" onclick="seek(event)">
+            <div class="progress-bar" id="progressBar"></div>
         </div>
-        <div class="btn" onclick="sendCommand('/currency')">
-            <span class="btn-icon">💰</span>
-            <span class="btn-text">Валюты</span>
+        <div class="time">
+            <span id="currentTime">0:00</span>
+            <span id="duration">0:00</span>
         </div>
-        <div class="btn" onclick="sendCommand('/btc')">
-            <span class="btn-icon"></span>
-            <span class="btn-text">Крипта</span>
+        
+        <div class="volume">
+            <span></span>
+            <input type="range" min="0" max="100" value="70" oninput="setVolume(this.value)">
         </div>
-        <!-- КНОПКА ПЛЕЕРА -->
-        <div class="btn full-width" onclick="openPlayer()">
-            <span class="btn-icon">🎵</span>
-            <span class="btn-text">Плеер</span>
-        </div>
-        <div class="btn full-width" onclick="sendCommand('/stats')">
-            <span class="btn-icon">📊</span>
-            <span class="btn-text">Статистика (Админ)</span>
-        </div>
+
+        <button class="back-btn" onclick="hidePlayer()">← Назад в меню</button>
     </div>
 
-    <div class="footer">
-        v1.0 // Render // Python
-    </div>
+    <audio id="audioPlayer"></audio>
 
     <script>
-        // Инициализация Web App
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
 
-        // Адаптация под тему телеграма
-        document.body.style.backgroundColor = tg.themeParams.bg_color || '#0a0a0a';
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const progressBar = document.getElementById('progressBar');
+        const cover = document.getElementById('cover');
+        const loadBtn = document.getElementById('loadBtn');
+        let isPlaying = false;
 
         function sendCommand(command) {
-            // Вибрация при нажатии
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-            
-            // Отправляем текст боту и закрываем окно
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             tg.sendData(command);
         }
 
-        function openPlayer() {
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-            // Открываем плеер в новом окне
-            tg.openLink('https://my-music-bot-bzg4.onrender.com/player');
+        function showPlayer() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('playerSection').classList.add('active');
         }
+
+        function hidePlayer() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('playerSection').classList.remove('active');
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        async function loadTrack() {
+            const url = document.getElementById('trackUrl').value.trim();
+            let title = document.getElementById('trackTitle').value.trim();
+            let artist = document.getElementById('trackArtist').value.trim();
+            
+            if (!url) {
+                alert('❌ Вставь ссылку на трек!');
+                return;
+            }
+            
+            loadBtn.disabled = true;
+            loadBtn.textContent = '⏳ Загрузка...';
+
+            try {
+                // Если это ссылка на Яндекс Музыку
+                if (url.includes('music.yandex.ru')) {
+                    const response = await fetch(`/api/resolve_yandex?url=${encodeURIComponent(url)}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        audio.src = data.direct_url;
+                        document.getElementById('title').textContent = data.title;
+                        document.getElementById('artist').textContent = data.artist;
+                    } else {
+                        throw new Error(data.error || 'Не удалось получить трек');
+                    }
+                } else {
+                    // Прямая ссылка на MP3
+                    audio.src = url;
+                    if (!title) document.getElementById('title').textContent = 'Custom Track';
+                    if (!artist) document.getElementById('artist').textContent = 'Unknown Artist';
+                }
+                
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                
+                await audio.play();
+                isPlaying = true;
+                playBtn.textContent = '⏸';
+                cover.classList.add('playing');
+                
+            } catch (err) {
+                alert('❌ Ошибка:\n' + err.message + '\n\nУбедись, что ссылка правильная и трек доступен.');
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = '▶️ Загрузить трек';
+            }
+        }
+
+        function togglePlay() {
+            if (!audio.src) { alert('❌ Сначала загрузи трек!'); return; }
+            
+            if (isPlaying) {
+                audio.pause();
+                playBtn.textContent = '▶️';
+                cover.classList.remove('playing');
+            } else {
+                audio.play();
+                playBtn.textContent = '';
+                cover.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        }
+
+        function seek(event) {
+            if (!audio.duration) return;
+            const progress = event.offsetX / event.target.offsetWidth;
+            audio.currentTime = progress * audio.duration;
+        }
+
+        function setVolume(value) { audio.volume = value / 100; }
+
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = progress + '%';
+                document.getElementById('currentTime').textContent = formatTime(audio.currentTime);
+                document.getElementById('duration').textContent = formatTime(audio.duration);
+            }
+        });
+
+        audio.addEventListener('ended', () => {
+            isPlaying = false; playBtn.textContent = '▶️';
+            cover.classList.remove('playing'); progressBar.style.width = '0%';
+        });
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        setVolume(70);
     </script>
 </body>
 </html>
