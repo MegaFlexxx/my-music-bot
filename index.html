@@ -84,7 +84,7 @@
         }
 
         .header h1::after {
-            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
@@ -212,20 +212,13 @@
             overflow: hidden; position: relative; transition: all 0.5s ease;
         }
 
-        /* ✅ ИСПРАВЛЕННЫЙ СТИЛЬ ДЛЯ ЧЕРЕПА */
         .cover .default-icon {
-            font-size: 100px;
-            position: absolute;
+            font-size: 100px; position: absolute;
             filter: grayscale(100%) brightness(1.5) drop-shadow(0 0 20px rgba(255,255,255,0.3));
-            opacity: 0.6;
-            animation: skullFloat 4s ease-in-out infinite;
-            will-change: transform;
+            opacity: 0.6; animation: skullFloat 4s ease-in-out infinite; will-change: transform;
         }
 
-        @keyframes skullFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
+        @keyframes skullFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         .cover.playing {
             animation: rotateOnly 20s linear infinite; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.4);
@@ -326,130 +319,154 @@
             letter-spacing: 10px; user-select: none; animation: chainSwing 4s ease-in-out infinite;
         }
 
-        /* ✅ СТИЛИ ДЛЯ ПАНЕЛИ СТАТИСТИКИ */
-        .stats-panel {
+        /* ✅ СТИЛИ ДЛЯ ПАНЕЛЕЙ (СТАТИСТИКА И ИСТОРИЯ) */
+        .panel-overlay {
             position: fixed; bottom: 0; left: 0; width: 100%; max-width: 450px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(10px);
-            border-top: 2px solid rgba(200, 200, 200, 0.3); border-radius: 20px 20px 0 0;
-            padding: 25px 30px; z-index: 100;
+            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px);
+            border-top: 2px solid rgba(200, 200, 200, 0.3); border-radius: 24px 24px 0 0;
+            padding: 30px; z-index: 100;
             transform: translateX(-50%) translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             font-family: 'Share Tech Mono', monospace;
+            max-height: 80vh; overflow-y: auto;
         }
 
-        .stats-panel.active { transform: translateX(-50%) translateY(0); }
+        .panel-overlay.active { transform: translateX(-50%) translateY(0); }
 
-        .stats-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
             border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;
         }
 
-        .stats-title {
-            font-size: 16px; color: #fff; letter-spacing: 2px; text-transform: uppercase;
-            display: flex; align-items: center; gap: 10px;
+        .panel-title {
+            font-size: 18px; color: #fff; letter-spacing: 2px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px; font-family: 'Orbitron', sans-serif;
         }
 
-        .stats-close {
-            background: none; border: none; color: #888; font-size: 24px; cursor: pointer;
-            transition: color 0.3s ease; padding: 5px;
+        .panel-close {
+            background: none; border: none; color: #888; font-size: 28px; cursor: pointer;
+            transition: color 0.3s ease; padding: 5px; line-height: 1;
         }
 
-        .stats-close:hover { color: #fff; }
+        .panel-close:hover { color: #fff; }
 
         .stats-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
         }
 
         .stat-card {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px; padding: 15px; text-align: center;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 18px 12px; text-align: center;
+            transition: all 0.3s ease;
         }
 
         .stat-value {
-            font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 5px;
+            font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px;
             font-family: 'Orbitron', sans-serif;
         }
 
-        .stat-label { font-size: 10px; color: #666; letter-spacing: 1px; text-transform: uppercase; }
+        .stat-label { font-size: 10px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; }
 
         .top-artists { margin-top: 10px; }
-
         .top-artists-title {
-            font-size: 12px; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+            font-size: 11px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+            font-family: 'Orbitron', sans-serif;
         }
-
         .artist-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
         }
-
         .artist-name { font-size: 13px; color: #ccc; }
         .artist-count { font-size: 12px; color: #666; font-family: 'Share Tech Mono', monospace; }
 
-        /* ✅ КАСТОМНАЯ КНОПКА СТАТИСТИКИ (ХРОМ ТАБЛЕТКА) */
-        .stats-toggle-btn {
-            position: fixed; 
-            bottom: 25px; 
-            right: 20px; 
-            /* Прямоугольная форма со скруглением */
-            width: auto; 
-            height: 44px;
-            padding: 0 18px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 8px;
-            
-            /* Хромированный градиент */
+        /* ✅ СТИЛИ ДЛЯ ИСТОРИИ ТРЕКОВ */
+        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        
+        .history-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px; cursor: pointer; transition: all 0.3s ease;
+        }
+        
+        .history-item:hover {
+            background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+
+        .history-item img {
+            width: 45px; height: 45px; border-radius: 8px; object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.1); filter: grayscale(100%);
+        }
+
+        .history-item .h-info { flex: 1; min-width: 0; }
+        .history-item .h-title {
+            font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-family: 'Orbitron', sans-serif; text-transform: uppercase;
+        }
+        .history-item .h-artist {
+            font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .history-item .h-time { font-size: 10px; color: #555; font-family: 'Share Tech Mono', monospace; }
+
+        /* ✅ КНОПКИ УПРАВЛЕНИЯ (STATS + HISTORY) */
+        .controls-group {
+            position: fixed; bottom: 25px; right: 20px; z-index: 99;
+            display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+        }
+
+        .ctrl-btn {
+            height: 44px; padding: 0 18px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
             background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 40%, #808080 60%, #c0c0c0 100%);
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: 22px; 
-            
-            /* Текст и шрифт */
-            font-family: 'Orbitron', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            color: #000;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            
-            /* Тени для объема */
-            box-shadow: 
-                0 4px 15px rgba(0,0,0,0.6),
-                inset 0 1px 0 rgba(255,255,255,0.9);
-            z-index: 99; 
-            transition: all 0.2s ease;
-            backdrop-filter: blur(5px);
-            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.4); border-radius: 22px;
+            font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;
+            color: #000; letter-spacing: 1px; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.9);
+            transition: all 0.2s ease; backdrop-filter: blur(5px); cursor: pointer;
+            white-space: nowrap;
         }
 
-        /* Иконка внутри кнопки */
-        .stats-toggle-btn svg {
-            width: 18px;
-            height: 18px;
-            fill: #000;
-        }
-
-        /* Эффект нажатия */
-        .stats-toggle-btn:active { 
+        .ctrl-btn svg { width: 18px; height: 18px; fill: #000; }
+        .ctrl-btn:active { 
             transform: scale(0.95); 
-            box-shadow: 
-                0 2px 8px rgba(0,0,0,0.8),
-                inset 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.8), inset 0 2px 5px rgba(0,0,0,0.3);
             filter: brightness(0.9);
+        }
+
+        /* ✅ ЭФФЕКТ БЕРСЕРКА (СТРОБОСКОП) */
+        @keyframes berserkFlash {
+            0% { background-color: rgba(255,255,255,0); }
+            20% { background-color: rgba(255,255,255,0.8); }
+            40% { background-color: rgba(255,0,0,0.6); }
+            60% { background-color: rgba(255,255,255,0.4); }
+            80% { background-color: rgba(255,0,0,0.3); }
+            100% { background-color: rgba(255,255,255,0); }
+        }
+
+        .berserk-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 999; opacity: 0;
+        }
+
+        .berserk-overlay.active {
+            animation: berserkFlash 0.3s ease-out forwards;
         }
     </style>
 </head>
 <body>
+    <!-- ✅ ОВЕРЛЕЙ ДЛЯ ЭФФЕКТА БЕРСЕРКА -->
+    <div class="berserk-overlay" id="berserkOverlay"></div>
+
     <div class="player-container">
         <div class="chain-decoration">⛓</div>
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p>⚡ Big Penis Bro Gang ☠️</p>
+            <p> Big Penis Bro Gang ☠️</p>
         </div>
 
         <div class="search-container">
-            <input type="text" class="search-input" id="searchQuery" placeholder="⚡ SEARCH: artist or track name">
+            <input type="text" class="search-input" id="searchQuery" placeholder=" SEARCH: artist or track name">
             <button class="search-btn" id="searchBtn" onclick="searchTracks()"> Search</button>
         </div>
 
@@ -460,10 +477,9 @@
         <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
         <button class="load-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
-        <!-- ✅ ИСПРАВЛЕННЫЙ БЛОК ОБЛОЖКИ С ЧЕРЕПОМ -->
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon">☠️</span>
+                <span class="default-icon" id="defaultIcon">️</span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
@@ -500,43 +516,54 @@
         </div>
     </div>
 
-    <!-- ✅ НОВАЯ СТИЛЬНАЯ КНОПКА СТАТИСТИКИ -->
-    <button class="stats-toggle-btn" onclick="toggleStats()">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 3v18h18v-2H5V3H3zm4 14h2v-6H7v6zm4 0h2v-10h-2v10zm4 0h2v-4h-2v4z"/>
-        </svg>
-        <span>STATS</span>
-    </button>
+    <!-- ✅ ГРУППА КНОПОК УПРАВЛЕНИЯ -->
+    <div class="controls-group">
+        <button class="ctrl-btn" onclick="toggleHistory()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+            </svg>
+            <span>HISTORY</span>
+        </button>
+        <button class="ctrl-btn" onclick="toggleStats()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3v18h18v-2H5V3H3zm4 14h2v-6H7v6zm4 0h2v-10h-2v10zm4 0h2v-4h-2v4z"/>
+            </svg>
+            <span>STATS</span>
+        </button>
+    </div>
 
     <!-- ✅ ПАНЕЛЬ СТАТИСТИКИ -->
-    <div class="stats-panel" id="statsPanel">
-        <div class="stats-header">
-            <div class="stats-title">📊 GANG STATS</div>
-            <button class="stats-close" onclick="toggleStats()">×</button>
+    <div class="panel-overlay" id="statsPanel">
+        <div class="panel-header">
+            <div class="panel-title">📊 GANG STATS</div>
+            <button class="panel-close" onclick="toggleStats()">×</button>
         </div>
         
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="totalTracks">0</div>
-                <div class="stat-label">TRACKS PLAYED</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalTime">0m</div>
-                <div class="stat-label">LISTENING TIME</div>
-            </div>
             <div class="stat-card">
                 <div class="stat-value" id="todayTracks">0</div>
                 <div class="stat-label">TODAY</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="favArtist">-</div>
-                <div class="stat-label">TOP ARTIST</div>
+                <div class="stat-value" id="totalTracks">0</div>
+                <div class="stat-label">ALL TIME</div>
             </div>
         </div>
         
         <div class="top-artists">
             <div class="top-artists-title">TOP ARTISTS</div>
             <div id="artistsList"></div>
+        </div>
+    </div>
+
+    <!-- ✅ ПАНЕЛЬ ИСТОРИИ ТРЕКОВ -->
+    <div class="panel-overlay" id="historyPanel">
+        <div class="panel-header">
+            <div class="panel-title">🕒 LAST PLAYED</div>
+            <button class="panel-close" onclick="toggleHistory()">×</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- Сюда будут добавляться треки -->
         </div>
     </div>
 
@@ -559,58 +586,50 @@
         // ✅ СИСТЕМА СТАТИСТИКИ
         const stats = {
             totalTracks: 0,
-            totalTime: 0, // в секундах
             todayTracks: 0,
             lastDate: new Date().toDateString(),
             artists: {}
         };
 
-        // Загрузка статистики из localStorage
+        // ✅ ИСТОРИЯ ТРЕКОВ (максимум 10 последних)
+        let trackHistory = [];
+
         function loadStats() {
             const saved = localStorage.getItem('chromeReaperStats');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 Object.assign(stats, parsed);
                 
-                // Проверка на новый день
                 const today = new Date().toDateString();
                 if (stats.lastDate !== today) {
                     stats.todayTracks = 0;
                     stats.lastDate = today;
                 }
             }
+
+            const savedHistory = localStorage.getItem('chromeReaperHistory');
+            if (savedHistory) {
+                trackHistory = JSON.parse(savedHistory);
+            }
+
             updateStatsUI();
+            updateHistoryUI();
         }
 
-        // Сохранение статистики
         function saveStats() {
             localStorage.setItem('chromeReaperStats', JSON.stringify(stats));
             updateStatsUI();
         }
 
-        // Обновление UI статистики
+        function saveHistory() {
+            localStorage.setItem('chromeReaperHistory', JSON.stringify(trackHistory));
+            updateHistoryUI();
+        }
+
         function updateStatsUI() {
+            document.getElementById('todayTracks').textContent = stats.todayTracks;
             document.getElementById('totalTracks').textContent = stats.totalTracks;
             
-            // Форматирование времени
-            const hours = Math.floor(stats.totalTime / 3600);
-            const mins = Math.floor((stats.totalTime % 3600) / 60);
-            document.getElementById('totalTime').textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-            
-            document.getElementById('todayTracks').textContent = stats.todayTracks;
-            
-            // Топ артист
-            let topArtist = '-';
-            let maxCount = 0;
-            for (const [artist, count] of Object.entries(stats.artists)) {
-                if (count > maxCount) {
-                    maxCount = count;
-                    topArtist = artist.length > 10 ? artist.substring(0, 10) + '...' : artist;
-                }
-            }
-            document.getElementById('favArtist').textContent = topArtist;
-            
-            // Список топ артистов
             const artistsList = document.getElementById('artistsList');
             artistsList.innerHTML = '';
             const sortedArtists = Object.entries(stats.artists)
@@ -628,35 +647,139 @@
             });
         }
 
-        // Переключение панели статистики
+        function updateHistoryUI() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            
+            if (trackHistory.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#666; padding:20px;">No history yet...</div>';
+                return;
+            }
+
+            trackHistory.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.onclick = () => replayTrack(track);
+                
+                const timeAgo = getTimeAgo(track.timestamp);
+                
+                if (track.cover_url) {
+                    item.innerHTML = `
+                        <img src="${track.cover_url}" alt="Cover">
+                        <div class="h-info">
+                            <div class="h-title">${track.title}</div>
+                            <div class="h-artist">${track.artist}</div>
+                        </div>
+                        <div class="h-time">${timeAgo}</div>
+                    `;
+                } else {
+                    item.innerHTML = `
+                        <div class="h-info">
+                            <div class="h-title">${track.title}</div>
+                            <div class="h-artist">${track.artist}</div>
+                        </div>
+                        <div class="h-time">${timeAgo}</div>
+                    `;
+                }
+                
+                list.appendChild(item);
+            });
+        }
+
+        function getTimeAgo(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            
+            if (minutes < 1) return 'just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${Math.floor(hours / 24)}d ago`;
+        }
+
+        async function replayTrack(track) {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            
+            try {
+                const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${track.id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    audio.src = data.direct_url;
+                    document.getElementById('title').textContent = data.title;
+                    document.getElementById('artist').textContent = data.artist;
+                    setCover(data.cover_url);
+                    
+                    await audio.play();
+                    isPlaying = true;
+                    playBtn.textContent = '⏸';
+                    cover.classList.add('playing');
+                    
+                    // Закрываем панель истории
+                    document.getElementById('historyPanel').classList.remove('active');
+                }
+            } catch (err) {
+                alert('Error replaying track: ' + err.message);
+            }
+        }
+
         function toggleStats() {
             const panel = document.getElementById('statsPanel');
+            const histPanel = document.getElementById('historyPanel');
+            histPanel.classList.remove('active');
             panel.classList.toggle('active');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
-        // Отслеживание прослушивания
-        let listeningInterval = null;
-        audio.addEventListener('play', () => {
-            if (!listeningInterval) {
-                listeningInterval = setInterval(() => {
-                    stats.totalTime++;
-                    saveStats();
-                }, 1000);
+        function toggleHistory() {
+            const panel = document.getElementById('historyPanel');
+            const statPanel = document.getElementById('statsPanel');
+            statPanel.classList.remove('active');
+            panel.classList.toggle('active');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        // ✅ ФУНКЦИЯ БЕРСЕРКА (СТРОБОСКОП + ВИБРАЦИЯ)
+        function triggerBerserkMode() {
+            const overlay = document.getElementById('berserkOverlay');
+            overlay.classList.remove('active');
+            void overlay.offsetWidth; // Триггер перерисовки
+            overlay.classList.add('active');
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('heavy');
+                setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), 100);
             }
-        });
+            
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 300);
+        }
 
-        audio.addEventListener('pause', () => {
-            clearInterval(listeningInterval);
-            listeningInterval = null;
-        });
+        function addToHistory(trackData) {
+            const entry = {
+                id: trackData.id,
+                title: trackData.title,
+                artist: trackData.artist,
+                cover_url: trackData.cover_url || null,
+                timestamp: Date.now()
+            };
+            
+            // Удаляем дубликаты (если трек уже есть в истории, удаляем старую запись)
+            trackHistory = trackHistory.filter(t => t.id !== entry.id);
+            
+            // Добавляем в начало
+            trackHistory.unshift(entry);
+            
+            // Ограничиваем до 10 треков
+            if (trackHistory.length > 10) {
+                trackHistory = trackHistory.slice(0, 10);
+            }
+            
+            saveHistory();
+        }
 
-        audio.addEventListener('ended', () => {
-            clearInterval(listeningInterval);
-            listeningInterval = null;
-        });
-
-        // Функция обновления статистики при запуске трека
         function updateTrackStats(artist) {
             stats.totalTracks++;
             stats.todayTracks++;
@@ -679,7 +802,7 @@
         function setCover(url) {
             if (!url) {
                 coverImage.style.display = 'none';
-                defaultIcon.style.display = 'block'; // ✅ Возвращаем череп
+                defaultIcon.style.display = 'block';
                 return;
             }
             
@@ -738,7 +861,7 @@
                             `;
                         } else {
                             item.innerHTML = `
-                                <div class="default-cover">☠️</div>
+                                <div class="default-cover">️</div>
                                 <div class="info">
                                     <div class="title">${track.title}</div>
                                     <div class="artist">${track.artist}</div>
@@ -759,7 +882,7 @@
                 }
                 
             } catch (err) {
-                alert('⚡ Search error: ' + err.message);
+                alert(' Search error: ' + err.message);
             } finally {
                 searchBtn.disabled = false;
                 searchBtn.textContent = '⚡ SEARCH';
@@ -771,6 +894,9 @@
             loadBtn.textContent = 'LOADING...';
             loadBtn.classList.add('loading');
             
+            // ✅ ТРИГГЕР БЕРСЕРКА ПРИ ВЫБОРЕ ТРЕКА ИЗ ПОИСКА
+            triggerBerserkMode();
+            
             try {
                 const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${track.id}`);
                 const data = await response.json();
@@ -781,14 +907,21 @@
                     document.getElementById('artist').textContent = track.artist;
                     setCover(track.cover_url);
                     
-                    // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
                     updateTrackStats(track.artist);
+                    
+                    // ✅ ДОБАВЛЯЕМ В ИСТОРИЮ
+                    addToHistory({
+                        id: track.id,
+                        title: track.title,
+                        artist: track.artist,
+                        cover_url: track.cover_url
+                    });
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '⏸';
+                    playBtn.textContent = '';
                     cover.classList.add('playing');
                 } else {
                     throw new Error(data.error || 'Failed to load track');
@@ -809,13 +942,16 @@
             let artist = document.getElementById('trackArtist').value.trim();
             
             if (!url) {
-                alert('⚡ Paste track link!');
+                alert(' Paste track link!');
                 return;
             }
             
             loadBtn.disabled = true;
             loadBtn.textContent = 'LOADING...';
             loadBtn.classList.add('loading');
+
+            // ✅ ТРИГГЕР БЕРСЕРКА ПРИ ЗАГРУЗКЕ ТРЕКА
+            triggerBerserkMode();
 
             try {
                 if (url.includes('music.yandex.ru')) {
@@ -828,8 +964,15 @@
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
                         
-                        // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
                         updateTrackStats(data.artist);
+                        
+                        // ✅ ДОБАВЛЯЕМ В ИСТОРИЮ
+                        addToHistory({
+                            id: url.split('/track/')[1]?.split('?')[0] || 'unknown',
+                            title: data.title,
+                            artist: data.artist,
+                            cover_url: data.cover_url
+                        });
                     } else {
                         throw new Error(data.error || 'Failed to get track');
                     }
@@ -839,15 +982,22 @@
                     document.getElementById('artist').textContent = artist || 'Unknown Artist';
                     setCover(null);
                     
-                    // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
                     updateTrackStats(artist || 'Unknown Artist');
+                    
+                    // ✅ ДОБАВЛЯЕМ В ИСТОРИЮ
+                    addToHistory({
+                        id: 'custom_' + Date.now(),
+                        title: title || 'Custom Track',
+                        artist: artist || 'Unknown Artist',
+                        cover_url: null
+                    });
                 }
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '⏸';
+                playBtn.textContent = '';
                 cover.classList.add('playing');
                 
             } catch (err) {
@@ -919,7 +1069,7 @@
 
         setVolume(70);
 
-        // ✅ ИНИЦИАЛИЗАЦИЯ СТАТИСТИКИ ПРИ ЗАГРУЗКЕ
+        // ✅ ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
         loadStats();
 
         // ✅ ОПТИМИЗИРОВАННАЯ ФУНКЦИЯ REAPER MODE
@@ -1016,8 +1166,15 @@
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
                         
-                        // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ ДЛЯ REAPER TRACK
                         updateTrackStats(data.artist);
+                        
+                        // ✅ ДОБАВЛЯЕМ REAPER TRACK В ИСТОРИЮ
+                        addToHistory({
+                            id: reaperTrackId,
+                            title: data.title,
+                            artist: data.artist,
+                            cover_url: data.cover_url
+                        });
                         
                         await audio.play();
                         isPlaying = true;
