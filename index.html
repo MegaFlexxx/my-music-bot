@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Skibidi Player</title>
+    <title>Skibidi Chrome Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; }
+        
         body {
-            background: radial-gradient(circle at top, #1a0033, #000);
+            background: #050505;
+            /* Тонкая сетка на фоне для вайба */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
             color: #fff;
             min-height: 100vh;
             display: flex;
@@ -17,97 +23,235 @@
             justify-content: center;
             padding: 20px;
         }
+
         .player-container {
             width: 100%;
             max-width: 400px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(20, 20, 20, 0.6);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 24px;
             padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
-        .header { text-align: center; margin-bottom: 25px; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        
+        /* ХРОМ ТЕКСТ */
         .header h1 {
-            font-size: 24px; font-weight: 800;
-            background: linear-gradient(90deg, #b026ff, #00f0ff);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
+            font-size: 26px; 
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: linear-gradient(180deg, #ffffff 0%, #d4d4d4 40%, #777777 50%, #d4d4d4 60%, #ffffff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
         }
-        .header p { color: #888; font-size: 12px; margin-top: 5px; }
+        
+        .header p { 
+            color: #666; 
+            font-size: 11px; 
+            margin-top: 8px; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
 
         .player-input {
-            width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
-            color: #fff; font-size: 14px; outline: none; margin-bottom: 10px;
+            width: 100%; 
+            padding: 14px; 
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px;
+            color: #fff; 
+            font-size: 14px; 
+            outline: none; 
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
         }
-        .player-input:focus { border-color: #b026ff; }
-        .player-input::placeholder { color: #666; }
+        .player-input:focus { 
+            border-color: rgba(255, 255, 255, 0.5); 
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+        }
+        .player-input::placeholder { color: #555; }
         
+        /* ХРОМ КНОПКА ЗАГРУЗКИ */
         .load-btn {
-            width: 100%; padding: 12px;
-            background: linear-gradient(135deg, #b026ff, #00f0ff);
-            border: none; border-radius: 12px; color: #fff; font-weight: 700;
-            cursor: pointer; margin-bottom: 25px; transition: all 0.3s ease;
+            width: 100%; 
+            padding: 14px;
+            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px; 
+            color: #000; 
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer; 
+            margin-bottom: 30px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
         }
-        .load-btn:active { transform: scale(0.98); }
+        .load-btn:active { 
+            transform: scale(0.98); 
+            filter: brightness(0.9);
+        }
         .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .cover-container {
-            width: 100%; aspect-ratio: 1; margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: center;
+            width: 100%; 
+            aspect-ratio: 1; 
+            margin-bottom: 25px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            position: relative;
         }
+        
         .cover {
-            width: 100%; height: 100%;
-            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            width: 100%; 
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a 0%, #4a4a4a 25%, #1a1a1a 50%, #3a3a3a 75%, #0a0a0a 100%);
             border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 80px; box-shadow: 0 10px 40px rgba(176, 38, 255, 0.3);
-            overflow: hidden; position: relative;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 80px; 
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden; 
+            position: relative;
             transition: all 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
+        
         .cover.playing {
             animation: rotate 20s linear infinite;
             border-radius: 50%;
-            box-shadow: 0 10px 60px rgba(176, 38, 255, 0.6);
+            box-shadow: 
+                0 0 60px rgba(255, 255, 255, 0.15),
+                inset 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
+        
         .cover img {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
             border-radius: inherit;
         }
+        
         .cover .default-icon {
-            font-size: 80px; position: absolute;
+            font-size: 80px; 
+            position: absolute;
+            filter: grayscale(100%) brightness(1.5);
+            opacity: 0.5;
         }
+        
         @keyframes rotate { 
             from { transform: rotate(0deg); } 
             to { transform: rotate(360deg); } 
         }
         
-        .track-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 5px; word-break: break-word; }
-        .track-artist { font-size: 14px; color: #888; text-align: center; margin-bottom: 25px; }
-        
-        .play-btn {
-            width: 70px; height: 70px; background: linear-gradient(135deg, #b026ff, #00f0ff);
-            border: none; border-radius: 50%; font-size: 30px; color: #fff;
-            cursor: pointer; display: block; margin: 0 auto 25px; transition: all 0.3s ease;
+        .track-title { 
+            font-size: 20px; 
+            font-weight: 700; 
+            text-align: center; 
+            margin-bottom: 5px; 
+            word-break: break-word; 
+            color: #fff;
         }
-        .play-btn:active { transform: scale(0.95); }
+        
+        .track-artist { 
+            font-size: 13px; 
+            color: #888; 
+            text-align: center; 
+            margin-bottom: 30px; 
+            letter-spacing: 0.5px;
+        }
+        
+        /* ХРОМ КНОПКА PLAY */
+        .play-btn {
+            width: 70px; 
+            height: 70px; 
+            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%; 
+            font-size: 30px; 
+            color: #000;
+            cursor: pointer; 
+            display: block; 
+            margin: 0 auto 30px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.15), inset 0 2px 0 rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-btn:active { 
+            transform: scale(0.95); 
+            filter: brightness(0.9);
+        }
         
         .progress {
-            width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px; overflow: hidden; cursor: pointer; margin-bottom: 8px;
+            width: 100%; 
+            height: 4px; 
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px; 
+            overflow: hidden; 
+            cursor: pointer; 
+            margin-bottom: 10px;
         }
-        .progress-bar { height: 100%; background: linear-gradient(90deg, #b026ff, #00f0ff); width: 0%; }
-        .time { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 20px; }
         
-        .volume { display: flex; align-items: center; gap: 10px; }
-        .volume input {
-            flex: 1; -webkit-appearance: none; height: 4px;
-            background: rgba(255, 255, 255, 0.1); border-radius: 2px; outline: none;
+        .progress-bar { 
+            height: 100%; 
+            background: linear-gradient(90deg, #ffffff, #aaaaaa); 
+            width: 0%; 
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
+        
+        .time { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 11px; 
+            color: #666; 
+            margin-bottom: 25px; 
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .volume { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+        }
+        
+        .volume-icon {
+            color: #888;
+            font-size: 16px;
+        }
+        
+        .volume input {
+            flex: 1; 
+            -webkit-appearance: none; 
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 2px; 
+            outline: none;
+        }
+        
         .volume input::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 14px; height: 14px;
-            background: #b026ff; border-radius: 50%; cursor: pointer;
+            -webkit-appearance: none; 
+            width: 14px; 
+            height: 14px;
+            background: linear-gradient(135deg, #fff, #aaa); 
+            border-radius: 50%; 
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
@@ -115,17 +259,17 @@
     <div class="player-container">
         <div class="header">
             <h1>SKIBIDI PLAYER</h1>
-            <p>Big Penis Bro Gang 💀🥀</p>
+            <p>Big Penis Bro Gang 💀</p>
         </div>
 
         <input type="text" class="player-input" id="trackUrl" placeholder="🔗 Ссылка на Яндекс Музыку или MP3">
         <input type="text" class="player-input" id="trackTitle" placeholder="Название (необязательно)">
         <input type="text" class="player-input" id="trackArtist" placeholder="Исполнитель (необязательно)">
-        <button class="load-btn" id="loadBtn" onclick="loadTrack()">▶️ Загрузить трек</button>
+        <button class="load-btn" id="loadBtn" onclick="loadTrack()">Загрузить трек</button>
 
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon">🎵</span>
+                <span class="default-icon" id="defaultIcon"></span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
@@ -133,7 +277,7 @@
         <div class="track-title" id="title">Skibidi Sound</div>
         <div class="track-artist" id="artist">Вставь ссылку выше</div>
         
-        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶️</button>
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
         
         <div class="progress" onclick="seek(event)">
             <div class="progress-bar" id="progressBar"></div>
@@ -144,7 +288,7 @@
         </div>
         
         <div class="volume">
-            <span>🔊</span>
+            <span class="volume-icon">🔊</span>
             <input type="range" min="0" max="100" value="70" oninput="setVolume(this.value)">
         </div>
     </div>
@@ -187,7 +331,7 @@
             }
             
             loadBtn.disabled = true;
-            loadBtn.textContent = '⏳ Загрузка...';
+            loadBtn.textContent = 'ЗАГРУЗКА...';
 
             try {
                 if (url.includes('music.yandex.ru')) {
@@ -220,7 +364,7 @@
                 alert('❌ Ошибка:\n' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = '▶️ Загрузить трек';
+                loadBtn.textContent = 'ЗАГРУЗИТЬ ТРЕК';
             }
         }
 
@@ -229,11 +373,11 @@
             
             if (isPlaying) {
                 audio.pause();
-                playBtn.textContent = '▶️';
+                playBtn.textContent = '▶';
                 cover.classList.remove('playing');
             } else {
                 audio.play();
-                playBtn.textContent = '⏸';
+                playBtn.textContent = '';
                 cover.classList.add('playing');
             }
             isPlaying = !isPlaying;
@@ -258,7 +402,7 @@
         });
 
         audio.addEventListener('ended', () => {
-            isPlaying = false; playBtn.textContent = '▶️';
+            isPlaying = false; playBtn.textContent = '▶';
             cover.classList.remove('playing'); progressBar.style.width = '0%';
         });
 
