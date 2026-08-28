@@ -84,7 +84,7 @@
         }
 
         .header h1::after {
-            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
@@ -290,7 +290,7 @@
             font-family: 'Share Tech Mono', monospace; letter-spacing: 2px;
         }
 
-        /* ✅ ГРОМКОСТЬ ВНУТРИ ПЛЕЕРА */
+        /* ✅ ХРОМИРОВАННАЯ ГРОМКОСТЬ */
         .volume-container {
             display: flex; align-items: center; gap: 15px; 
             padding-top: 15px; border-top: 1px solid rgba(150, 150, 150, 0.1);
@@ -307,15 +307,79 @@
             50% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.8)) drop-shadow(0 2px 6px rgba(0,0,0,0.9)); }
         }
 
-        .volume input {
-            flex: 1; -webkit-appearance: none; height: 5px;
-            background: linear-gradient(180deg, #1a1a1a, #0a0a0a); border: 1px solid rgba(150, 150, 150, 0.3); outline: none;
+        /* ✅ ПОЛНОСТЬЮ ХРОМИРОВАННЫЙ ПОЛЗУНОК */
+        .volume input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+            border: 1px solid rgba(150, 150, 150, 0.3);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
         }
 
-        .volume input::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 16px; height: 16px;
-            background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%); cursor: pointer;
-            box-shadow: 0 0 10px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.5);
+        /* Трек ползунка (заполненная часть) */
+        .volume input[type="range"]::-webkit-slider-runnable-track {
+            height: 5px;
+            background: linear-gradient(90deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(255,255,255,0.3);
+        }
+
+        /* Бегунок ползунка */
+        .volume input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #d0d0d0 30%, #909090 60%, #c0c0c0 100%);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 
+                0 0 12px rgba(255,255,255,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.9),
+                0 2px 4px rgba(0,0,0,0.5);
+            margin-top: -7px; /* Центрируем бегунок относительно трека */
+            transition: all 0.2s ease;
+        }
+
+        .volume input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 
+                0 0 18px rgba(255,255,255,0.7),
+                inset 0 1px 0 rgba(255,255,255,0.9),
+                0 2px 6px rgba(0,0,0,0.6);
+            transform: scale(1.1);
+        }
+
+        .volume input[type="range"]::-webkit-slider-thumb:active {
+            box-shadow: 
+                0 0 10px rgba(255,255,255,0.4),
+                inset 0 2px 4px rgba(0,0,0,0.3);
+            transform: scale(0.95);
+        }
+
+        /* Для Firefox */
+        .volume input[type="range"]::-moz-range-track {
+            height: 5px;
+            background: linear-gradient(90deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(255,255,255,0.3);
+        }
+
+        .volume input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #d0d0d0 30%, #909090 60%, #c0c0c0 100%);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 
+                0 0 12px rgba(255,255,255,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.9),
+                0 2px 4px rgba(0,0,0,0.5);
         }
 
         .chain-decoration {
@@ -354,14 +418,14 @@
 
         .panel-close:hover { color: #fff; }
 
-        /* ✅ СТАТИСТИКА В ХРОМ-СТИЛЕ (БЕЗ СИНЕГО!) */
+        /* ✅ СТАТИСТИКА В ХРОМ-СТИЛЕ */
         .stats-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;
         }
 
         .stat-card {
             background: rgba(255,255,255,0.03); 
-            border: 1px solid rgba(200,200,200,0.15); /* Хромированная рамка */
+            border: 1px solid rgba(200,200,200,0.15);
             border-radius: 14px; padding: 18px 12px; text-align: center;
             transition: all 0.3s ease;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
@@ -369,10 +433,10 @@
 
         .stat-value {
             font-size: 26px; font-weight: 700; 
-            color: #e0e0e0; /* Серебристый текст */
+            color: #e0e0e0;
             margin-bottom: 6px;
             font-family: 'Orbitron', sans-serif;
-            text-shadow: 0 0 10px rgba(255,255,255,0.2); /* Легкое свечение */
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
         }
 
         .stat-label { 
@@ -473,11 +537,11 @@
     <div class="berserk-overlay" id="berserkOverlay"></div>
 
     <div class="player-container">
-        <div class="chain-decoration">⛓</div>
+        <div class="chain-decoration"></div>
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p> Big Penis Bro Gang ☠️</p>
+            <p> Big Penis Bro Gang ️</p>
         </div>
 
         <div class="search-container">
@@ -580,7 +644,7 @@
 
     <div class="panel-overlay" id="historyPanel">
         <div class="panel-header">
-            <div class="panel-title">🕒 LAST PLAYED</div>
+            <div class="panel-title"> LAST PLAYED</div>
             <button class="panel-close" onclick="toggleHistory()">×</button>
         </div>
         <div class="history-list" id="historyList"></div>
@@ -748,7 +812,7 @@
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '⏸';
+                    playBtn.textContent = '';
                     cover.classList.add('playing');
                     
                     document.getElementById('historyPanel').classList.remove('active');
@@ -1150,7 +1214,7 @@
             
             const reaperMsg = document.createElement('div');
             reaperMsg.id = 'reaperMsg';
-            reaperMsg.textContent = '⚠️ MAX VOLUME ACTIVATED ☠️';
+            reaperMsg.textContent = '️ MAX VOLUME ACTIVATED ☠️';
             reaperMsg.style.cssText = `
                 position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
                 font-family: 'Nosifer', cursive; font-size: 20px; color: #ff003c;
