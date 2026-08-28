@@ -61,16 +61,48 @@
         .load-btn:active { transform: scale(0.98); }
         .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        .cover {
-            width: 100%; aspect-ratio: 1;
-            background: linear-gradient(135deg, #b026ff, #00f0ff);
-            border-radius: 16px; margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 80px; box-shadow: 0 10px 40px rgba(176, 38, 255, 0.3);
-            animation: rotate 20s linear infinite; animation-play-state: paused;
+        /* 🔥 ОБЛОЖКА 🔥 */
+        .cover-container {
+            width: 100%;
+            aspect-ratio: 1;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
-        .cover.playing { animation-play-state: running; }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .cover {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #b026ff, #00f0ff);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            box-shadow: 0 10px 40px rgba(176, 38, 255, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        .cover.playing {
+            animation: rotate 20s linear infinite;
+            border-radius: 50%;
+            box-shadow: 0 10px 60px rgba(176, 38, 255, 0.5);
+        }
+        .cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+        }
+        .cover .default-icon {
+            font-size: 80px;
+            position: absolute;
+        }
+        @keyframes rotate { 
+            from { transform: rotate(0deg); } 
+            to { transform: rotate(360deg); } 
+        }
         
         .track-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 5px; word-break: break-word; }
         .track-artist { font-size: 14px; color: #888; text-align: center; margin-bottom: 20px; }
@@ -111,14 +143,14 @@
             <p>Big Penis Bro Gang 💀🥀</p>
         </div>
         <div class="grid">
-            <div class="btn" onclick="sendCommand('/moose')"><span class="btn-icon">🦌</span><span class="btn-text">Рандом</span></div>
-            <div class="btn" onclick="sendCommand('/weather')"><span class="btn-icon"></span><span class="btn-text">Погода</span></div>
-            <div class="btn" onclick="sendCommand('/currency')"><span class="btn-icon">💰</span><span class="btn-text">Валюты</span></div>
+            <div class="btn" onclick="sendCommand('/moose')"><span class="btn-icon"></span><span class="btn-text">Рандом</span></div>
+            <div class="btn" onclick="sendCommand('/weather')"><span class="btn-icon">🌦</span><span class="btn-text">Погода</span></div>
+            <div class="btn" onclick="sendCommand('/currency')"><span class="btn-icon"></span><span class="btn-text">Валюты</span></div>
             <div class="btn" onclick="sendCommand('/btc')"><span class="btn-icon">🪙</span><span class="btn-text">Крипта</span></div>
             <div class="btn full-width" onclick="showPlayer()"><span class="btn-icon">🎵</span><span class="btn-text">Плеер</span></div>
             <div class="btn full-width" onclick="sendCommand('/stats')"><span class="btn-icon">📊</span><span class="btn-text">Статистика (Админ)</span></div>
         </div>
-        <div class="footer">v2.0 // Render // Python</div>
+        <div class="footer">v2.1 // Render // Python</div>
     </div>
 
     <div id="playerSection" class="player-section">
@@ -132,7 +164,14 @@
         <input type="text" class="player-input" id="trackArtist" placeholder="Исполнитель (авто для Яндекса)">
         <button class="load-btn" id="loadBtn" onclick="loadTrack()">▶️ Загрузить трек</button>
 
-        <div class="cover" id="cover">🎵</div>
+        <!-- 🔥 ОБЛОЖКА С КАРТИНКОЙ 🔥 -->
+        <div class="cover-container">
+            <div class="cover" id="cover">
+                <span class="default-icon" id="defaultIcon">🎵</span>
+                <img id="coverImage" src="" alt="Cover" style="display: none;">
+            </div>
+        </div>
+        
         <div class="track-title" id="title">Skibidi Sound</div>
         <div class="track-artist" id="artist">Вставь ссылку выше</div>
         
@@ -147,7 +186,7 @@
         </div>
         
         <div class="volume">
-            <span></span>
+            <span>🔊</span>
             <input type="range" min="0" max="100" value="70" oninput="setVolume(this.value)">
         </div>
 
@@ -165,6 +204,8 @@
         const playBtn = document.getElementById('playBtn');
         const progressBar = document.getElementById('progressBar');
         const cover = document.getElementById('cover');
+        const coverImage = document.getElementById('coverImage');
+        const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
@@ -185,6 +226,18 @@
             document.getElementById('mainMenu').classList.remove('hidden');
         }
 
+        // 🔥 ФУНКЦИЯ ДЛЯ УСТАНОВКИ ОБЛОЖКИ 🔥
+        function setCover(url) {
+            if (url) {
+                coverImage.src = url;
+                coverImage.style.display = 'block';
+                defaultIcon.style.display = 'none';
+            } else {
+                coverImage.style.display = 'none';
+                defaultIcon.style.display = 'block';
+            }
+        }
+
         async function loadTrack() {
             const url = document.getElementById('trackUrl').value.trim();
             let title = document.getElementById('trackTitle').value.trim();
@@ -199,7 +252,6 @@
             loadBtn.textContent = '⏳ Загрузка...';
 
             try {
-                // Если это ссылка на Яндекс Музыку
                 if (url.includes('music.yandex.ru')) {
                     const response = await fetch(`/api/resolve_yandex?url=${encodeURIComponent(url)}`);
                     const data = await response.json();
@@ -208,14 +260,15 @@
                         audio.src = data.direct_url;
                         document.getElementById('title').textContent = data.title;
                         document.getElementById('artist').textContent = data.artist;
+                        setCover(data.cover_url);  // 🔥 УСТАНАВЛИВАЕМ ОБЛОЖКУ 🔥
                     } else {
                         throw new Error(data.error || 'Не удалось получить трек');
                     }
                 } else {
-                    // Прямая ссылка на MP3
                     audio.src = url;
-                    if (!title) document.getElementById('title').textContent = 'Custom Track';
-                    if (!artist) document.getElementById('artist').textContent = 'Unknown Artist';
+                    document.getElementById('title').textContent = title || 'Custom Track';
+                    document.getElementById('artist').textContent = artist || 'Unknown Artist';
+                    setCover(null);  // Для прямых MP3 обложки нет
                 }
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
@@ -242,7 +295,7 @@
                 cover.classList.remove('playing');
             } else {
                 audio.play();
-                playBtn.textContent = '';
+                playBtn.textContent = '⏸';
                 cover.classList.add('playing');
             }
             isPlaying = !isPlaying;
