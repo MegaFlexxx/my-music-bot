@@ -491,7 +491,7 @@ async def set_commands():
         BotCommand(command="start", description="🚀 Запустить бота"),
         BotCommand(command="stats", description="📊 Статистика (админ)"),
         BotCommand(command="moose", description="🦌 Случайный трек/фото"),
-        BotCommand(command="weather", description=" Погода в городе"),
+        BotCommand(command="weather", description="⛅️ Погода в городе"),
         BotCommand(command="currency", description="💰 Курс валют"),
         BotCommand(command="btc", description="🪙 Курс криптовалют"),
     ]
