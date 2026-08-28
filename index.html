@@ -62,8 +62,6 @@
                 0 0 100px rgba(0, 0, 0, 0.8);
             position: relative;
             overflow: hidden;
-            transition: transform 0.1s ease;
-            transform-style: preserve-3d;
         }
 
         .player-container::before {
@@ -156,7 +154,7 @@
         }
 
         .header h1::after {
-            content: '️';
+            content: '☠️';
             position: absolute;
             top: 50%;
             right: -40px;
@@ -736,12 +734,12 @@
     </style>
 </head>
 <body>
-    <div class="player-container" id="playerContainer">
+    <div class="player-container">
         <div class="chain-decoration">⛓⛓</div>
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p>⚡ Big Penis Bro Gang ️</p>
+            <p>⚡ Big Penis Bro Gang ☠️</p>
         </div>
 
         <div class="search-container">
@@ -758,7 +756,7 @@
 
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon">️</span>
+                <span class="default-icon" id="defaultIcon">☠️</span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
@@ -821,27 +819,7 @@
         const coverImage = document.getElementById('coverImage');
         const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
-        const playerContainer = document.getElementById('playerContainer');
         let isPlaying = false;
-
-        // 3D TILT EFFECT
-        playerContainer.addEventListener('mousemove', (e) => {
-            const rect = playerContainer.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const rotateX = (y - centerY) / 20;
-            const rotateY = (centerX - x) / 20;
-            
-            playerContainer.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-        });
-
-        playerContainer.addEventListener('mouseleave', () => {
-            playerContainer.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
-        });
 
         function setCover(url) {
             if (url) {
@@ -994,7 +972,7 @@
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '';
+                playBtn.textContent = '⏸';
                 cover.classList.add('playing');
                 
             } catch (err) {
@@ -1015,7 +993,7 @@
                 cover.classList.remove('playing');
             } else {
                 audio.play();
-                playBtn.textContent = '';
+                playBtn.textContent = '⏸';
                 cover.classList.add('playing');
             }
             isPlaying = !isPlaying;
