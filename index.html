@@ -6,7 +6,7 @@
     <title>Chrome Reaper Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Metal+Mania&family=Orbitron:wght@400;700;900&display=swap');
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -22,6 +22,32 @@
             align-items: center;
             padding: 20px;
             font-family: 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* SCANLINES EFFECT */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            animation: scanlines 8s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
         }
 
         .player-container {
@@ -29,7 +55,6 @@
             max-width: 450px;
             background: linear-gradient(180deg, rgba(30,30,30,0.9) 0%, rgba(10,10,10,0.95) 100%);
             border: 2px solid rgba(200, 200, 200, 0.3);
-            border-radius: 0;
             padding: 40px 30px;
             box-shadow: 
                 0 0 60px rgba(255, 255, 255, 0.1),
@@ -37,6 +62,8 @@
                 0 0 100px rgba(0, 0, 0, 0.8);
             position: relative;
             overflow: hidden;
+            transition: transform 0.1s ease;
+            transform-style: preserve-3d;
         }
 
         .player-container::before {
@@ -47,6 +74,12 @@
             right: 0;
             height: 3px;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
 
         .header { 
@@ -55,7 +88,7 @@
             position: relative;
         }
 
-        /* CHROME REAPER LOGO STYLE */
+        /* GLITCH EFFECT ON LOGO */
         .header h1 {
             font-family: 'Metal Mania', cursive;
             font-size: 42px;
@@ -81,17 +114,49 @@
                 drop-shadow(0 0 20px rgba(255,255,255,0.3))
                 drop-shadow(0 2px 4px rgba(0,0,0,0.9));
             position: relative;
-            text-shadow: 
-                2px 2px 0px #000,
-                -1px -1px 0 #000,
-                1px -1px 0 #000,
-                -1px 1px 0 #000,
-                1px 1px 0 #000;
-            margin-bottom: 10px;
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 90%, 100% {
+                transform: translate(0);
+                filter: 
+                    drop-shadow(0 0 10px rgba(255,255,255,0.5))
+                    drop-shadow(0 0 20px rgba(255,255,255,0.3))
+                    drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            }
+            91% {
+                transform: translate(-2px, 1px);
+                filter: 
+                    drop-shadow(2px 0 10px rgba(255,0,0,0.5))
+                    drop-shadow(-2px 0 10px rgba(0,255,255,0.5))
+                    drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            }
+            92% {
+                transform: translate(2px, -1px);
+                filter: 
+                    drop-shadow(-2px 0 10px rgba(255,0,0,0.5))
+                    drop-shadow(2px 0 10px rgba(0,255,255,0.5))
+                    drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            }
+            93% {
+                transform: translate(-1px, 2px);
+                filter: 
+                    drop-shadow(1px 0 10px rgba(255,0,0,0.5))
+                    drop-shadow(-1px 0 10px rgba(0,255,255,0.5))
+                    drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            }
+            94% {
+                transform: translate(0);
+                filter: 
+                    drop-shadow(0 0 10px rgba(255,255,255,0.5))
+                    drop-shadow(0 0 20px rgba(255,255,255,0.3))
+                    drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            }
         }
 
         .header h1::after {
-            content: '️';
+            content: '☠️';
             position: absolute;
             top: 50%;
             right: -40px;
@@ -99,6 +164,12 @@
             font-size: 30px;
             filter: grayscale(100%) brightness(1.5);
             opacity: 0.8;
+            animation: skullPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes skullPulse {
+            0%, 100% { transform: translateY(-50%) scale(1); opacity: 0.8; }
+            50% { transform: translateY(-50%) scale(1.1); opacity: 1; }
         }
 
         .header h1::before {
@@ -109,6 +180,13 @@
             font-size: 25px;
             filter: grayscale(100%) brightness(1.3);
             opacity: 0.6;
+            animation: chainSwing 4s ease-in-out infinite;
+            transform-origin: top center;
+        }
+
+        @keyframes chainSwing {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
         }
         
         .header p { 
@@ -120,7 +198,6 @@
             font-weight: 600;
         }
 
-        /* CHROME INPUTS */
         .search-container {
             margin-bottom: 25px;
             position: relative;
@@ -131,7 +208,6 @@
             padding: 16px;
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 100%);
             border: 1px solid rgba(150, 150, 150, 0.3);
-            border-radius: 0;
             color: #fff;
             font-size: 13px;
             outline: none;
@@ -157,7 +233,6 @@
             font-style: italic;
         }
 
-        /* CHROME BUTTONS */
         .search-btn, .load-btn {
             width: 100%;
             padding: 16px;
@@ -172,7 +247,6 @@
                 #ffffff 100%
             );
             border: none;
-            border-radius: 0;
             color: #000;
             font-weight: 900;
             font-size: 14px;
@@ -217,7 +291,18 @@
             filter: grayscale(100%);
         }
 
-        /* SEARCH RESULTS */
+        /* LOADING ANIMATION */
+        .load-btn.loading {
+            background: linear-gradient(90deg, #606060, #808080, #606060);
+            background-size: 200% 100%;
+            animation: loadingShimmer 1.5s infinite;
+        }
+
+        @keyframes loadingShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
         .search-results {
             max-height: 300px;
             overflow-y: auto;
@@ -248,6 +333,23 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .result-item:hover::before {
+            left: 100%;
         }
 
         .result-item:hover {
@@ -260,11 +362,16 @@
         .result-item img {
             width: 55px;
             height: 55px;
-            border-radius: 0;
             object-fit: cover;
             background: #1a1a1a;
             border: 2px solid rgba(150,150,150,0.3);
             filter: grayscale(100%) contrast(1.2);
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover img {
+            filter: grayscale(0%) contrast(1.2);
+            border-color: rgba(255,255,255,0.6);
         }
 
         .result-item .default-cover {
@@ -310,7 +417,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* CHROME COVER */
         .cover-container {
             width: 100%;
             aspect-ratio: 1;
@@ -346,14 +452,35 @@
             transition: all 0.5s ease;
         }
 
+        /* PULSE EFFECT WHEN PLAYING */
         .cover.playing {
-            animation: rotate 20s linear infinite;
+            animation: rotate 20s linear infinite, pulse 2s ease-in-out infinite;
             border-radius: 50%;
             border: 4px solid rgba(255, 255, 255, 0.4);
             box-shadow: 
                 0 0 80px rgba(255, 255, 255, 0.3),
                 inset 0 0 60px rgba(0, 0, 0, 0.9),
                 0 0 150px rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 80px rgba(255, 255, 255, 0.3),
+                    inset 0 0 60px rgba(0, 0, 0, 0.9),
+                    0 0 150px rgba(255, 255, 255, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 100px rgba(255, 255, 255, 0.5),
+                    inset 0 0 60px rgba(0, 0, 0, 0.9),
+                    0 0 200px rgba(255, 255, 255, 0.4);
+            }
         }
 
         .cover img {
@@ -370,12 +497,6 @@
             opacity: 0.4;
         }
 
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* CHROME TEXT */
         .track-title { 
             font-family: 'Metal Mania', cursive;
             font-size: 28px;
@@ -405,7 +526,7 @@
             font-weight: 600;
         }
 
-        /* CHROME PLAY BUTTON */
+        /* ANIMATED PLAY BUTTON */
         .play-btn {
             width: 80px;
             height: 80px;
@@ -447,6 +568,33 @@
             border-radius: 50% 50% 0 0;
         }
 
+        .play-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            animation: playPulse 2s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes playPulse {
+            0% {
+                width: 100%;
+                height: 100%;
+                opacity: 0.5;
+            }
+            100% {
+                width: 150%;
+                height: 150%;
+                opacity: 0;
+            }
+        }
+
         .play-btn:active {
             transform: scale(0.95);
             box-shadow: 
@@ -454,17 +602,17 @@
                 inset 0 2px 10px rgba(0,0,0,0.4);
         }
 
-        /* PROGRESS BAR */
+        /* LIQUID METAL PROGRESS BAR */
         .progress {
             width: 100%;
-            height: 6px;
+            height: 8px;
             background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
             border: 1px solid rgba(150, 150, 150, 0.3);
-            border-radius: 0;
             overflow: hidden;
             cursor: pointer;
             margin-bottom: 12px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+            position: relative;
         }
 
         .progress-bar {
@@ -472,14 +620,40 @@
             background: linear-gradient(
                 90deg,
                 #ffffff 0%,
-                #c0c0c0 50%,
-                #808080 100%
+                #c0c0c0 30%,
+                #808080 50%,
+                #c0c0c0 70%,
+                #ffffff 100%
             );
+            background-size: 200% 100%;
             width: 0%;
             box-shadow: 
                 0 0 15px rgba(255,255,255,0.6),
                 inset 0 1px 0 rgba(255,255,255,0.8);
+            animation: liquidMetal 2s linear infinite;
             transition: width 0.1s ease;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.8),
+                transparent
+            );
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes liquidMetal {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
         }
 
         .time {
@@ -492,7 +666,6 @@
             letter-spacing: 2px;
         }
 
-        /* VOLUME */
         .volume {
             display: flex;
             align-items: center;
@@ -513,7 +686,6 @@
             height: 5px;
             background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
             border: 1px solid rgba(150, 150, 150, 0.3);
-            border-radius: 0;
             outline: none;
         }
 
@@ -527,7 +699,6 @@
                 #c0c0c0 50%,
                 #808080 100%
             );
-            border-radius: 0;
             cursor: pointer;
             box-shadow: 
                 0 0 10px rgba(255,255,255,0.6),
@@ -535,7 +706,6 @@
             border: 1px solid rgba(0,0,0,0.5);
         }
 
-        /* DECORATIVE CHAINS */
         .chain-decoration {
             position: absolute;
             top: -20px;
@@ -546,16 +716,17 @@
             filter: grayscale(100%) brightness(1.5);
             letter-spacing: 10px;
             user-select: none;
+            animation: chainSwing 4s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
-    <div class="player-container" style="position: relative;">
+    <div class="player-container" id="playerContainer">
         <div class="chain-decoration">⛓⛓</div>
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p>⚡ Big Penis Bro Gang </p>
+            <p>⚡ Big Penis Bro Gang ☠️</p>
         </div>
 
         <div class="search-container">
@@ -610,7 +781,27 @@
         const coverImage = document.getElementById('coverImage');
         const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
+        const playerContainer = document.getElementById('playerContainer');
         let isPlaying = false;
+
+        // 3D TILT EFFECT
+        playerContainer.addEventListener('mousemove', (e) => {
+            const rect = playerContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = (y - centerY) / 20;
+            const rotateY = (centerX - x) / 20;
+            
+            playerContainer.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
+
+        playerContainer.addEventListener('mouseleave', () => {
+            playerContainer.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+        });
 
         function setCover(url) {
             if (url) {
@@ -644,10 +835,11 @@
                 if (data.success && data.results.length > 0) {
                     resultsDiv.innerHTML = '';
                     
-                    data.results.forEach(track => {
+                    data.results.forEach((track, index) => {
                         const item = document.createElement('div');
                         item.className = 'result-item';
                         item.onclick = () => selectTrack(track);
+                        item.style.animationDelay = `${index * 0.1}s`;
                         
                         const duration = `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}`;
                         
@@ -678,7 +870,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found </div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
@@ -693,6 +885,7 @@
         async function selectTrack(track) {
             loadBtn.disabled = true;
             loadBtn.textContent = 'LOADING...';
+            loadBtn.classList.add('loading');
             
             try {
                 const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${track.id}`);
@@ -718,7 +911,8 @@
                 alert('⚡ Error: ' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = ' LOAD TRACK';
+                loadBtn.textContent = '⚡ LOAD TRACK';
+                loadBtn.classList.remove('loading');
             }
         }
 
@@ -734,6 +928,7 @@
             
             loadBtn.disabled = true;
             loadBtn.textContent = 'LOADING...';
+            loadBtn.classList.add('loading');
 
             try {
                 if (url.includes('music.yandex.ru')) {
@@ -767,6 +962,7 @@
             } finally {
                 loadBtn.disabled = false;
                 loadBtn.textContent = '⚡ LOAD TRACK';
+                loadBtn.classList.remove('loading');
             }
         }
 
