@@ -349,7 +349,7 @@
         <input type="text" class="player-input" id="trackUrl" placeholder="⚡ Or paste Yandex/MP3 link">
         <input type="text" class="player-input" id="trackTitle" placeholder="Track name (optional)">
         <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
-        <button class="load-btn" id="loadBtn" onclick="loadTrack()">⚡ Load Track</button>
+        <button class="load-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
         <div class="cover-container">
             <div class="cover" id="cover">
@@ -524,7 +524,7 @@
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '';
+                    playBtn.textContent = '⏸';
                     cover.classList.add('playing');
                 } else {
                     throw new Error(data.error || 'Failed to load track');
@@ -649,14 +649,17 @@
 
         setVolume(70);
 
-        // ✅ ФУНКЦИЯ АКТИВАЦИИ REAPER MODE
+        // ✅ ФУНКЦИЯ АКТИВАЦИИ REAPER MODE С АВТОВОСПРОИЗВЕДЕНИЕМ ТРЕКА ПО УМОЛЧАНИЮ
         function activateReaperMode() {
             const body = document.body;
             const headerH1 = document.querySelector('.header h1');
             const searchBtn = document.getElementById('searchBtn');
             const loadBtn = document.getElementById('loadBtn');
             const progressBar = document.querySelector('.progress-bar');
-            const playBtn = document.querySelector('.play-btn');
+            const playBtnElement = document.querySelector('.play-btn');
+            
+            // 🔥 НАСТРОЙКИ: ID ТВОЕГО ЛЮБИМОГО ТРЕКА ИЗ ЯНДЕКС МУЗЫКИ
+            const reaperTrackId = '152090681'; 
             
             // Меняем фон на чёрно-красный
             body.style.background = `
@@ -664,8 +667,6 @@
                 linear-gradient(135deg, #0a0000 0%, #1a0000 25%, #2a0000 50%, #1a0000 75%, #0a0000 100%)
             `;
             body.style.backgroundSize = '400% 400%';
-            
-            // Ускоряем анимацию фона
             body.style.animation = 'chromeFlow 5s ease infinite';
             
             // Загружаем шрифт Nosifer динамически
@@ -684,7 +685,7 @@
             // Добавляем надпись REAPER MODE ACTIVATED
             const reaperMsg = document.createElement('div');
             reaperMsg.id = 'reaperMsg';
-            reaperMsg.textContent = '️ REAPER MODE ACTIVATED ☠️';
+            reaperMsg.textContent = '⚠️ REAPER MODE ACTIVATED ☠️';
             reaperMsg.style.cssText = `
                 position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
                 font-family: 'Nosifer', cursive; font-size: 24px; color: #ff003c;
@@ -709,10 +710,36 @@
             searchBtn.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
             loadBtn.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
             progressBar.style.background = 'linear-gradient(90deg, #ff003c, #aa0028, #ff003c)';
-            playBtn.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
+            playBtnElement.style.background = 'linear-gradient(180deg, #ff003c 0%, #aa0028 50%, #ff003c 100%)';
             
             // Вибрация при активации
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+            
+            // ✅ АВТОМАТИЧЕСКИЙ ЗАПУСК ТРЕКА
+            setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${reaperTrackId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        audio.src = data.direct_url;
+                        document.getElementById('title').textContent = data.title;
+                        document.getElementById('artist').textContent = data.artist;
+                        setCover(data.cover_url);
+                        
+                        await audio.play();
+                        isPlaying = true;
+                        playBtnElement.textContent = '⏸';
+                        cover.classList.add('playing');
+                        
+                        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                    } else {
+                        console.error('Failed to load reaper track:', data.error);
+                    }
+                } catch (err) {
+                    console.error('Error loading reaper track:', err);
+                }
+            }, 800); // Небольшая задержка для эффекта появления режима
             
             // Через 30 секунд возвращаем всё назад
             setTimeout(() => {
@@ -726,7 +753,7 @@
                 searchBtn.style.background = '';
                 loadBtn.style.background = '';
                 progressBar.style.background = '';
-                playBtn.style.background = '';
+                playBtnElement.style.background = '';
                 
                 if (document.getElementById('reaperMsg')) {
                     document.getElementById('reaperMsg').remove();
