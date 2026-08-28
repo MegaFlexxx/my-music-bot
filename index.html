@@ -84,7 +84,7 @@
         }
 
         .header h1::after {
-            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
@@ -385,16 +385,58 @@
         .artist-name { font-size: 13px; color: #ccc; }
         .artist-count { font-size: 12px; color: #666; font-family: 'Share Tech Mono', monospace; }
 
-        /* Кнопка открытия статистики */
+        /* ✅ КАСТОМНАЯ КНОПКА СТАТИСТИКИ (ХРОМ ТАБЛЕТКА) */
         .stats-toggle-btn {
-            position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px;
-            background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
-            border: none; border-radius: 50%; font-size: 20px; color: #000; cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 99; transition: all 0.3s ease;
-            display: flex; align-items: center; justify-content: center;
+            position: fixed; 
+            bottom: 25px; 
+            right: 20px; 
+            /* Прямоугольная форма со скруглением */
+            width: auto; 
+            height: 44px;
+            padding: 0 18px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px;
+            
+            /* Хромированный градиент */
+            background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 40%, #808080 60%, #c0c0c0 100%);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 22px; 
+            
+            /* Текст и шрифт */
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: #000;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            
+            /* Тени для объема */
+            box-shadow: 
+                0 4px 15px rgba(0,0,0,0.6),
+                inset 0 1px 0 rgba(255,255,255,0.9);
+            z-index: 99; 
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
         }
 
-        .stats-toggle-btn:active { transform: scale(0.9); }
+        /* Иконка внутри кнопки */
+        .stats-toggle-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: #000;
+        }
+
+        /* Эффект нажатия */
+        .stats-toggle-btn:active { 
+            transform: scale(0.95); 
+            box-shadow: 
+                0 2px 8px rgba(0,0,0,0.8),
+                inset 0 2px 5px rgba(0,0,0,0.3);
+            filter: brightness(0.9);
+        }
     </style>
 </head>
 <body>
@@ -458,8 +500,13 @@
         </div>
     </div>
 
-    <!-- ✅ КНОПКА ОТКРЫТИЯ СТАТИСТИКИ -->
-    <button class="stats-toggle-btn" onclick="toggleStats()"></button>
+    <!-- ✅ НОВАЯ СТИЛЬНАЯ КНОПКА СТАТИСТИКИ -->
+    <button class="stats-toggle-btn" onclick="toggleStats()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3v18h18v-2H5V3H3zm4 14h2v-6H7v6zm4 0h2v-10h-2v10zm4 0h2v-4h-2v4z"/>
+        </svg>
+        <span>STATS</span>
+    </button>
 
     <!-- ✅ ПАНЕЛЬ СТАТИСТИКИ -->
     <div class="stats-panel" id="statsPanel">
@@ -707,7 +754,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ️</div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
@@ -741,7 +788,7 @@
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '';
+                    playBtn.textContent = '⏸';
                     cover.classList.add('playing');
                 } else {
                     throw new Error(data.error || 'Failed to load track');
@@ -800,14 +847,14 @@
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '';
+                playBtn.textContent = '⏸';
                 cover.classList.add('playing');
                 
             } catch (err) {
                 alert(' Error:\n' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = '⚡ LOAD TRACK';
+                loadBtn.textContent = ' LOAD TRACK';
                 loadBtn.classList.remove('loading');
             }
         }
@@ -974,7 +1021,7 @@
                         
                         await audio.play();
                         isPlaying = true;
-                        playBtnElement.textContent = '';
+                        playBtnElement.textContent = '⏸';
                         
                         coverElement.classList.remove('playing'); 
                         coverElement.style.animation = 'reaperCoverPulse 1s ease-in-out infinite';
