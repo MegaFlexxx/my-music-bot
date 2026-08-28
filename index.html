@@ -62,6 +62,8 @@
                 0 0 100px rgba(0, 0, 0, 0.8);
             position: relative;
             overflow: hidden;
+            transition: transform 0.1s ease;
+            transform-style: preserve-3d;
         }
 
         .player-container::before {
@@ -154,7 +156,7 @@
         }
 
         .header h1::after {
-            content: '☠️';
+            content: '️';
             position: absolute;
             top: 50%;
             right: -40px;
@@ -672,10 +674,25 @@
             border-top: 1px solid rgba(150, 150, 150, 0.2);
         }
 
+        /* CHROME VOLUME ICON */
         .volume-icon {
-            color: #888;
-            font-size: 18px;
-            filter: grayscale(100%);
+            filter: 
+                drop-shadow(0 0 5px rgba(255,255,255,0.6))
+                drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            animation: volumePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes volumePulse {
+            0%, 100% { 
+                filter: 
+                    drop-shadow(0 0 5px rgba(255,255,255,0.6))
+                    drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            }
+            50% { 
+                filter: 
+                    drop-shadow(0 0 10px rgba(255,255,255,0.8))
+                    drop-shadow(0 2px 6px rgba(0,0,0,0.9));
+            }
         }
 
         .volume input {
@@ -724,7 +741,7 @@
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p>⚡ Big Penis Bro Gang ☠️</p>
+            <p>⚡ Big Penis Bro Gang ️</p>
         </div>
 
         <div class="search-container">
@@ -741,7 +758,7 @@
 
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon">☠️</span>
+                <span class="default-icon" id="defaultIcon">️</span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
@@ -760,7 +777,32 @@
         </div>
         
         <div class="volume">
-            <span class="volume-icon">🔊</span>
+            <svg class="volume-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="volumeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#c0c0c0;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#808080;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" 
+                         fill="url(#volumeGradient)" 
+                         stroke="rgba(255,255,255,0.5)" 
+                         stroke-width="1.5"
+                         filter="drop-shadow(0 0 3px rgba(255,255,255,0.5))"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" 
+                      fill="none"
+                      stroke="url(#volumeGradient)" 
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      filter="drop-shadow(0 0 3px rgba(255,255,255,0.5))"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" 
+                      fill="none"
+                      stroke="url(#volumeGradient)" 
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      filter="drop-shadow(0 0 3px rgba(255,255,255,0.5))"/>
+            </svg>
             <input type="range" min="0" max="100" value="70" oninput="setVolume(this.value)">
         </div>
     </div>
@@ -779,7 +821,27 @@
         const coverImage = document.getElementById('coverImage');
         const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
+        const playerContainer = document.getElementById('playerContainer');
         let isPlaying = false;
+
+        // 3D TILT EFFECT
+        playerContainer.addEventListener('mousemove', (e) => {
+            const rect = playerContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = (y - centerY) / 20;
+            const rotateY = (centerX - x) / 20;
+            
+            playerContainer.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
+
+        playerContainer.addEventListener('mouseleave', () => {
+            playerContainer.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+        });
 
         function setCover(url) {
             if (url) {
@@ -886,7 +948,7 @@
                 }
                 
             } catch (err) {
-                alert('⚡ Error: ' + err.message);
+                alert(' Error: ' + err.message);
             } finally {
                 loadBtn.disabled = false;
                 loadBtn.textContent = '⚡ LOAD TRACK';
@@ -932,7 +994,7 @@
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '⏸';
+                playBtn.textContent = '';
                 cover.classList.add('playing');
                 
             } catch (err) {
@@ -953,7 +1015,7 @@
                 cover.classList.remove('playing');
             } else {
                 audio.play();
-                playBtn.textContent = '⏸';
+                playBtn.textContent = '';
                 cover.classList.add('playing');
             }
             isPlaying = !isPlaying;
