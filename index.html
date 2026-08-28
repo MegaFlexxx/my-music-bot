@@ -52,7 +52,7 @@
             width: 100%; max-width: 450px;
             background: linear-gradient(180deg, #1e1e1e 0%, #0a0a0a 100%);
             border: 2px solid rgba(200, 200, 200, 0.3);
-            padding: 40px 30px;
+            padding: 40px 30px 30px 30px; /* Чуть меньше отступ снизу */
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             position: relative; overflow: hidden; z-index: 2;
             transition: border-color 1s ease, box-shadow 1s ease;
@@ -286,11 +286,16 @@
         @keyframes liquidMetal { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
 
         .time {
-            display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-bottom: 30px;
+            display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-bottom: 20px;
             font-family: 'Share Tech Mono', monospace; letter-spacing: 2px;
         }
 
-        .volume { display: flex; align-items: center; gap: 15px; padding-top: 20px; border-top: 1px solid rgba(150, 150, 150, 0.2); }
+        /* ✅ НОВАЯ ГРОМКОСТЬ ВНУТРИ ПЛЕЕРА */
+        .volume-container {
+            display: flex; align-items: center; gap: 15px; 
+            padding-top: 15px; border-top: 1px solid rgba(150, 150, 150, 0.1);
+            margin-bottom: 10px;
+        }
 
         .volume-icon {
             filter: drop-shadow(0 0 5px rgba(255,255,255,0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
@@ -349,8 +354,9 @@
 
         .panel-close:hover { color: #fff; }
 
+        /* ✅ СТАРАЯ КРУТАЯ СЕТКА СТАТИСТИКИ */
         .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;
         }
 
         .stat-card {
@@ -366,7 +372,7 @@
 
         .stat-label { font-size: 10px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; }
 
-        .top-artists { margin-top: 10px; }
+        .top-artists { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
         .top-artists-title {
             font-size: 11px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
             font-family: 'Orbitron', sans-serif;
@@ -497,7 +503,8 @@
             <span id="duration">0:00</span>
         </div>
         
-        <div class="volume">
+        <!-- ✅ ГРОМКОСТЬ ТЕПЕРЬ ЗДЕСЬ (ВНУТРИ ПЛЕЕРА) -->
+        <div class="volume-container">
             <svg class="volume-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <linearGradient id="volumeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -532,7 +539,7 @@
         </button>
     </div>
 
-    <!-- ✅ ПАНЕЛЬ СТАТИСТИКИ -->
+    <!-- ✅ ПАНЕЛЬ СТАТИСТИКИ (СТАРЫЙ КРУТОЙ ДИЗАЙН) -->
     <div class="panel-overlay" id="statsPanel">
         <div class="panel-header">
             <div class="panel-title">📊 GANG STATS</div>
@@ -547,6 +554,14 @@
             <div class="stat-card">
                 <div class="stat-value" id="totalTracks">0</div>
                 <div class="stat-label">ALL TIME</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalTime">0m</div>
+                <div class="stat-label">LISTENING TIME</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="favArtist">-</div>
+                <div class="stat-label">TOP ARTIST</div>
             </div>
         </div>
         
@@ -586,6 +601,7 @@
         // ✅ СИСТЕМА СТАТИСТИКИ
         const stats = {
             totalTracks: 0,
+            totalTime: 0,
             todayTracks: 0,
             lastDate: new Date().toDateString(),
             artists: {}
@@ -626,10 +642,29 @@
             updateHistoryUI();
         }
 
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        }
+
         function updateStatsUI() {
             document.getElementById('todayTracks').textContent = stats.todayTracks;
             document.getElementById('totalTracks').textContent = stats.totalTracks;
+            document.getElementById('totalTime').textContent = formatDuration(stats.totalTime);
             
+            // Топ артист
+            let topArtist = '-';
+            let maxCount = 0;
+            for (const [artist, count] of Object.entries(stats.artists)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topArtist = artist.length > 10 ? artist.substring(0, 10) + '...' : artist;
+                }
+            }
+            document.getElementById('favArtist').textContent = topArtist;
+            
+            // Список топ артистов
             const artistsList = document.getElementById('artistsList');
             artistsList.innerHTML = '';
             const sortedArtists = Object.entries(stats.artists)
@@ -1032,6 +1067,27 @@
         }
 
         function setVolume(value) { audio.volume = value / 100; }
+
+        // ✅ ОТСЛЕЖИВАНИЕ ВРЕМЕНИ ПРОСЛУШИВАНИЯ
+        let listeningInterval = null;
+        audio.addEventListener('play', () => {
+            if (!listeningInterval) {
+                listeningInterval = setInterval(() => {
+                    stats.totalTime++;
+                    saveStats();
+                }, 1000);
+            }
+        });
+
+        audio.addEventListener('pause', () => {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        });
+
+        audio.addEventListener('ended', () => {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        });
 
         audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
