@@ -10,7 +10,6 @@
         
         body {
             background: #050505;
-            /* Тонкая сетка на фоне для вайба */
             background-image: 
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
@@ -20,7 +19,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 20px;
         }
 
@@ -33,236 +31,217 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 24px;
             padding: 30px;
-            box-shadow: 
-                0 20px 50px rgba(0, 0, 0, 0.8),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
         }
 
-        .header { text-align: center; margin-bottom: 30px; }
-        
-        /* ХРОМ ТЕКСТ */
+        .header { text-align: center; margin-bottom: 25px; }
         .header h1 {
-            font-size: 26px; 
-            font-weight: 900;
-            letter-spacing: 3px;
+            font-size: 26px; font-weight: 900; letter-spacing: 3px;
             text-transform: uppercase;
             background: linear-gradient(180deg, #ffffff 0%, #d4d4d4 40%, #777777 50%, #d4d4d4 60%, #ffffff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.8));
         }
-        
-        .header p { 
-            color: #666; 
-            font-size: 11px; 
-            margin-top: 8px; 
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        .header p { color: #666; font-size: 11px; margin-top: 8px; letter-spacing: 1px; text-transform: uppercase; }
 
-        .player-input {
-            width: 100%; 
-            padding: 14px; 
+        /* ПОИСК */
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 14px;
             background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            color: #fff; 
-            font-size: 14px; 
-            outline: none; 
+            color: #fff;
+            font-size: 14px;
+            outline: none;
             margin-bottom: 10px;
             transition: all 0.3s ease;
         }
-        .player-input:focus { 
-            border-color: rgba(255, 255, 255, 0.5); 
+        .search-input:focus {
+            border-color: rgba(255, 255, 255, 0.5);
             background: rgba(0, 0, 0, 0.8);
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
         }
-        .player-input::placeholder { color: #555; }
-        
-        /* ХРОМ КНОПКА ЗАГРУЗКИ */
-        .load-btn {
-            width: 100%; 
-            padding: 14px;
-            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px; 
-            color: #000; 
-            font-weight: 800;
-            font-size: 14px;
+        .search-input::placeholder { color: #555; }
+        .search-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #333 0%, #555 50%, #333 100%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            cursor: pointer; 
-            margin-bottom: 30px; 
+            cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
         }
-        .load-btn:active { 
-            transform: scale(0.98); 
-            filter: brightness(0.9);
+        .search-btn:active { transform: scale(0.98); }
+        .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* РЕЗУЛЬТАТЫ ПОИСКА */
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            display: none;
         }
-        .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .cover-container {
-            width: 100%; 
-            aspect-ratio: 1; 
-            margin-bottom: 25px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            position: relative;
-        }
-        
-        .cover {
-            width: 100%; 
-            height: 100%;
-            background: linear-gradient(135deg, #2a2a2a 0%, #4a4a4a 25%, #1a1a1a 50%, #3a3a3a 75%, #0a0a0a 100%);
-            border-radius: 16px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            font-size: 80px; 
-            box-shadow: 
-                0 10px 40px rgba(0, 0, 0, 0.8),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            overflow: hidden; 
-            position: relative;
-            transition: all 0.5s ease;
+        .search-results.active { display: block; }
+        .result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .cover.playing {
-            animation: rotate 20s linear infinite;
-            border-radius: 50%;
-            box-shadow: 
-                0 0 60px rgba(255, 255, 255, 0.15),
-                inset 0 0 20px rgba(0, 0, 0, 0.8);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .cover img {
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover;
-            border-radius: inherit;
-        }
-        
-        .cover .default-icon {
-            font-size: 80px; 
-            position: absolute;
-            filter: grayscale(100%) brightness(1.5);
-            opacity: 0.5;
-        }
-        
-        @keyframes rotate { 
-            from { transform: rotate(0deg); } 
-            to { transform: rotate(360deg); } 
-        }
-        
-        .track-title { 
-            font-size: 20px; 
-            font-weight: 700; 
-            text-align: center; 
-            margin-bottom: 5px; 
-            word-break: break-word; 
-            color: #fff;
-        }
-        
-        .track-artist { 
-            font-size: 13px; 
-            color: #888; 
-            text-align: center; 
-            margin-bottom: 30px; 
-            letter-spacing: 0.5px;
-        }
-        
-        /* ХРОМ КНОПКА PLAY */
-        .play-btn {
-            width: 70px; 
-            height: 70px; 
-            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50%; 
-            font-size: 30px; 
-            color: #000;
-            cursor: pointer; 
-            display: block; 
-            margin: 0 auto 30px; 
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.15), inset 0 2px 0 rgba(255,255,255,0.8);
+        }
+        .result-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+        .result-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+        }
+        .result-item .default-cover {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #333, #555);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 20px;
         }
-        .play-btn:active { 
-            transform: scale(0.95); 
-            filter: brightness(0.9);
+        .result-item .info {
+            flex: 1;
+            min-width: 0;
         }
-        
-        .progress {
-            width: 100%; 
-            height: 4px; 
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px; 
-            overflow: hidden; 
-            cursor: pointer; 
-            margin-bottom: 10px;
+        .result-item .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        
-        .progress-bar { 
-            height: 100%; 
-            background: linear-gradient(90deg, #ffffff, #aaaaaa); 
-            width: 0%; 
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-        
-        .time { 
-            display: flex; 
-            justify-content: space-between; 
-            font-size: 11px; 
-            color: #666; 
-            margin-bottom: 25px; 
-            font-variant-numeric: tabular-nums;
-        }
-        
-        .volume { 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-        }
-        
-        .volume-icon {
+        .result-item .artist {
+            font-size: 12px;
             color: #888;
-            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        
-        .volume input {
-            flex: 1; 
-            -webkit-appearance: none; 
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1); 
-            border-radius: 2px; 
-            outline: none;
+        .result-item .duration {
+            font-size: 11px;
+            color: #666;
         }
+
+        .player-input {
+            width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+            color: #fff; font-size: 14px; outline: none; margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .player-input:focus { border-color: rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.8); }
+        .player-input::placeholder { color: #555; }
         
+        .load-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
+            border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px;
+            color: #000; font-weight: 800; font-size: 14px; letter-spacing: 1px;
+            text-transform: uppercase; cursor: pointer; margin-bottom: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+        .load-btn:active { transform: scale(0.98); filter: brightness(0.9); }
+        .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .cover-container {
+            width: 100%; aspect-ratio: 1; margin-bottom: 25px;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .cover {
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #2a2a2a 0%, #4a4a4a 25%, #1a1a1a 50%, #3a3a3a 75%, #0a0a0a 100%);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 80px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden; position: relative; transition: all 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .cover.playing {
+            animation: rotate 20s linear infinite;
+            border-radius: 50%;
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .cover img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+        .cover .default-icon { font-size: 80px; position: absolute; filter: grayscale(100%) brightness(1.5); opacity: 0.5; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        .track-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 5px; word-break: break-word; color: #fff; }
+        .track-artist { font-size: 13px; color: #888; text-align: center; margin-bottom: 30px; letter-spacing: 0.5px; }
+        
+        .play-btn {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 20%, #999999 50%, #ffffff 80%, #cccccc 100%);
+            border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
+            font-size: 30px; color: #000; cursor: pointer; display: block; margin: 0 auto 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 255, 255, 0.15), inset 0 2px 0 rgba(255,255,255,0.8);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .play-btn:active { transform: scale(0.95); filter: brightness(0.9); }
+        
+        .progress { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; cursor: pointer; margin-bottom: 10px; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #ffffff, #aaaaaa); width: 0%; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+        .time { display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-bottom: 25px; font-variant-numeric: tabular-nums; }
+        
+        .volume { display: flex; align-items: center; gap: 15px; }
+        .volume-icon { color: #888; font-size: 16px; }
+        .volume input { flex: 1; -webkit-appearance: none; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; outline: none; }
         .volume input::-webkit-slider-thumb {
-            -webkit-appearance: none; 
-            width: 14px; 
-            height: 14px;
-            background: linear-gradient(135deg, #fff, #aaa); 
-            border-radius: 50%; 
-            cursor: pointer;
+            -webkit-appearance: none; width: 14px; height: 14px;
+            background: linear-gradient(135deg, #fff, #aaa); border-radius: 50%; cursor: pointer;
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
 <body>
+    <!-- ПОИСК -->
     <div class="player-container">
         <div class="header">
             <h1>SKIBIDI PLAYER</h1>
             <p>Big Penis Bro Gang 💀</p>
         </div>
 
-        <input type="text" class="player-input" id="trackUrl" placeholder="🔗 Ссылка на Яндекс Музыку или MP3">
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchQuery" placeholder="🔍 Поиск: название или исполнитель">
+            <button class="search-btn" id="searchBtn" onclick="searchTracks()">Искать</button>
+        </div>
+
+        <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <!-- ПЛЕЕР -->
+    <div class="player-container">
+        <input type="text" class="player-input" id="trackUrl" placeholder="🔗 Или вставь ссылку на Яндекс/MP3">
         <input type="text" class="player-input" id="trackTitle" placeholder="Название (необязательно)">
         <input type="text" class="player-input" id="trackArtist" placeholder="Исполнитель (необязательно)">
         <button class="load-btn" id="loadBtn" onclick="loadTrack()">Загрузить трек</button>
@@ -275,7 +254,7 @@
         </div>
         
         <div class="track-title" id="title">Skibidi Sound</div>
-        <div class="track-artist" id="artist">Вставь ссылку выше</div>
+        <div class="track-artist" id="artist">Вставь ссылку или найди трек</div>
         
         <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
         
@@ -320,13 +299,115 @@
             }
         }
 
+        // 🔥 ПОИСК ТРЕКОВ 🔥
+        async function searchTracks() {
+            const query = document.getElementById('searchQuery').value.trim();
+            const searchBtn = document.getElementById('searchBtn');
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (!query) {
+                alert('❌ Введите название трека или исполнителя!');
+                return;
+            }
+            
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'ПОИСК...';
+            resultsDiv.classList.remove('active');
+            
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.success && data.results.length > 0) {
+                    resultsDiv.innerHTML = '';
+                    
+                    data.results.forEach(track => {
+                        const item = document.createElement('div');
+                        item.className = 'result-item';
+                        item.onclick = () => selectTrack(track);
+                        
+                        const duration = `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}`;
+                        
+                        if (track.cover_url) {
+                            item.innerHTML = `
+                                <img src="${track.cover_url}" alt="Cover">
+                                <div class="info">
+                                    <div class="title">${track.title}</div>
+                                    <div class="artist">${track.artist}</div>
+                                </div>
+                                <div class="duration">${duration}</div>
+                            `;
+                        } else {
+                            item.innerHTML = `
+                                <div class="default-cover">🎵</div>
+                                <div class="info">
+                                    <div class="title">${track.title}</div>
+                                    <div class="artist">${track.artist}</div>
+                                </div>
+                                <div class="duration">${duration}</div>
+                            `;
+                        }
+                        
+                        resultsDiv.appendChild(item);
+                    });
+                    
+                    resultsDiv.classList.add('active');
+                    
+                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                } else {
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">Ничего не найдено </div>';
+                    resultsDiv.classList.add('active');
+                }
+                
+            } catch (err) {
+                alert('❌ Ошибка поиска: ' + err.message);
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'ИСКАТЬ';
+            }
+        }
+
+        // 🔥 ВЫБОР ТРЕКА ИЗ ПОИСКА 🔥
+        async function selectTrack(track) {
+            loadBtn.disabled = true;
+            loadBtn.textContent = 'ЗАГРУЗКА...';
+            
+            try {
+                // Получаем прямую ссылку на трек через API
+                const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${track.id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    audio.src = data.direct_url;
+                    document.getElementById('title').textContent = track.title;
+                    document.getElementById('artist').textContent = track.artist;
+                    setCover(track.cover_url);
+                    
+                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                    
+                    await audio.play();
+                    isPlaying = true;
+                    playBtn.textContent = '⏸';
+                    cover.classList.add('playing');
+                } else {
+                    throw new Error(data.error || 'Не удалось загрузить трек');
+                }
+                
+            } catch (err) {
+                alert(' Ошибка: ' + err.message);
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = 'ЗАГРУЗИТЬ ТРЕК';
+            }
+        }
+
         async function loadTrack() {
             const url = document.getElementById('trackUrl').value.trim();
             let title = document.getElementById('trackTitle').value.trim();
             let artist = document.getElementById('trackArtist').value.trim();
             
             if (!url) {
-                alert('❌ Вставь ссылку на трек!');
+                alert(' Вставь ссылку на трек!');
                 return;
             }
             
@@ -377,7 +458,7 @@
                 cover.classList.remove('playing');
             } else {
                 audio.play();
-                playBtn.textContent = '';
+                playBtn.textContent = '⏸';
                 cover.classList.add('playing');
             }
             isPlaying = !isPlaying;
@@ -412,6 +493,11 @@
             const secs = Math.floor(seconds % 60);
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
+
+        // Поиск по Enter
+        document.getElementById('searchQuery').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchTracks();
+        });
 
         setVolume(70);
     </script>
