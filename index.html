@@ -34,26 +34,16 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* ✅ ОПТИМИЗАЦИЯ: Аппаратное ускорение для шума */
         body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
-            pointer-events: none; z-index: 1; opacity: 0.3;
-            will-change: transform;
-            transform: translateZ(0);
+            pointer-events: none; z-index: 1; opacity: 0.3; will-change: transform; transform: translateZ(0);
         }
 
-        /* ✅ ОПТИМИЗАЦИЯ: Аппаратное ускорение для сканлайнов */
         body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
-            pointer-events: none; z-index: 3; animation: scanlines 8s linear infinite;
-            will-change: transform;
-            transform: translateZ(0);
+            pointer-events: none; z-index: 3; animation: scanlines 8s linear infinite; will-change: transform; transform: translateZ(0);
         }
 
         @keyframes scanlines { 0% { transform: translateY(0); } 100% { transform: translateY(10px); } }
@@ -70,8 +60,7 @@
 
         .player-container::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-            animation: shimmer 3s ease-in-out infinite;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent); animation: shimmer 3s ease-in-out infinite;
         }
 
         @keyframes shimmer { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
@@ -79,13 +68,11 @@
         .header { text-align: center; margin-bottom: 35px; position: relative; }
 
         .header h1 {
-            font-family: 'Metal Mania', cursive;
-            font-size: 42px; font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
+            font-family: 'Metal Mania', cursive; font-size: 42px; font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
             background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 10%, #909090 25%, #505050 40%, #202020 50%, #505050 60%, #909090 75%, #e0e0e0 90%, #ffffff 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)) drop-shadow(0 0 20px rgba(255,255,255,0.3)) drop-shadow(0 2px 4px rgba(0,0,0,0.9));
-            position: relative; animation: glitch 3s infinite;
-            transition: all 1s ease;
+            position: relative; animation: glitch 3s infinite; transition: all 1s ease;
         }
 
         @keyframes glitch {
@@ -119,8 +106,7 @@
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 100%);
             border: 1px solid rgba(150, 150, 150, 0.3); color: #fff; font-size: 13px; outline: none; margin-bottom: 12px;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1); transition: all 0.3s ease;
-            font-family: 'Share Tech Mono', monospace;
-            letter-spacing: 1px;
+            font-family: 'Share Tech Mono', monospace; letter-spacing: 1px;
         }
 
         .search-input:focus, .player-input:focus {
@@ -173,8 +159,7 @@
             background: linear-gradient(180deg, rgba(40,40,40,0.8) 0%, rgba(20,20,20,0.9) 100%);
             border: 1px solid rgba(100, 100, 100, 0.2); border-left: 3px solid transparent;
             cursor: pointer; transition: all 0.3s ease; margin-bottom: 1px; position: relative; overflow: hidden;
-            animation: searchItemSlideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            opacity: 0;
+            animation: searchItemSlideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0;
         }
 
         .result-item::before {
@@ -207,8 +192,7 @@
         .result-item .title {
             font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 5px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            text-transform: uppercase; letter-spacing: 1px;
-            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase; letter-spacing: 1px; font-family: 'Orbitron', sans-serif;
         }
 
         .result-item .artist {
@@ -216,9 +200,7 @@
             font-family: 'Share Tech Mono', monospace;
         }
 
-        .result-item .duration {
-            font-size: 11px; color: #666; font-family: 'Share Tech Mono', monospace;
-        }
+        .result-item .duration { font-size: 11px; color: #666; font-family: 'Share Tech Mono', monospace; }
 
         .cover-container { width: 100%; aspect-ratio: 1; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; position: relative; }
 
@@ -230,28 +212,18 @@
             overflow: hidden; position: relative; transition: all 0.5s ease;
         }
 
-        /* ✅ ОПТИМИЗАЦИЯ: Только вращение без пульсации теней */
         .cover.playing {
-            animation: rotateOnly 20s linear infinite;
-            border-radius: 50%;
-            border: 4px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 
-                0 0 30px rgba(255, 255, 255, 0.15),
-                inset 0 0 20px rgba(0, 0, 0, 0.9);
-            will-change: transform;
+            animation: rotateOnly 20s linear infinite; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.9); will-change: transform;
         }
 
-        @keyframes rotateOnly {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+        @keyframes rotateOnly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .cover img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.3) brightness(0.9); }
         .cover .default-icon { font-size: 100px; position: absolute; filter: grayscale(100%) brightness(2); opacity: 0.4; }
 
         .track-title { 
-            font-family: 'Orbitron', sans-serif;
-            font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; word-break: break-word;
+            font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; word-break: break-word;
             background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); letter-spacing: 2px; text-transform: uppercase;
@@ -259,8 +231,7 @@
 
         .track-artist { 
             font-size: 13px; color: #777; text-align: center; margin-bottom: 35px;
-            letter-spacing: 3px; text-transform: uppercase; font-weight: 600;
-            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 3px; text-transform: uppercase; font-weight: 600; font-family: 'Share Tech Mono', monospace;
         }
 
         .play-btn {
@@ -276,12 +247,10 @@
             background: linear-gradient(180deg, rgba(255,255,255,0.8), transparent); border-radius: 50% 50% 0 0;
         }
 
-        /* ✅ ОПТИМИЗАЦИЯ: Лёгкая пульсация кнопки */
         .play-btn::after {
             content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 100%; height: 100%; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
-            animation: playPulse 2s ease-in-out infinite; opacity: 0;
-            will-change: width, height, opacity;
+            animation: playPulse 2s ease-in-out infinite; opacity: 0; will-change: width, height, opacity;
         }
 
         @keyframes playPulse { 0% { width: 100%; height: 100%; opacity: 0.5; } 100% { width: 150%; height: 150%; opacity: 0; } }
@@ -342,6 +311,76 @@
             font-size: 30px; opacity: 0.4; filter: grayscale(100%) brightness(1.5);
             letter-spacing: 10px; user-select: none; animation: chainSwing 4s ease-in-out infinite;
         }
+
+        /* ✅ СТИЛИ ДЛЯ ПАНЕЛИ СТАТИСТИКИ */
+        .stats-panel {
+            position: fixed; bottom: 0; left: 0; width: 100%; max-width: 450px; left: 50%; transform: translateX(-50%);
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(10px);
+            border-top: 2px solid rgba(200, 200, 200, 0.3); border-radius: 20px 20px 0 0;
+            padding: 25px 30px; z-index: 100;
+            transform: translateX(-50%) translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .stats-panel.active { transform: translateX(-50%) translateY(0); }
+
+        .stats-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;
+        }
+
+        .stats-title {
+            font-size: 16px; color: #fff; letter-spacing: 2px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .stats-close {
+            background: none; border: none; color: #888; font-size: 24px; cursor: pointer;
+            transition: color 0.3s ease; padding: 5px;
+        }
+
+        .stats-close:hover { color: #fff; }
+
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px; padding: 15px; text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 5px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-label { font-size: 10px; color: #666; letter-spacing: 1px; text-transform: uppercase; }
+
+        .top-artists { margin-top: 10px; }
+
+        .top-artists-title {
+            font-size: 12px; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+        }
+
+        .artist-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .artist-name { font-size: 13px; color: #ccc; }
+        .artist-count { font-size: 12px; color: #666; font-family: 'Share Tech Mono', monospace; }
+
+        /* Кнопка открытия статистики */
+        .stats-toggle-btn {
+            position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px;
+            background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
+            border: none; border-radius: 50%; font-size: 20px; color: #000; cursor: pointer;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 99; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .stats-toggle-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -360,14 +399,14 @@
 
         <div class="search-results" id="searchResults"></div>
 
-        <input type="text" class="player-input" id="trackUrl" placeholder="⚡ Or paste Yandex/MP3 link">
+        <input type="text" class="player-input" id="trackUrl" placeholder=" Or paste Yandex/MP3 link">
         <input type="text" class="player-input" id="trackTitle" placeholder="Track name (optional)">
         <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
         <button class="load-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon">☠️</span>
+                <span class="default-icon" id="defaultIcon">️</span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
@@ -404,6 +443,41 @@
         </div>
     </div>
 
+    <!-- ✅ КНОПКА ОТКРЫТИЯ СТАТИСТИКИ -->
+    <button class="stats-toggle-btn" onclick="toggleStats()"></button>
+
+    <!-- ✅ ПАНЕЛЬ СТАТИСТИКИ -->
+    <div class="stats-panel" id="statsPanel">
+        <div class="stats-header">
+            <div class="stats-title">📊 GANG STATS</div>
+            <button class="stats-close" onclick="toggleStats()">×</button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalTracks">0</div>
+                <div class="stat-label">TRACKS PLAYED</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalTime">0m</div>
+                <div class="stat-label">LISTENING TIME</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todayTracks">0</div>
+                <div class="stat-label">TODAY</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="favArtist">-</div>
+                <div class="stat-label">TOP ARTIST</div>
+            </div>
+        </div>
+        
+        <div class="top-artists">
+            <div class="top-artists-title">TOP ARTISTS</div>
+            <div id="artistsList"></div>
+        </div>
+    </div>
+
     <audio id="audioPlayer"></audio>
 
     <script>
@@ -419,6 +493,118 @@
         const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
+
+        // ✅ СИСТЕМА СТАТИСТИКИ
+        const stats = {
+            totalTracks: 0,
+            totalTime: 0, // в секундах
+            todayTracks: 0,
+            lastDate: new Date().toDateString(),
+            artists: {}
+        };
+
+        // Загрузка статистики из localStorage
+        function loadStats() {
+            const saved = localStorage.getItem('chromeReaperStats');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                Object.assign(stats, parsed);
+                
+                // Проверка на новый день
+                const today = new Date().toDateString();
+                if (stats.lastDate !== today) {
+                    stats.todayTracks = 0;
+                    stats.lastDate = today;
+                }
+            }
+            updateStatsUI();
+        }
+
+        // Сохранение статистики
+        function saveStats() {
+            localStorage.setItem('chromeReaperStats', JSON.stringify(stats));
+            updateStatsUI();
+        }
+
+        // Обновление UI статистики
+        function updateStatsUI() {
+            document.getElementById('totalTracks').textContent = stats.totalTracks;
+            
+            // Форматирование времени
+            const hours = Math.floor(stats.totalTime / 3600);
+            const mins = Math.floor((stats.totalTime % 3600) / 60);
+            document.getElementById('totalTime').textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            
+            document.getElementById('todayTracks').textContent = stats.todayTracks;
+            
+            // Топ артист
+            let topArtist = '-';
+            let maxCount = 0;
+            for (const [artist, count] of Object.entries(stats.artists)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    topArtist = artist.length > 10 ? artist.substring(0, 10) + '...' : artist;
+                }
+            }
+            document.getElementById('favArtist').textContent = topArtist;
+            
+            // Список топ артистов
+            const artistsList = document.getElementById('artistsList');
+            artistsList.innerHTML = '';
+            const sortedArtists = Object.entries(stats.artists)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            sortedArtists.forEach(([artist, count]) => {
+                const row = document.createElement('div');
+                row.className = 'artist-row';
+                row.innerHTML = `
+                    <span class="artist-name">${artist}</span>
+                    <span class="artist-count">${count} tracks</span>
+                `;
+                artistsList.appendChild(row);
+            });
+        }
+
+        // Переключение панели статистики
+        function toggleStats() {
+            const panel = document.getElementById('statsPanel');
+            panel.classList.toggle('active');
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        // Отслеживание прослушивания
+        let listeningInterval = null;
+        audio.addEventListener('play', () => {
+            if (!listeningInterval) {
+                listeningInterval = setInterval(() => {
+                    stats.totalTime++;
+                    saveStats();
+                }, 1000);
+            }
+        });
+
+        audio.addEventListener('pause', () => {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        });
+
+        audio.addEventListener('ended', () => {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        });
+
+        // Функция обновления статистики при запуске трека
+        function updateTrackStats(artist) {
+            stats.totalTracks++;
+            stats.todayTracks++;
+            
+            if (artist && artist !== 'Unknown Artist') {
+                stats.artists[artist] = (stats.artists[artist] || 0) + 1;
+            }
+            
+            saveStats();
+        }
 
         let searchTimeout = null;
         function debouncedSearch() {
@@ -450,7 +636,6 @@
             const searchBtn = document.getElementById('searchBtn');
             const resultsDiv = document.getElementById('searchResults');
             
-            // ✅ ПРОВЕРКА НА ПОСХАЛКУ
             if (query === '1488') {
                 activateReaperMode();
                 return;
@@ -534,11 +719,14 @@
                     document.getElementById('artist').textContent = track.artist;
                     setCover(track.cover_url);
                     
+                    // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
+                    updateTrackStats(track.artist);
+                    
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '⏸';
+                    playBtn.textContent = '';
                     cover.classList.add('playing');
                 } else {
                     throw new Error(data.error || 'Failed to load track');
@@ -577,6 +765,9 @@
                         document.getElementById('title').textContent = data.title;
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
+                        
+                        // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
+                        updateTrackStats(data.artist);
                     } else {
                         throw new Error(data.error || 'Failed to get track');
                     }
@@ -585,6 +776,9 @@
                     document.getElementById('title').textContent = title || 'Custom Track';
                     document.getElementById('artist').textContent = artist || 'Unknown Artist';
                     setCover(null);
+                    
+                    // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
+                    updateTrackStats(artist || 'Unknown Artist');
                 }
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
@@ -595,7 +789,7 @@
                 cover.classList.add('playing');
                 
             } catch (err) {
-                alert('⚡ Error:\n' + err.message);
+                alert(' Error:\n' + err.message);
             } finally {
                 loadBtn.disabled = false;
                 loadBtn.textContent = '⚡ LOAD TRACK';
@@ -663,7 +857,10 @@
 
         setVolume(70);
 
-        // ✅ ОПТИМИЗИРОВАННАЯ ФУНКЦИЯ REAPER MODE (БЕЗ ЛАГОВ)
+        // ✅ ИНИЦИАЛИЗАЦИЯ СТАТИСТИКИ ПРИ ЗАГРУЗКЕ
+        loadStats();
+
+        // ✅ ОПТИМИЗИРОВАННАЯ ФУНКЦИЯ REAPER MODE
         function activateReaperMode() {
             const body = document.body;
             const headerH1 = document.querySelector('.header h1');
@@ -673,22 +870,18 @@
             const playBtnElement = document.querySelector('.play-btn');
             const coverElement = document.getElementById('cover');
             
-            // 🔥 ID ТВОЕГО ТРЕКА
             const reaperTrackId = '152090681'; 
             
-            // ✅ МАКСИМАЛЬНАЯ ГРОМКОСТЬ
             audio.volume = 1.0;
             const volumeSlider = document.querySelector('.volume input');
             if (volumeSlider) volumeSlider.value = 100;
             
-            // ✅ СТАТИЧНЫЙ ФОН (отключаем анимацию для производительности)
             body.style.background = `
                 radial-gradient(circle at 50% 50%, rgba(255,0,0,0.15) 0%, transparent 60%),
                 linear-gradient(135deg, #0a0000 0%, #1a0000 50%, #0a0000 100%)
             `;
             body.style.animation = 'none'; 
             
-            // Шрифт Nosifer
             const nosiferLink = document.createElement('link');
             nosiferLink.href = 'https://fonts.googleapis.com/css2?family=Nosifer&display=swap';
             nosiferLink.rel = 'stylesheet';
@@ -701,10 +894,9 @@
                 headerH1.style.textShadow = '0 0 20px rgba(255,0,0,0.8)';
             }, 100);
             
-            // Сообщение
             const reaperMsg = document.createElement('div');
             reaperMsg.id = 'reaperMsg';
-            reaperMsg.textContent = '⚠️ MAX VOLUME ACTIVATED ☠️';
+            reaperMsg.textContent = '⚠️ MAX VOLUME ACTIVATED ️';
             reaperMsg.style.cssText = `
                 position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
                 font-family: 'Nosifer', cursive; font-size: 20px; color: #ff003c;
@@ -715,7 +907,6 @@
             `;
             document.body.appendChild(reaperMsg);
             
-            // Стили режима
             const style = document.createElement('style');
             style.textContent = `
                 @keyframes reaperPulse {
@@ -741,19 +932,16 @@
             `;
             document.head.appendChild(style);
             
-            // Красные элементы
             searchBtn.style.background = 'linear-gradient(180deg, #ff003c, #aa0028)';
             loadBtn.style.background = 'linear-gradient(180deg, #ff003c, #aa0028)';
             progressBar.style.background = 'linear-gradient(90deg, #ff003c, #aa0028)';
             playBtnElement.style.background = 'linear-gradient(180deg, #ff003c, #aa0028)';
             
-            // Вибрация
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('heavy');
                 setTimeout(() => tg.HapticFeedback.impactOccurred('rigid'), 200);
             }
             
-            // Запуск трека БЕЗ ВРАЩЕНИЯ ОБЛОЖКИ
             setTimeout(async () => {
                 try {
                     const response = await fetch(`/api/resolve_yandex?url=https://music.yandex.ru/track/${reaperTrackId}`);
@@ -766,17 +954,18 @@
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
                         
+                        // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ ДЛЯ REAPER TRACK
+                        updateTrackStats(data.artist);
+                        
                         await audio.play();
                         isPlaying = true;
                         playBtnElement.textContent = '';
                         
-                        // ✅ ЛЁГКАЯ ПУЛЬСАЦИЯ ВМЕСТО ВРАЩЕНИЯ
                         coverElement.classList.remove('playing'); 
                         coverElement.style.animation = 'reaperCoverPulse 1s ease-in-out infinite';
                         coverElement.style.borderRadius = '16px'; 
                         coverElement.style.borderColor = '#ff003c';
                         
-                        // Вспышка контейнера
                         document.querySelector('.player-container').style.animation = 'bassFlash 1s ease-in-out infinite';
                         
                         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
@@ -786,7 +975,6 @@
                 }
             }, 800);
             
-            // Сброс через 30 секунд
             setTimeout(() => {
                 body.style.background = '';
                 body.style.animation = 'chromeFlow 15s ease infinite'; 
@@ -800,7 +988,6 @@
                 progressBar.style.background = '';
                 playBtnElement.style.background = '';
                 
-                // Возврат обложки в норму
                 coverElement.style.animation = '';
                 coverElement.style.borderRadius = '';
                 coverElement.style.borderColor = '';
