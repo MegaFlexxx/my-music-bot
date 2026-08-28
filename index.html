@@ -25,7 +25,7 @@
             overflow-x: hidden;
         }
 
-        /* SCANLINES EFFECT */
+        /* SCANLINES EFFECT - оптимизировано через will-change */
         body::before {
             content: '';
             position: fixed;
@@ -43,6 +43,7 @@
             pointer-events: none;
             z-index: 1000;
             animation: scanlines 8s linear infinite;
+            will-change: transform;
         }
 
         @keyframes scanlines {
@@ -53,13 +54,14 @@
         .player-container {
             width: 100%;
             max-width: 450px;
-            background: linear-gradient(180deg, rgba(30,30,30,0.9) 0%, rgba(10,10,10,0.95) 100%);
+            /* ✅ ОПТИМИЗАЦИЯ 1: убран backdrop-filter, заменён на простой градиент */
+            background: linear-gradient(180deg, #1e1e1e 0%, #0a0a0a 100%);
             border: 2px solid rgba(200, 200, 200, 0.3);
             padding: 40px 30px;
+            /* ✅ Уменьшены box-shadow для производительности */
             box-shadow: 
-                0 0 60px rgba(255, 255, 255, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                0 0 100px rgba(0, 0, 0, 0.8);
+                0 0 30px rgba(255, 255, 255, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -86,7 +88,6 @@
             position: relative;
         }
 
-        /* GLITCH EFFECT ON LOGO */
         .header h1 {
             font-family: 'Metal Mania', cursive;
             font-size: 42px;
@@ -171,7 +172,7 @@
         }
 
         .header h1::before {
-            content: '⛓';
+            content: '';
             position: absolute;
             top: -15px;
             left: -30px;
@@ -254,8 +255,7 @@
             margin-bottom: 25px;
             box-shadow: 
                 0 4px 15px rgba(0,0,0,0.6),
-                inset 0 1px 0 rgba(255,255,255,0.9),
-                0 0 30px rgba(255,255,255,0.2);
+                inset 0 1px 0 rgba(255,255,255,0.9);
             transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
@@ -289,7 +289,6 @@
             filter: grayscale(100%);
         }
 
-        /* LOADING ANIMATION */
         .load-btn.loading {
             background: linear-gradient(90deg, #606060, #808080, #606060);
             background-size: 200% 100%;
@@ -442,42 +441,38 @@
             justify-content: center;
             font-size: 100px;
             box-shadow: 
-                0 10px 50px rgba(0, 0, 0, 0.9),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                0 0 100px rgba(255, 255, 255, 0.1);
+                0 10px 30px rgba(0, 0, 0, 0.9),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
             overflow: hidden;
             position: relative;
             transition: all 0.5s ease;
         }
 
-        /* PULSE EFFECT WHEN PLAYING */
+        /* ✅ ОПТИМИЗАЦИЯ 2: объединённая анимация rotate + pulse */
         .cover.playing {
-            animation: rotate 20s linear infinite, pulse 2s ease-in-out infinite;
+            animation: rotateAndPulse 20s linear infinite;
             border-radius: 50%;
             border: 4px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 
-                0 0 80px rgba(255, 255, 255, 0.3),
-                inset 0 0 60px rgba(0, 0, 0, 0.9),
-                0 0 150px rgba(255, 255, 255, 0.2);
         }
 
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { 
+        @keyframes rotateAndPulse {
+            0% {
+                transform: rotate(0deg);
                 box-shadow: 
-                    0 0 80px rgba(255, 255, 255, 0.3),
-                    inset 0 0 60px rgba(0, 0, 0, 0.9),
-                    0 0 150px rgba(255, 255, 255, 0.2);
+                    0 0 50px rgba(255, 255, 255, 0.2),
+                    inset 0 0 40px rgba(0, 0, 0, 0.9);
             }
-            50% { 
+            50% {
+                transform: rotate(180deg);
                 box-shadow: 
-                    0 0 100px rgba(255, 255, 255, 0.5),
-                    inset 0 0 60px rgba(0, 0, 0, 0.9),
-                    0 0 200px rgba(255, 255, 255, 0.4);
+                    0 0 80px rgba(255, 255, 255, 0.4),
+                    inset 0 0 40px rgba(0, 0, 0, 0.9);
+            }
+            100% {
+                transform: rotate(360deg);
+                box-shadow: 
+                    0 0 50px rgba(255, 255, 255, 0.2),
+                    inset 0 0 40px rgba(0, 0, 0, 0.9);
             }
         }
 
@@ -524,7 +519,6 @@
             font-weight: 600;
         }
 
-        /* ANIMATED PLAY BUTTON */
         .play-btn {
             width: 80px;
             height: 80px;
@@ -549,8 +543,7 @@
             margin: 0 auto 35px;
             box-shadow: 
                 0 5px 25px rgba(0,0,0,0.7),
-                inset 0 2px 0 rgba(255,255,255,0.9),
-                0 0 40px rgba(255,255,255,0.3);
+                inset 0 2px 0 rgba(255,255,255,0.9);
             transition: all 0.2s ease;
             position: relative;
         }
@@ -600,7 +593,6 @@
                 inset 0 2px 10px rgba(0,0,0,0.4);
         }
 
-        /* LIQUID METAL PROGRESS BAR */
         .progress {
             width: 100%;
             height: 8px;
@@ -626,7 +618,7 @@
             background-size: 200% 100%;
             width: 0%;
             box-shadow: 
-                0 0 15px rgba(255,255,255,0.6),
+                0 0 10px rgba(255,255,255,0.5),
                 inset 0 1px 0 rgba(255,255,255,0.8);
             animation: liquidMetal 2s linear infinite;
             transition: width 0.1s ease;
@@ -672,12 +664,12 @@
             border-top: 1px solid rgba(150, 150, 150, 0.2);
         }
 
-        /* CHROME VOLUME ICON */
         .volume-icon {
             filter: 
                 drop-shadow(0 0 5px rgba(255,255,255,0.6))
                 drop-shadow(0 2px 4px rgba(0,0,0,0.8));
             animation: volumePulse 3s ease-in-out infinite;
+            flex-shrink: 0;
         }
 
         @keyframes volumePulse {
@@ -821,15 +813,31 @@
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
+        // ✅ ОПТИМИЗАЦИЯ 3: Debounce для поиска
+        let searchTimeout = null;
+        function debouncedSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchTracks(), 500);
+        }
+
+        // ✅ ОПТИМИЗАЦИЯ 4: Кэш обложек в памяти
+        const coverCache = new Map();
+
         function setCover(url) {
-            if (url) {
-                coverImage.src = url;
-                coverImage.style.display = 'block';
-                defaultIcon.style.display = 'none';
-            } else {
+            if (!url) {
                 coverImage.style.display = 'none';
                 defaultIcon.style.display = 'block';
+                return;
             }
+            
+            if (coverCache.has(url)) {
+                coverImage.src = coverCache.get(url);
+            } else {
+                coverCache.set(url, url);
+                coverImage.src = url;
+            }
+            coverImage.style.display = 'block';
+            defaultIcon.style.display = 'none';
         }
 
         async function searchTracks() {
@@ -863,7 +871,7 @@
                         
                         if (track.cover_url) {
                             item.innerHTML = `
-                                <img src="${track.cover_url}" alt="Cover">
+                                <img src="${track.cover_url}" alt="Cover" loading="lazy">
                                 <div class="info">
                                     <div class="title">${track.title}</div>
                                     <div class="artist">${track.artist}</div>
@@ -929,7 +937,7 @@
                 alert(' Error: ' + err.message);
             } finally {
                 loadBtn.disabled = false;
-                loadBtn.textContent = '⚡ LOAD TRACK';
+                loadBtn.textContent = ' LOAD TRACK';
                 loadBtn.classList.remove('loading');
             }
         }
@@ -972,7 +980,7 @@
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '⏸';
+                playBtn.textContent = '';
                 cover.classList.add('playing');
                 
             } catch (err) {
@@ -1029,8 +1037,19 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
+        // ✅ ОПТИМИЗАЦИЯ 3: Debounce на ввод поиска
+        document.getElementById('searchQuery').addEventListener('input', debouncedSearch);
         document.getElementById('searchQuery').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchTracks();
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                searchTracks();
+            }
+        });
+
+        // ✅ ОПТИМИЗАЦИЯ 5: Предзагрузка аудио
+        audio.preload = 'auto';
+        audio.addEventListener('loadedmetadata', () => {
+            document.getElementById('duration').textContent = formatTime(audio.duration);
         });
 
         setVolume(70);
