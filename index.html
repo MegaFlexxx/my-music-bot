@@ -84,7 +84,7 @@
         }
 
         .header h1::after {
-            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
@@ -212,20 +212,13 @@
             overflow: hidden; position: relative; transition: all 0.5s ease;
         }
 
-        /* ✅ ИСПРАВЛЕННЫЙ СТИЛЬ ДЛЯ ЧЕРЕПА */
         .cover .default-icon {
-            font-size: 100px;
-            position: absolute;
+            font-size: 100px; position: absolute;
             filter: grayscale(100%) brightness(1.5) drop-shadow(0 0 20px rgba(255,255,255,0.3));
-            opacity: 0.6;
-            animation: skullFloat 4s ease-in-out infinite;
-            will-change: transform;
+            opacity: 0.6; animation: skullFloat 4s ease-in-out infinite; will-change: transform;
         }
 
-        @keyframes skullFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
+        @keyframes skullFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         .cover.playing {
             animation: rotateOnly 20s linear infinite; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.4);
@@ -329,57 +322,69 @@
         /* ✅ СТИЛИ ДЛЯ ПАНЕЛИ СТАТИСТИКИ */
         .stats-panel {
             position: fixed; bottom: 0; left: 0; width: 100%; max-width: 450px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(10px);
-            border-top: 2px solid rgba(200, 200, 200, 0.3); border-radius: 20px 20px 0 0;
-            padding: 25px 30px; z-index: 100;
+            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px);
+            border-top: 2px solid rgba(200, 200, 200, 0.3); border-radius: 24px 24px 0 0;
+            padding: 30px; z-index: 100;
             transform: translateX(-50%) translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             font-family: 'Share Tech Mono', monospace;
+            max-height: 80vh; overflow-y: auto;
         }
 
         .stats-panel.active { transform: translateX(-50%) translateY(0); }
 
         .stats-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
             border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;
         }
 
         .stats-title {
-            font-size: 16px; color: #fff; letter-spacing: 2px; text-transform: uppercase;
-            display: flex; align-items: center; gap: 10px;
+            font-size: 18px; color: #fff; letter-spacing: 2px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px; font-family: 'Orbitron', sans-serif;
         }
 
         .stats-close {
-            background: none; border: none; color: #888; font-size: 24px; cursor: pointer;
-            transition: color 0.3s ease; padding: 5px;
+            background: none; border: none; color: #888; font-size: 28px; cursor: pointer;
+            transition: color 0.3s ease; padding: 5px; line-height: 1;
         }
 
         .stats-close:hover { color: #fff; }
 
+        .section-label {
+            font-size: 11px; color: #b026ff; letter-spacing: 2px; text-transform: uppercase;
+            margin: 15px 0 10px 0; font-family: 'Orbitron', sans-serif;
+        }
+
         .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;
         }
 
         .stat-card {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px; padding: 15px; text-align: center;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 18px 12px; text-align: center;
+            transition: all 0.3s ease;
         }
 
+        .stat-card.today { border-color: rgba(176, 38, 255, 0.3); background: rgba(176, 38, 255, 0.05); }
+
         .stat-value {
-            font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 5px;
+            font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px;
             font-family: 'Orbitron', sans-serif;
         }
 
-        .stat-label { font-size: 10px; color: #666; letter-spacing: 1px; text-transform: uppercase; }
+        .stat-value.neon { color: #b026ff; text-shadow: 0 0 15px rgba(176, 38, 255, 0.4); }
 
-        .top-artists { margin-top: 10px; }
+        .stat-label { font-size: 9px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; }
+
+        .top-artists { margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); }
 
         .top-artists-title {
-            font-size: 12px; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+            font-size: 11px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+            font-family: 'Orbitron', sans-serif;
         }
 
         .artist-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
         }
 
         .artist-name { font-size: 13px; color: #ccc; }
@@ -387,54 +392,22 @@
 
         /* ✅ КАСТОМНАЯ КНОПКА СТАТИСТИКИ (ХРОМ ТАБЛЕТКА) */
         .stats-toggle-btn {
-            position: fixed; 
-            bottom: 25px; 
-            right: 20px; 
-            /* Прямоугольная форма со скруглением */
-            width: auto; 
-            height: 44px;
-            padding: 0 18px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 8px;
-            
-            /* Хромированный градиент */
+            position: fixed; bottom: 25px; right: 20px;
+            width: auto; height: 44px; padding: 0 18px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
             background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 40%, #808080 60%, #c0c0c0 100%);
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: 22px; 
-            
-            /* Текст и шрифт */
-            font-family: 'Orbitron', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            color: #000;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            
-            /* Тени для объема */
-            box-shadow: 
-                0 4px 15px rgba(0,0,0,0.6),
-                inset 0 1px 0 rgba(255,255,255,0.9);
-            z-index: 99; 
-            transition: all 0.2s ease;
-            backdrop-filter: blur(5px);
-            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.4); border-radius: 22px;
+            font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;
+            color: #000; letter-spacing: 1px; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.9);
+            z-index: 99; transition: all 0.2s ease; backdrop-filter: blur(5px); cursor: pointer;
         }
 
-        /* Иконка внутри кнопки */
-        .stats-toggle-btn svg {
-            width: 18px;
-            height: 18px;
-            fill: #000;
-        }
+        .stats-toggle-btn svg { width: 18px; height: 18px; fill: #000; }
 
-        /* Эффект нажатия */
         .stats-toggle-btn:active { 
             transform: scale(0.95); 
-            box-shadow: 
-                0 2px 8px rgba(0,0,0,0.8),
-                inset 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.8), inset 0 2px 5px rgba(0,0,0,0.3);
             filter: brightness(0.9);
         }
     </style>
@@ -445,11 +418,11 @@
         
         <div class="header">
             <h1>Chrome Reaper</h1>
-            <p>⚡ Big Penis Bro Gang ☠️</p>
+            <p> Big Penis Bro Gang ☠️</p>
         </div>
 
         <div class="search-container">
-            <input type="text" class="search-input" id="searchQuery" placeholder="⚡ SEARCH: artist or track name">
+            <input type="text" class="search-input" id="searchQuery" placeholder=" SEARCH: artist or track name">
             <button class="search-btn" id="searchBtn" onclick="searchTracks()"> Search</button>
         </div>
 
@@ -460,10 +433,9 @@
         <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
         <button class="load-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
-        <!-- ✅ ИСПРАВЛЕННЫЙ БЛОК ОБЛОЖКИ С ЧЕРЕПОМ -->
         <div class="cover-container">
             <div class="cover" id="cover">
-                <span class="default-icon" id="defaultIcon">☠️</span>
+                <span class="default-icon" id="defaultIcon">️</span>
                 <img id="coverImage" src="" alt="Cover" style="display: none;">
             </div>
         </div>
@@ -508,35 +480,40 @@
         <span>STATS</span>
     </button>
 
-    <!-- ✅ ПАНЕЛЬ СТАТИСТИКИ -->
+    <!-- ✅ ОБНОВЛЁННАЯ ПАНЕЛЬ СТАТИСТИКИ -->
     <div class="stats-panel" id="statsPanel">
         <div class="stats-header">
             <div class="stats-title">📊 GANG STATS</div>
             <button class="stats-close" onclick="toggleStats()">×</button>
         </div>
         
+        <div class="section-label">TODAY</div>
+        <div class="stats-grid">
+            <div class="stat-card today">
+                <div class="stat-value neon" id="todayTracks">0</div>
+                <div class="stat-label">TRACKS</div>
+            </div>
+            <div class="stat-card today">
+                <div class="stat-value neon" id="todayTime">0m</div>
+                <div class="stat-label">TIME</div>
+            </div>
+        </div>
+        
+        <div class="section-label" style="color: #888;">ALL TIME</div>
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-value" id="totalTracks">0</div>
-                <div class="stat-label">TRACKS PLAYED</div>
+                <div class="stat-label">TOTAL TRACKS</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="totalTime">0m</div>
-                <div class="stat-label">LISTENING TIME</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="todayTracks">0</div>
-                <div class="stat-label">TODAY</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="favArtist">-</div>
-                <div class="stat-label">TOP ARTIST</div>
+                <div class="stat-label">TOTAL TIME</div>
             </div>
         </div>
         
         <div class="top-artists">
-            <div class="top-artists-title">TOP ARTISTS</div>
-            <div id="artistsList"></div>
+            <div class="top-artists-title">TOP ARTIST ALL TIME</div>
+            <div id="favArtistBlock" style="text-align:center; padding: 12px; font-size: 15px; color: #fff; font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">-</div>
         </div>
     </div>
 
@@ -556,91 +533,73 @@
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
-        // ✅ СИСТЕМА СТАТИСТИКИ
+        // ✅ ОБНОВЛЁННАЯ СИСТЕМА СТАТИСТИКИ
         const stats = {
             totalTracks: 0,
-            totalTime: 0, // в секундах
+            totalTime: 0,
             todayTracks: 0,
+            todayTime: 0,
             lastDate: new Date().toDateString(),
             artists: {}
         };
 
-        // Загрузка статистики из localStorage
         function loadStats() {
             const saved = localStorage.getItem('chromeReaperStats');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 Object.assign(stats, parsed);
                 
-                // Проверка на новый день
                 const today = new Date().toDateString();
                 if (stats.lastDate !== today) {
                     stats.todayTracks = 0;
+                    stats.todayTime = 0;
                     stats.lastDate = today;
                 }
             }
             updateStatsUI();
         }
 
-        // Сохранение статистики
         function saveStats() {
             localStorage.setItem('chromeReaperStats', JSON.stringify(stats));
             updateStatsUI();
         }
 
-        // Обновление UI статистики
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        }
+
         function updateStatsUI() {
-            document.getElementById('totalTracks').textContent = stats.totalTracks;
-            
-            // Форматирование времени
-            const hours = Math.floor(stats.totalTime / 3600);
-            const mins = Math.floor((stats.totalTime % 3600) / 60);
-            document.getElementById('totalTime').textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-            
             document.getElementById('todayTracks').textContent = stats.todayTracks;
+            document.getElementById('todayTime').textContent = formatDuration(stats.todayTime);
+            document.getElementById('totalTracks').textContent = stats.totalTracks;
+            document.getElementById('totalTime').textContent = formatDuration(stats.totalTime);
             
-            // Топ артист
             let topArtist = '-';
             let maxCount = 0;
             for (const [artist, count] of Object.entries(stats.artists)) {
                 if (count > maxCount) {
                     maxCount = count;
-                    topArtist = artist.length > 10 ? artist.substring(0, 10) + '...' : artist;
+                    topArtist = artist.length > 15 ? artist.substring(0, 15) + '...' : artist;
                 }
             }
-            document.getElementById('favArtist').textContent = topArtist;
-            
-            // Список топ артистов
-            const artistsList = document.getElementById('artistsList');
-            artistsList.innerHTML = '';
-            const sortedArtists = Object.entries(stats.artists)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5);
-            
-            sortedArtists.forEach(([artist, count]) => {
-                const row = document.createElement('div');
-                row.className = 'artist-row';
-                row.innerHTML = `
-                    <span class="artist-name">${artist}</span>
-                    <span class="artist-count">${count} tracks</span>
-                `;
-                artistsList.appendChild(row);
-            });
+            document.getElementById('favArtistBlock').textContent = topArtist;
         }
 
-        // Переключение панели статистики
         function toggleStats() {
             const panel = document.getElementById('statsPanel');
             panel.classList.toggle('active');
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
-        // Отслеживание прослушивания
+        // ✅ ОБНОВЛЁННОЕ ОТСЛЕЖИВАНИЕ ПРОСЛУШИВАНИЯ
         let listeningInterval = null;
         audio.addEventListener('play', () => {
             if (!listeningInterval) {
                 listeningInterval = setInterval(() => {
                     stats.totalTime++;
+                    stats.todayTime++;
                     saveStats();
                 }, 1000);
             }
@@ -656,7 +615,6 @@
             listeningInterval = null;
         });
 
-        // Функция обновления статистики при запуске трека
         function updateTrackStats(artist) {
             stats.totalTracks++;
             stats.todayTracks++;
@@ -679,7 +637,7 @@
         function setCover(url) {
             if (!url) {
                 coverImage.style.display = 'none';
-                defaultIcon.style.display = 'block'; // ✅ Возвращаем череп
+                defaultIcon.style.display = 'block';
                 return;
             }
             
@@ -781,14 +739,13 @@
                     document.getElementById('artist').textContent = track.artist;
                     setCover(track.cover_url);
                     
-                    // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
                     updateTrackStats(track.artist);
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
                     
                     await audio.play();
                     isPlaying = true;
-                    playBtn.textContent = '⏸';
+                    playBtn.textContent = '';
                     cover.classList.add('playing');
                 } else {
                     throw new Error(data.error || 'Failed to load track');
@@ -828,7 +785,6 @@
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
                         
-                        // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
                         updateTrackStats(data.artist);
                     } else {
                         throw new Error(data.error || 'Failed to get track');
@@ -839,7 +795,6 @@
                     document.getElementById('artist').textContent = artist || 'Unknown Artist';
                     setCover(null);
                     
-                    // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ
                     updateTrackStats(artist || 'Unknown Artist');
                 }
                 
@@ -847,7 +802,7 @@
                 
                 await audio.play();
                 isPlaying = true;
-                playBtn.textContent = '⏸';
+                playBtn.textContent = '';
                 cover.classList.add('playing');
                 
             } catch (err) {
@@ -1016,7 +971,6 @@
                         document.getElementById('artist').textContent = data.artist;
                         setCover(data.cover_url);
                         
-                        // ✅ ОБНОВЛЕНИЕ СТАТИСТИКИ ДЛЯ REAPER TRACK
                         updateTrackStats(data.artist);
                         
                         await audio.play();
