@@ -110,6 +110,11 @@
             <span class="btn-icon"></span>
             <span class="btn-text">Крипта</span>
         </div>
+        <!-- КНОПКА ПЛЕЕРА -->
+        <div class="btn full-width" onclick="openPlayer()">
+            <span class="btn-icon">🎵</span>
+            <span class="btn-text">Плеер</span>
+        </div>
         <div class="btn full-width" onclick="sendCommand('/stats')">
             <span class="btn-icon">📊</span>
             <span class="btn-text">Статистика (Админ)</span>
@@ -124,19 +129,27 @@
         // Инициализация Web App
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand(); // Разворачиваем на весь экран
+        tg.expand();
 
-        // Адаптация под тему телеграма (на всякий случай, хотя у нас свой дизайн)
+        // Адаптация под тему телеграма
         document.body.style.backgroundColor = tg.themeParams.bg_color || '#0a0a0a';
 
         function sendCommand(command) {
-            // Вибрация при нажатии (если поддерживается)
+            // Вибрация при нажатии
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
             }
             
             // Отправляем текст боту и закрываем окно
             tg.sendData(command);
+        }
+
+        function openPlayer() {
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+            // Открываем плеер в новом окне
+            tg.openLink('https://my-music-bot-bzg4.onrender.com/player');
         }
     </script>
 </body>
