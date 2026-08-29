@@ -19,14 +19,13 @@
         }
 
         body {
-            background: #050505; /* Темный фон за пределами приложения */
+            background: #050505;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', sans-serif;
         }
 
-        /* ✅ ГЛАВНЫЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ */
         .app-container {
             width: 100%; max-width: 450px; height: 100vh;
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0a0a0a 100%);
@@ -46,7 +45,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Шум и сканлайны теперь внутри контейнера */
         .app-container::after {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
@@ -61,11 +59,10 @@
 
         @keyframes scanlines { 0% { transform: translateY(0); } 100% { transform: translateY(10px); } }
 
-        /* ✅ СКРОЛЛЯЩАЯСЯ ОБЛАСТЬ */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 60px 30px 140px 30px; /* Увеличил верхний отступ для цепей */
+            padding: 60px 30px 140px 30px;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             position: relative;
@@ -77,10 +74,9 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* ✅ ИСПРАВЛЕННЫЕ ЦЕПИ */
         .chain-decoration {
             position: absolute; 
-            top: 10px; /* Поднял выше, чтобы было видно */
+            top: 10px; 
             left: 50%; 
             transform: translateX(-50%);
             font-size: 30px; 
@@ -367,7 +363,7 @@
             box-shadow: 0 0 12px rgba(255,255,255,0.5), inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* ✅ КНОПКИ АБСОЛЮТНЫЕ ОТНОСИТЕЛЬНО КОНТЕЙНЕРА */
+        /* ✅ КНОПКИ С ЯВНЫМИ VHS-ПОЛОСКАМИ */
         .controls-group {
             position: absolute; 
             bottom: 25px; 
@@ -389,16 +385,35 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.9);
             transition: all 0.2s ease; backdrop-filter: blur(5px); cursor: pointer;
             white-space: nowrap;
+            position: relative;
+            overflow: hidden;
         }
 
-        .ctrl-btn svg { width: 18px; height: 18px; fill: #000; }
+        /* ✅ ЯВНЫЕ VHS-ПОЛОСКИ ПОВЕРХ КНОПОК */
+        .ctrl-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.03) 0px,
+                rgba(0,0,0,0.03) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            border-radius: 22px;
+        }
+
+        .ctrl-btn svg { width: 18px; height: 18px; fill: #000; position: relative; z-index: 2; }
+        .ctrl-btn span { position: relative; z-index: 2; }
+        
         .ctrl-btn:active { 
             transform: scale(0.95); 
             box-shadow: 0 2px 8px rgba(0,0,0,0.8), inset 0 2px 5px rgba(0,0,0,0.3);
             filter: brightness(0.9);
         }
 
-        /* ✅ ПАНЕЛИ АБСОЛЮТНЫЕ */
         .panel-overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; 
             background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px);
@@ -487,7 +502,6 @@
         }
         .history-item .h-time { font-size: 10px; color: #555; font-family: 'Share Tech Mono', monospace; }
 
-        /* ✅ ЭФФЕКТ БЕРСЕРКА */
         @keyframes berserkFlash {
             0% { background-color: rgba(255,255,255,0); }
             20% { background-color: rgba(255,255,255,0.8); }
@@ -508,14 +522,11 @@
     </style>
 </head>
 <body>
-    <!-- ✅ ЕДИНЫЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ -->
     <div class="app-container">
         <div class="berserk-overlay" id="berserkOverlay"></div>
 
-        <!-- ✅ СКРОЛЛЯЩАЯСЯ ЧАСТЬ -->
         <div class="scrollable-content">
             <div class="player-inner">
-                <!-- ✅ ЦЕПИ ТЕПЕРЬ ВНУТРИ СКРОЛЛА, НО С ФИКСИРОВАННОЙ ПОЗИЦИЕЙ ОТНОСИТЕЛЬНО КОНТЕЙНЕРА -->
                 <div class="chain-decoration">⛓ </div>
                 
                 <div class="header">
@@ -582,7 +593,6 @@
             </div>
         </div>
 
-        <!-- ✅ КНОПКИ ВНУТРИ КОНТЕЙНЕРА -->
         <div class="controls-group">
             <button class="ctrl-btn" onclick="toggleHistory()">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -598,7 +608,6 @@
             </button>
         </div>
 
-        <!-- ✅ ПАНЕЛИ ВНУТРИ КОНТЕЙНЕРА -->
         <div class="panel-overlay" id="statsPanel">
             <div class="panel-header">
                 <div class="panel-title"> GANG STATS</div>
@@ -656,9 +665,13 @@
         const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
-        
-        // ✅ ФЛАГ ИНИЦИАЛИЗАЦИИ ТАЙМЕРА (чтобы не дублировался)
-        let timerInitialized = false;
+
+        // ✅ ПОЛНЫЙ СБРОС ТАЙМЕРА ПРИ ЗАГРУЗКЕ
+        let listeningInterval = null;
+        if (listeningInterval) {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        }
 
         const stats = {
             totalTracks: 0,
@@ -1120,30 +1133,25 @@
 
         function setVolume(value) { audio.volume = value / 100; }
 
-        // ✅ ИСПРАВЛЕННЫЙ ТАЙМЕР (ТОЛЬКО ОДИН РАЗ)
-        let listeningInterval = null;
-        if (!timerInitialized) {
-            audio.addEventListener('play', () => {
-                if (!listeningInterval) {
-                    listeningInterval = setInterval(() => {
-                        stats.totalTime++;
-                        saveStats();
-                    }, 1000);
-                }
-            });
+        // ✅ ИСПРАВЛЕННЫЙ ТАЙМЕР: ОДИН ИНТЕРВАЛ, БЕЗ ДУБЛИКАТОВ
+        audio.addEventListener('play', () => {
+            if (!listeningInterval) {
+                listeningInterval = setInterval(() => {
+                    stats.totalTime++;
+                    saveStats();
+                }, 1000);
+            }
+        });
 
-            audio.addEventListener('pause', () => {
-                clearInterval(listeningInterval);
-                listeningInterval = null;
-            });
+        audio.addEventListener('pause', () => {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        });
 
-            audio.addEventListener('ended', () => {
-                clearInterval(listeningInterval);
-                listeningInterval = null;
-            });
-            
-            timerInitialized = true;
-        }
+        audio.addEventListener('ended', () => {
+            clearInterval(listeningInterval);
+            listeningInterval = null;
+        });
 
         audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
@@ -1201,7 +1209,6 @@
             const volumeSlider = document.querySelector('.volume input');
             if (volumeSlider) volumeSlider.value = 100;
             
-            // ✅ МЕНЯЕМ ФОН У APP-CONTAINER
             appContainer.style.background = `
                 radial-gradient(circle at 50% 50%, rgba(255,0,0,0.15) 0%, transparent 60%),
                 linear-gradient(135deg, #0a0000 0%, #1a0000 50%, #0a0000 100%)
