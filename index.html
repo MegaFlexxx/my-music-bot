@@ -12,23 +12,32 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* ✅ ГЛОБАЛЬНЫЙ ФИКС: Убираем скролл у body */
         html, body {
             height: 100%;
-            overflow: hidden; /* Запрещаем скролл всей страницы */
-            touch-action: none; /* Отключаем жесты зума/свайпа браузера */
+            overflow: hidden;
+            touch-action: none;
         }
 
         body {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0a0a0a 100%);
-            background-size: 400% 400%;
-            animation: chromeFlow 15s ease infinite;
-            color: #fff;
+            background: #050505; /* Темный фон за пределами приложения */
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* ✅ ГЛАВНЫЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ */
+        .app-container {
+            width: 100%; max-width: 450px; height: 100vh;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0a0a0a 100%);
+            background-size: 400% 400%;
+            animation: chromeFlow 15s ease infinite;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 2;
+            transition: background 1s ease;
         }
 
         @keyframes chromeFlow {
@@ -37,13 +46,14 @@
             100% { background-position: 0% 50%; }
         }
 
-        body::after {
+        /* Шум и сканлайны теперь внутри контейнера */
+        .app-container::after {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
             pointer-events: none; z-index: 1; opacity: 0.3;
         }
 
-        body::before {
+        .app-container::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
             pointer-events: none; z-index: 3; animation: scanlines 8s linear infinite;
@@ -51,35 +61,41 @@
 
         @keyframes scanlines { 0% { transform: translateY(0); } 100% { transform: translateY(10px); } }
 
-        /* ✅ ГЛАВНЫЙ КОНТЕЙНЕР: Теперь это "экран" приложения */
-        .app-container {
-            width: 100%; max-width: 450px; height: 100vh;
-            background: linear-gradient(180deg, #1e1e1e 0%, #0a0a0a 100%);
-            border-left: 2px solid rgba(200, 200, 200, 0.1);
-            border-right: 2px solid rgba(200, 200, 200, 0.1);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Скроллится только внутренняя часть */
-            z-index: 2;
-        }
-
-        /* ✅ СКРОЛЛЯЩАЯСЯ ОБЛАСТЬ: Все контент внутри этого блока */
+        /* ✅ СКРОЛЛЯЩАЯСЯ ОБЛАСТЬ */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 40px 30px 120px 30px; /* Большой отступ снизу для кнопок */
+            padding: 60px 30px 140px 30px; /* Увеличил верхний отступ для цепей */
             -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Скрываем скроллбар */
+            scrollbar-width: none;
+            position: relative;
+            z-index: 10;
         }
         .scrollable-content::-webkit-scrollbar { display: none; }
 
         .player-inner {
-            /* Внутренний контейнер для центрирования контента */
             display: flex; flex-direction: column; align-items: center;
         }
 
-        .header { text-align: center; margin-bottom: 35px; position: relative; width: 100%; }
+        /* ✅ ИСПРАВЛЕННЫЕ ЦЕПИ */
+        .chain-decoration {
+            position: absolute; 
+            top: 10px; /* Поднял выше, чтобы было видно */
+            left: 50%; 
+            transform: translateX(-50%);
+            font-size: 30px; 
+            opacity: 0.5; 
+            filter: grayscale(100%) brightness(1.5);
+            letter-spacing: 15px; 
+            user-select: none; 
+            animation: chainSwing 4s ease-in-out infinite;
+            z-index: 20;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        @keyframes chainSwing { 0%, 100% { transform: translateX(-50%) rotate(-3deg); } 50% { transform: translateX(-50%) rotate(3deg); } }
+
+        .header { text-align: center; margin-bottom: 35px; position: relative; width: 100%; margin-top: 20px; }
 
         .header h1 {
             font-family: 'Metal Mania', cursive; font-size: 42px; font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
@@ -98,19 +114,12 @@
         }
 
         .header h1::after {
-            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
         @keyframes skullPulse { 0%, 100% { transform: translateY(-50%) scale(1); opacity: 0.8; } 50% { transform: translateY(-50%) scale(1.1); opacity: 1; } }
 
-        .header h1::before {
-            content: ''; position: absolute; top: -15px; left: -30px; font-size: 25px;
-            filter: grayscale(100%) brightness(1.3); opacity: 0.6; animation: chainSwing 4s ease-in-out infinite; transform-origin: top center;
-        }
-
-        @keyframes chainSwing { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
-        
         .header p { color: #666; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin-top: 15px; font-weight: 600; }
 
         .search-container { margin-bottom: 25px; position: relative; width: 100%; }
@@ -256,7 +265,6 @@
             letter-spacing: 3px; text-transform: uppercase; font-weight: 600; font-family: 'Share Tech Mono', monospace;
         }
 
-        /* ✅ ХРОМИРОВАННАЯ КНОПКА PLAY/PAUSE */
         .play-btn {
             width: 80px; height: 80px;
             background: linear-gradient(180deg, #ffffff 0%, #d0d0d0 20%, #909090 40%, #707070 50%, #909090 60%, #d0d0d0 80%, #ffffff 100%);
@@ -312,7 +320,6 @@
             font-family: 'Share Tech Mono', monospace; letter-spacing: 2px;
         }
 
-        /* ✅ ХРОМИРОВАННАЯ ГРОМКОСТЬ */
         .volume-container {
             display: flex; align-items: center; gap: 15px; 
             padding-top: 15px; border-top: 1px solid rgba(150, 150, 150, 0.1);
@@ -360,13 +367,7 @@
             box-shadow: 0 0 12px rgba(255,255,255,0.5), inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        .chain-decoration {
-            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
-            font-size: 30px; opacity: 0.4; filter: grayscale(100%) brightness(1.5);
-            letter-spacing: 10px; user-select: none; animation: chainSwing 4s ease-in-out infinite;
-        }
-
-        /* ✅ КНОПКИ ТЕПЕРЬ АБСОЛЮТНЫЕ ОТНОСИТЕЛЬНО КОНТЕЙНЕРА */
+        /* ✅ КНОПКИ АБСОЛЮТНЫЕ ОТНОСИТЕЛЬНО КОНТЕЙНЕРА */
         .controls-group {
             position: absolute; 
             bottom: 25px; 
@@ -397,7 +398,7 @@
             filter: brightness(0.9);
         }
 
-        /* ✅ ПАНЕЛИ ТОЖЕ АБСОЛЮТНЫЕ */
+        /* ✅ ПАНЕЛИ АБСОЛЮТНЫЕ */
         .panel-overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; 
             background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px);
@@ -514,11 +515,12 @@
         <!-- ✅ СКРОЛЛЯЩАЯСЯ ЧАСТЬ -->
         <div class="scrollable-content">
             <div class="player-inner">
-                <div class="chain-decoration"></div>
+                <!-- ✅ ЦЕПИ ТЕПЕРЬ ВНУТРИ СКРОЛЛА, НО С ФИКСИРОВАННОЙ ПОЗИЦИЕЙ ОТНОСИТЕЛЬНО КОНТЕЙНЕРА -->
+                <div class="chain-decoration">⛓ </div>
                 
                 <div class="header">
                     <h1>Chrome Reaper</h1>
-                    <p> Big Penis Bro Gang ☠️</p>
+                    <p> Big Penis Bro Gang ️</p>
                 </div>
 
                 <div class="search-container">
@@ -535,7 +537,7 @@
 
                 <div class="cover-container">
                     <div class="cover" id="cover">
-                        <span class="default-icon" id="defaultIcon">☠️</span>
+                        <span class="default-icon" id="defaultIcon">️</span>
                         <img id="coverImage" src="" alt="Cover" style="display: none;">
                     </div>
                 </div>
@@ -580,7 +582,7 @@
             </div>
         </div>
 
-        <!-- ✅ КНОПКИ ВНУТРИ КОНТЕЙНЕРА (ABSOLUTE) -->
+        <!-- ✅ КНОПКИ ВНУТРИ КОНТЕЙНЕРА -->
         <div class="controls-group">
             <button class="ctrl-btn" onclick="toggleHistory()">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -596,7 +598,7 @@
             </button>
         </div>
 
-        <!-- ✅ ПАНЕЛИ ВНУТРИ КОНТЕЙНЕРА (ABSOLUTE) -->
+        <!-- ✅ ПАНЕЛИ ВНУТРИ КОНТЕЙНЕРА -->
         <div class="panel-overlay" id="statsPanel">
             <div class="panel-header">
                 <div class="panel-title"> GANG STATS</div>
@@ -654,6 +656,9 @@
         const defaultIcon = document.getElementById('defaultIcon');
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
+        
+        // ✅ ФЛАГ ИНИЦИАЛИЗАЦИИ ТАЙМЕРА (чтобы не дублировался)
+        let timerInitialized = false;
 
         const stats = {
             totalTracks: 0,
@@ -1115,25 +1120,30 @@
 
         function setVolume(value) { audio.volume = value / 100; }
 
+        // ✅ ИСПРАВЛЕННЫЙ ТАЙМЕР (ТОЛЬКО ОДИН РАЗ)
         let listeningInterval = null;
-        audio.addEventListener('play', () => {
-            if (!listeningInterval) {
-                listeningInterval = setInterval(() => {
-                    stats.totalTime++;
-                    saveStats();
-                }, 1000);
-            }
-        });
+        if (!timerInitialized) {
+            audio.addEventListener('play', () => {
+                if (!listeningInterval) {
+                    listeningInterval = setInterval(() => {
+                        stats.totalTime++;
+                        saveStats();
+                    }, 1000);
+                }
+            });
 
-        audio.addEventListener('pause', () => {
-            clearInterval(listeningInterval);
-            listeningInterval = null;
-        });
+            audio.addEventListener('pause', () => {
+                clearInterval(listeningInterval);
+                listeningInterval = null;
+            });
 
-        audio.addEventListener('ended', () => {
-            clearInterval(listeningInterval);
-            listeningInterval = null;
-        });
+            audio.addEventListener('ended', () => {
+                clearInterval(listeningInterval);
+                listeningInterval = null;
+            });
+            
+            timerInitialized = true;
+        }
 
         audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
@@ -1177,7 +1187,7 @@
         loadStats();
 
         function activateReaperMode() {
-            const body = document.body;
+            const appContainer = document.querySelector('.app-container');
             const headerH1 = document.querySelector('.header h1');
             const searchBtn = document.getElementById('searchBtn');
             const loadBtn = document.getElementById('loadBtn');
@@ -1191,8 +1201,8 @@
             const volumeSlider = document.querySelector('.volume input');
             if (volumeSlider) volumeSlider.value = 100;
             
-            // Меняем фон всего приложения
-            document.querySelector('.app-container').style.background = `
+            // ✅ МЕНЯЕМ ФОН У APP-CONTAINER
+            appContainer.style.background = `
                 radial-gradient(circle at 50% 50%, rgba(255,0,0,0.15) 0%, transparent 60%),
                 linear-gradient(135deg, #0a0000 0%, #1a0000 50%, #0a0000 100%)
             `;
@@ -1220,7 +1230,7 @@
                 background: rgba(0,0,0,0.9); padding: 15px 30px; border: 2px solid #ff003c;
                 border-radius: 8px; will-change: transform, opacity;
             `;
-            document.querySelector('.app-container').appendChild(reaperMsg);
+            appContainer.appendChild(reaperMsg);
             
             const style = document.createElement('style');
             style.textContent = `
@@ -1298,7 +1308,7 @@
             }, 800);
             
             setTimeout(() => {
-                document.querySelector('.app-container').style.background = '';
+                appContainer.style.background = '';
                 headerH1.style.fontFamily = "'Metal Mania', cursive";
                 headerH1.textContent = 'Chrome Reaper';
                 headerH1.style.color = '';
