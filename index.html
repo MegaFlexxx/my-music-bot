@@ -120,12 +120,62 @@
 
         .search-container { margin-bottom: 25px; position: relative; width: 100%; }
 
+        /* ✅ ЕДИНЫЙ СТИЛЬ ДЛЯ ВСЕХ КНОПОК */
+        .chrome-btn {
+            width: 100%; padding: 16px;
+            background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 20%, #808080 40%, #606060 50%, #808080 60%, #c0c0c0 80%, #ffffff 100%);
+            border: none; color: #000; font-weight: 900; font-size: 14px; letter-spacing: 4px; text-transform: uppercase;
+            cursor: pointer; margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.9); 
+            transition: all 0.2s ease; 
+            position: relative; 
+            overflow: hidden;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* VHS-полоски для всех кнопок */
+        .chrome-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.04) 0px,
+                rgba(0,0,0,0.04) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            border-radius: 8px;
+        }
+
+        .chrome-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); transition: left 0.5s;
+            z-index: 1;
+        }
+
+        .chrome-btn:hover::before { left: 100%; }
+
+        .chrome-btn:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(0,0,0,0.8), inset 0 2px 5px rgba(0,0,0,0.3); }
+
+        .chrome-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(100%); }
+
+        .chrome-btn.loading {
+            background: linear-gradient(90deg, #606060, #808080, #606060);
+            background-size: 200% 100%; animation: loadingShimmer 1.5s infinite;
+        }
+
+        @keyframes loadingShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
         .search-input, .player-input {
             width: 100%; padding: 16px;
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 100%);
             border: 1px solid rgba(150, 150, 150, 0.3); color: #fff; font-size: 13px; outline: none; margin-bottom: 12px;
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1); transition: all 0.3s ease;
             font-family: 'Share Tech Mono', monospace; letter-spacing: 1px;
+            border-radius: 8px;
         }
 
         .search-input:focus, .player-input:focus {
@@ -135,35 +185,11 @@
 
         .search-input::placeholder, .player-input::placeholder { color: #555; font-style: italic; }
 
-        .search-btn, .load-btn {
-            width: 100%; padding: 16px;
-            background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 20%, #808080 40%, #606060 50%, #808080 60%, #c0c0c0 80%, #ffffff 100%);
-            border: none; color: #000; font-weight: 900; font-size: 14px; letter-spacing: 4px; text-transform: uppercase;
-            cursor: pointer; margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.9); transition: all 0.2s ease; position: relative; overflow: hidden;
-        }
-
-        .search-btn::before, .load-btn::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent); transition: left 0.5s;
-        }
-
-        .search-btn:hover::before, .load-btn:hover::before { left: 100%; }
-
-        .search-btn:active, .load-btn:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(0,0,0,0.8), inset 0 2px 5px rgba(0,0,0,0.3); }
-
-        .search-btn:disabled, .load-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(100%); }
-
-        .load-btn.loading {
-            background: linear-gradient(90deg, #606060, #808080, #606060); background-size: 200% 100%; animation: loadingShimmer 1.5s infinite;
-        }
-
-        @keyframes loadingShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
         .search-results {
             width: 100%; max-height: 300px; overflow-y: auto; margin-bottom: 25px; display: none;
             border: 1px solid rgba(150, 150, 150, 0.2); background: rgba(0,0,0,0.5);
             -webkit-overflow-scrolling: touch;
+            border-radius: 8px;
         }
 
         .search-results.active { display: block; }
@@ -197,6 +223,7 @@
         .result-item img {
             width: 55px; height: 55px; object-fit: cover; background: #1a1a1a;
             border: 2px solid rgba(150,150,150,0.3); filter: grayscale(100%) contrast(1.2); transition: all 0.3s ease;
+            border-radius: 6px;
         }
 
         .result-item:hover img { filter: grayscale(0%) contrast(1.2); border-color: rgba(255,255,255,0.6); }
@@ -205,6 +232,7 @@
             width: 55px; height: 55px; background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
             border: 2px solid rgba(150,150,150,0.3); display: flex; align-items: center; justify-content: center;
             font-size: 24px; filter: grayscale(100%);
+            border-radius: 6px;
         }
 
         .result-item .info { flex: 1; min-width: 0; }
@@ -230,6 +258,7 @@
             border: 3px solid rgba(200, 200, 200, 0.3); display: flex; align-items: center; justify-content: center;
             font-size: 100px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             overflow: hidden; position: relative; transition: all 0.5s ease;
+            border-radius: 12px;
         }
 
         .cover .default-icon {
@@ -247,7 +276,7 @@
 
         @keyframes rotateOnly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        .cover img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.3) brightness(0.9); }
+        .cover img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.3) brightness(0.9); border-radius: inherit; }
 
         .track-title { 
             font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; word-break: break-word;
@@ -294,6 +323,7 @@
             width: 100%; height: 8px; background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
             border: 1px solid rgba(150, 150, 150, 0.3); overflow: hidden; cursor: pointer; margin-bottom: 12px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); position: relative;
+            border-radius: 4px;
         }
 
         .progress-bar {
@@ -302,6 +332,7 @@
             background-size: 200% 100%; width: 0%;
             box-shadow: 0 0 10px rgba(255,255,255,0.5), inset 0 1px 0 rgba(255,255,255,0.8);
             animation: liquidMetal 2s linear infinite; transition: width 0.1s ease; position: relative;
+            border-radius: 4px;
         }
 
         .progress-bar::after {
@@ -363,7 +394,6 @@
             box-shadow: 0 0 12px rgba(255,255,255,0.5), inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* ✅ КНОПКИ С ЯВНЫМИ VHS-ПОЛОСКАМИ */
         .controls-group {
             position: absolute; 
             bottom: 25px; 
@@ -389,7 +419,6 @@
             overflow: hidden;
         }
 
-        /* ✅ ЯВНЫЕ VHS-ПОЛОСКИ ПОВЕРХ КНОПОК */
         .ctrl-btn::after {
             content: '';
             position: absolute;
@@ -531,12 +560,12 @@
                 
                 <div class="header">
                     <h1>Chrome Reaper</h1>
-                    <p> Big Penis Bro Gang ️</p>
+                    <p> Big Penis Bro Gang ☠️</p>
                 </div>
 
                 <div class="search-container">
                     <input type="text" class="search-input" id="searchQuery" placeholder=" SEARCH: artist or track name">
-                    <button class="search-btn" id="searchBtn" onclick="searchTracks()"> Search</button>
+                    <button class="chrome-btn" id="searchBtn" onclick="searchTracks()"> Search</button>
                 </div>
 
                 <div class="search-results" id="searchResults"></div>
@@ -544,11 +573,11 @@
                 <input type="text" class="player-input" id="trackUrl" placeholder=" Or paste Yandex/MP3 link">
                 <input type="text" class="player-input" id="trackTitle" placeholder="Track name (optional)">
                 <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
-                <button class="load-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
+                <button class="chrome-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
                 <div class="cover-container">
                     <div class="cover" id="cover">
-                        <span class="default-icon" id="defaultIcon">️</span>
+                        <span class="default-icon" id="defaultIcon">☠️</span>
                         <img id="coverImage" src="" alt="Cover" style="display: none;">
                     </div>
                 </div>
@@ -666,13 +695,9 @@
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
-        // ✅ ПОЛНЫЙ СБРОС ТАЙМЕРА ПРИ ЗАГРУЗКЕ
+        // ✅ ПОЛНЫЙ СБРОС ТАЙМЕРА И СТАТИСТИКИ ПРИ ЗАГРУЗКЕ
         let listeningInterval = null;
-        if (listeningInterval) {
-            clearInterval(listeningInterval);
-            listeningInterval = null;
-        }
-
+        
         const stats = {
             totalTracks: 0,
             totalTime: 0,
@@ -686,19 +711,37 @@
         function loadStats() {
             const saved = localStorage.getItem('chromeReaperStats');
             if (saved) {
-                const parsed = JSON.parse(saved);
-                Object.assign(stats, parsed);
-                
-                const today = new Date().toDateString();
-                if (stats.lastDate !== today) {
-                    stats.todayTracks = 0;
-                    stats.lastDate = today;
+                try {
+                    const parsed = JSON.parse(saved);
+                    // ✅ ЗАЩИТА ОТ БАГОВАННЫХ ЗНАЧЕНИЙ
+                    if (parsed.totalTime && parsed.totalTime > 0 && parsed.totalTime < 86400) {
+                        stats.totalTime = parsed.totalTime;
+                    } else {
+                        stats.totalTime = 0; // Сброс если значение нереалистичное
+                    }
+                    
+                    if (parsed.totalTracks && parsed.totalTracks > 0) stats.totalTracks = parsed.totalTracks;
+                    if (parsed.todayTracks && parsed.todayTracks >= 0) stats.todayTracks = parsed.todayTracks;
+                    if (parsed.artists) stats.artists = parsed.artists;
+                    
+                    const today = new Date().toDateString();
+                    if (stats.lastDate !== today) {
+                        stats.todayTracks = 0;
+                        stats.lastDate = today;
+                    }
+                } catch(e) {
+                    console.error('Error loading stats:', e);
+                    stats.totalTime = 0;
                 }
             }
 
             const savedHistory = localStorage.getItem('chromeReaperHistory');
             if (savedHistory) {
-                trackHistory = JSON.parse(savedHistory);
+                try {
+                    trackHistory = JSON.parse(savedHistory);
+                } catch(e) {
+                    trackHistory = [];
+                }
             }
 
             updateStatsUI();
@@ -716,6 +759,7 @@
         }
 
         function formatDuration(seconds) {
+            if (!seconds || seconds < 0) return '0m';
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
             return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -1171,7 +1215,7 @@
         });
 
         function formatTime(seconds) {
-            if (isNaN(seconds)) return '0:00';
+            if (isNaN(seconds) || seconds < 0) return '0:00';
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${mins}:${secs.toString().padStart(2, '0')}`;
