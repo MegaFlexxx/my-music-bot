@@ -85,7 +85,7 @@
 
         .header { text-align: center; margin-bottom: 35px; position: relative; width: 100%; margin-top: 20px; }
 
-        /* ✅ НОВЫЙ СЕРЕБРЯНЫЙ ХРОМ + КРАСНЫЙ ГЛИТЧ */
+        /* ✅ СЕРЕБРЯНЫЙ ХРОМ + КРАСНЫЙ ГЛИТЧ */
         .header h1 {
             font-family: 'Metal Mania', cursive; 
             font-size: 42px; 
@@ -93,7 +93,6 @@
             letter-spacing: 4px; 
             text-transform: uppercase;
             
-            /* Серебряный металлический градиент */
             background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 20%, #a0a0a0 50%, #606060 80%, #303030 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -104,7 +103,6 @@
             margin-bottom: 5px;
         }
 
-        /* Создаем копию текста ТОЛЬКО для красного глитча */
         .header h1::before {
             content: attr(data-text);
             position: absolute;
@@ -117,14 +115,12 @@
             -webkit-text-fill-color: transparent;
             opacity: 0.9;
             pointer-events: none;
-            /* Красная тень вместо синей/голубой */
             text-shadow: 2px 0 #ff003c; 
             clip-path: inset(0 0 0 0);
             animation: glitchRedOnly 3s infinite linear alternate-reverse;
-            left: 3px; /* Смещение вправо для эффекта сбоя */
+            left: 3px;
         }
 
-        /* Анимация основного дрожания (только серебро) */
         @keyframes chromeGlitchRed {
             0%, 90%, 100% { 
                 transform: translate(0); 
@@ -148,7 +144,6 @@
             }
         }
 
-        /* Анимация ТОЛЬКО красного канала */
         @keyframes glitchRedOnly {
             0%, 85%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); opacity: 0; }
             86% { clip-path: inset(20% 0 30% 0); transform: translate(-5px, 0); opacity: 1; }
@@ -257,7 +252,6 @@
         }
         .result-item .duration { font-size: 11px; color: #666; font-family: 'Share Tech Mono', monospace; }
 
-        /* ✅ КОНТЕЙНЕР ДЛЯ ОБЛОЖКИ И ТЯНКИ */
         .media-row {
             display: flex;
             align-items: center;
@@ -351,7 +345,6 @@
             z-index: 3;
         }
 
-        /* ✅ СЛОТ ПОД ТЯНКУ С АНИМАЦИЕЙ КАЧАНИЯ */
         .waifu-slot {
             width: 30%;
             aspect-ratio: 3/4;
@@ -361,8 +354,6 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             position: relative;
             background: #111;
-            
-            /* Анимация качания */
             animation: gentleBounce 2s ease-in-out infinite alternate;
             will-change: transform;
         }
@@ -634,6 +625,30 @@
         }
 
         .berserk-overlay.active { animation: berserkFlash 0.3s ease-out forwards; }
+
+        /* ✅ ЧАСТИЦЫ ИСКР */
+        .spark-particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: #ffffff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 2px rgba(192, 192, 192, 0.6);
+            animation: sparkFly 0.6s ease-out forwards;
+        }
+
+        @keyframes sparkFly {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -645,7 +660,6 @@
                 <div class="chain-decoration"> </div>
                 
                 <div class="header">
-                    <!-- ✅ DATA-TEXT ДЛЯ РАБОТЫ ПСЕВДОЭЛЕМЕНТОВ -->
                     <h1 data-text="CHROME REAPER">CHROME REAPER</h1>
                     <p> Big Penis Bro Gang ☠️</p>
                 </div>
@@ -662,7 +676,6 @@
                 <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
                 <button class="chrome-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
-                <!-- ✅ НОВЫЙ МАКЕТ: ОБЛОЖКА + ТЯНКА РЯДОМ -->
                 <div class="media-row">
                     <div class="cover-container" id="coverContainer">
                         <div class="cover" id="cover">
@@ -671,7 +684,6 @@
                         </div>
                     </div>
                     
-                    <!-- ✅ СЛОТ ПОД ТВОЮ КАРТИНКУ -->
                     <div class="waifu-slot" id="waifuSlot">
                         <img src="https://img10.joyreactor.com/pics/post/blueorca-artist-original-8759320.jpeg" alt="Waifu" id="waifuImg">
                     </div>
@@ -1101,6 +1113,45 @@
                 }, 30);
             }
         }
+
+        // ✅ ФУНКЦИЯ СОЗДАНИЯ ЧАСТИЦ
+        function createSparks(x, y, count = 8) {
+            for (let i = 0; i < count; i++) {
+                const spark = document.createElement('div');
+                spark.className = 'spark-particle';
+                
+                // Случайное направление разлета
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 30 + Math.random() * 50;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                spark.style.left = x + 'px';
+                spark.style.top = y + 'px';
+                spark.style.setProperty('--tx', tx + 'px');
+                spark.style.setProperty('--ty', ty + 'px');
+                
+                // Немного варьируем размер
+                const size = 2 + Math.random() * 4;
+                spark.style.width = size + 'px';
+                spark.style.height = size + 'px';
+                
+                document.body.appendChild(spark);
+                
+                // Удаляем после анимации
+                setTimeout(() => {
+                    spark.remove();
+                }, 600);
+            }
+        }
+
+        // Добавляем обработчик кликов для всех интерактивных элементов
+        document.addEventListener('click', (e) => {
+            const interactiveElements = ['BUTTON', 'INPUT'];
+            if (interactiveElements.includes(e.target.tagName) || e.target.closest('.ctrl-btn, .chrome-btn, .play-btn, .result-item, .history-item')) {
+                createSparks(e.clientX, e.clientY, 8);
+            }
+        });
 
         function initHologramGyro() {
             if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
