@@ -685,14 +685,14 @@
                 <div class="media-row">
                     <div class="cover-container" id="coverContainer">
                         <div class="cover" id="cover">
-                            <span class="default-icon" id="defaultIcon">️</span>
+                            <span class="default-icon" id="defaultIcon">☠️</span>
                             <img id="coverImage" src="" alt="Cover" style="display: none;">
                         </div>
                     </div>
                     
-                    <!-- ✅ СЛОТ ПОД ТЯНКУ -->
+                    <!-- ✅ СЛОТ ПОД ТЯНКУ (ТЕПЕРЬ СРАЗУ КРАСИВАЯ!) -->
                     <div class="waifu-slot" id="waifuSlot">
-                        <img src="https://via.placeholder.com/300x400/111/444?text=REAPER+WAFU" alt="Waifu" id="waifuImg">
+                        <img src="https://i.pinimg.com/736x/8e/d5/63/8ed563e3584762b20e3d9533192af071.jpg" alt="Waifu" id="waifuImg">
                     </div>
                 </div>
                 
@@ -834,16 +834,11 @@
 
         // ✅ БАЗА ПРОВЕРЕННЫХ ТЯНОК (ЗАМЕНИ ССЫЛКИ НА СВОИ!)
         const waifuDatabase = [
-            'https://i.pinimg.com/736x/8e/d5/63/8ed563e3584762b20e3d9533192af071.jpg', // Тянка 1
-            'https://i.pinimg.com/736x/8f/64/11/8f641173f8a69768420b818bf58650ef.jpg', // Тянка 2
-            'https://i.pinimg.com/736x/2c/c8/4f/2cc84f4678ad418b4b66c1f4ba698e7e.jpg', // Тянка 3
-            'https://i.pinimg.com/736x/e6/d2/90/e6d2900f2c3323db805b66d14e947613.jpg', // Тянка 4
-            'https://i.pinimg.com/736x/cc/00/49/cc0049be79c677422ca044fd5be076fc.jpg', // Тянка 5
-            'https://i.pinimg.com/1200x/4b/48/b6/4b48b6611d7465233e117ba283fc51f2.jpg', // Тянка 6
-            'https://i.pinimg.com/736x/f1/cd/23/f1cd23beb552d9d61f8b327585644f8f.jpg', // Тянка 7
-            'https://i.pinimg.com/736x/14/c2/87/14c2873f25fd5f200ea8aad9fb806d57.jpg', // Тянка 8
-            'https://i.pinimg.com/736x/ae/1a/a0/ae1aa084e5765766792654faa10e30f0.jpg', // Тянка 9
-            'https://i.pinimg.com/736x/b6/c8/23/b6c8231afd9ec2b09c040bcfc2912ffd.jpg'  // Тянка 10
+            'https://i.pinimg.com/736x/8e/d5/63/8ed563e3584762b20e3d9533192af071.jpg', // Тянка 1 (Твоя!)
+            'https://i.imgur.com/def456.jpg', // Тянка 2
+            'https://i.imgur.com/ghi789.jpg', // Тянка 3
+            'https://i.imgur.com/jkl012.jpg', // Тянка 4
+            'https://i.imgur.com/mno345.jpg'  // Тянка 5
         ];
 
         let currentWaifuIndex = -1;
@@ -1323,7 +1318,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ️</div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
