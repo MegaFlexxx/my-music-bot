@@ -120,7 +120,6 @@
 
         .search-container { margin-bottom: 25px; position: relative; width: 100%; }
 
-        /* ✅ ЕДИНЫЙ СТИЛЬ ДЛЯ ВСЕХ КНОПОК */
         .chrome-btn {
             width: 100%; padding: 16px;
             background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 20%, #808080 40%, #606060 50%, #808080 60%, #c0c0c0 80%, #ffffff 100%);
@@ -134,7 +133,6 @@
             font-family: 'Orbitron', sans-serif;
         }
 
-        /* VHS-полоски для всех кнопок */
         .chrome-btn::after {
             content: '';
             position: absolute;
@@ -443,18 +441,23 @@
             filter: brightness(0.9);
         }
 
+        /* ✅ ПРУЖИНИСТАЯ АНИМАЦИЯ ДЛЯ ПАНЕЛЕЙ */
         .panel-overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; 
             background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(15px);
             border-top: 2px solid rgba(200, 200, 200, 0.3); border-radius: 24px 24px 0 0;
             padding: 30px; z-index: 100;
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            /* ✅ КУСТОМНАЯ КРИВАЯ БЕЗЬЕ С ЭФФЕКТОМ ВЫПРЫГИВАНИЯ */
+            transform: translateY(100%); 
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             font-family: 'Share Tech Mono', monospace;
             max-height: 80vh; overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
-        .panel-overlay.active { transform: translateY(0); }
+        .panel-overlay.active { 
+            transform: translateY(0); 
+        }
 
         .panel-header {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
@@ -695,7 +698,6 @@
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
-        // ✅ ПОЛНЫЙ СБРОС ТАЙМЕРА И СТАТИСТИКИ ПРИ ЗАГРУЗКЕ
         let listeningInterval = null;
         
         const stats = {
@@ -713,11 +715,10 @@
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    // ✅ ЗАЩИТА ОТ БАГОВАННЫХ ЗНАЧЕНИЙ
                     if (parsed.totalTime && parsed.totalTime > 0 && parsed.totalTime < 86400) {
                         stats.totalTime = parsed.totalTime;
                     } else {
-                        stats.totalTime = 0; // Сброс если значение нереалистичное
+                        stats.totalTime = 0;
                     }
                     
                     if (parsed.totalTracks && parsed.totalTracks > 0) stats.totalTracks = parsed.totalTracks;
@@ -1022,7 +1023,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
@@ -1177,7 +1178,6 @@
 
         function setVolume(value) { audio.volume = value / 100; }
 
-        // ✅ ИСПРАВЛЕННЫЙ ТАЙМЕР: ОДИН ИНТЕРВАЛ, БЕЗ ДУБЛИКАТОВ
         audio.addEventListener('play', () => {
             if (!listeningInterval) {
                 listeningInterval = setInterval(() => {
