@@ -26,7 +26,6 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        /* ✅ CRT-ЭФФЕКТ КОНТЕЙНЕРА */
         .app-container {
             width: 100%; max-width: 450px; height: 100vh;
             position: relative;
@@ -34,7 +33,6 @@
             flex-direction: column;
             overflow: hidden;
             z-index: 2;
-            /* Жидкий хромовый фон */
             background: radial-gradient(circle at 50% 50%, #2a2a2a 0%, #0a0a0a 70%, #000000 100%);
             animation: liquidChromeBg 20s ease-in-out infinite alternate;
         }
@@ -45,7 +43,6 @@
             100% { filter: hue-rotate(-10deg) brightness(0.9); }
         }
 
-        /* Сканлайны + Шум */
         .app-container::after {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
@@ -57,7 +54,7 @@
             background: repeating-linear-gradient(0deg, rgba(0,0,0,0.2), rgba(0,0,0,0.2) 1px, transparent 1px, transparent 3px);
             pointer-events: none; z-index: 3; 
             animation: scanlines 10s linear infinite;
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.9); /* Виньетка */
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
         }
 
         @keyframes scanlines { 0% { transform: translateY(0); } 100% { transform: translateY(20px); } }
@@ -88,7 +85,6 @@
 
         .header { text-align: center; margin-bottom: 35px; position: relative; width: 100%; margin-top: 20px; }
 
-        /* ✅ ГЛИТЧ-ТЕКСТ ЗАГОЛОВКА */
         .header h1 {
             font-family: 'Metal Mania', cursive; font-size: 42px; font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
             color: #fff;
@@ -211,41 +207,103 @@
         }
         .result-item .duration { font-size: 11px; color: #666; font-family: 'Share Tech Mono', monospace; }
 
-        .cover-container { width: 100%; aspect-ratio: 1; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; position: relative; }
+        /* ✅ ГОЛОГРАФИЧЕСКАЯ ОБЛОЖКА */
+        .cover-container { 
+            width: 100%; aspect-ratio: 1; margin-bottom: 30px; 
+            display: flex; align-items: center; justify-content: center; 
+            position: relative;
+            perspective: 1000px; /* Для 3D эффекта */
+        }
 
         .cover {
             width: 100%; height: 100%;
             background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 25%, #0a0a0a 50%, #2a2a2a 75%, #0a0a0a 100%);
-            border: 3px solid rgba(200, 200, 200, 0.3); display: flex; align-items: center; justify-content: center;
-            font-size: 100px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            overflow: hidden; position: relative; transition: all 0.5s ease; border-radius: 12px;
+            border: 3px solid rgba(200, 200, 200, 0.3); 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 100px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            overflow: hidden; position: relative; 
+            border-radius: 12px;
+            
+            /* ✅ 3D ТРАНСФОРМАЦИИ ДЛЯ ГОЛОГРАММЫ */
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out; /* Плавное следование за гироскопом */
+            will-change: transform;
+        }
+
+        /* Слой для бликов голограммы */
+        .cover::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.1) 25%,
+                rgba(0,255,255,0.1) 50%,
+                rgba(255,0,255,0.1) 75%,
+                rgba(255,255,255,0) 100%
+            );
+            mix-blend-mode: overlay;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        /* Слой для хроматической аберрации */
+        .cover::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: inherit;
+            mix-blend-mode: screen;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .cover.hologram-active::after {
+            opacity: 0.3;
+            background: linear-gradient(45deg, rgba(255,0,0,0.2), rgba(0,255,0,0.2), rgba(0,0,255,0.2));
         }
 
         .cover .default-icon {
             font-size: 100px; position: absolute;
             filter: grayscale(100%) brightness(1.5) drop-shadow(0 0 20px rgba(255,255,255,0.3));
             opacity: 0.6; animation: skullFloat 4s ease-in-out infinite; will-change: transform;
+            z-index: 3;
         }
 
         @keyframes skullFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        /* ✅ НЕОНОВОЕ СВЕЧЕНИЕ ПРИ ВОСПРОИЗВЕДЕНИИ */
+        /* НЕОНОВОЕ СВЕЧЕНИЕ ПРИ ВОСПРОИЗВЕДЕНИИ */
         .cover.playing {
             animation: rotateOnly 20s linear infinite; border-radius: 50%; border: 4px solid rgba(255, 0, 60, 0.6);
-            box-shadow: 0 0 40px rgba(255, 0, 60, 0.4), inset 0 0 30px rgba(255, 0, 60, 0.2); will-change: transform;
+            box-shadow: 0 0 40px rgba(255, 0, 60, 0.4), inset 0 0 30px rgba(255, 0, 60, 0.2); 
+            will-change: transform;
+        }
+
+        /* Отключаем вращение при активном гироскопе, чтобы не конфликтовало */
+        .cover.playing.gyro-active {
+            animation: none;
         }
 
         @keyframes rotateOnly { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        .cover img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.3) brightness(0.9); border-radius: inherit; }
+        .cover img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            filter: grayscale(100%) contrast(1.3) brightness(0.9); 
+            border-radius: inherit; 
+            z-index: 3;
+        }
 
-        /* ✅ ЭФФЕКТ ПЕЧАТНОЙ МАШИНКИ ДЛЯ ТЕКСТА */
         .track-title { 
             font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 8px; word-break: break-word;
             background: linear-gradient(180deg, #ffffff 0%, #c0c0c0 50%, #808080 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); letter-spacing: 2px; text-transform: uppercase;
-            min-height: 1.2em; /* Чтобы текст не прыгал при печати */
+            min-height: 1.2em;
         }
 
         .track-artist { 
@@ -254,7 +312,6 @@
             min-height: 1.2em;
         }
 
-        /* Мигающий курсор для эффекта печати */
         .typing-cursor::after {
             content: '_';
             animation: blink 0.8s step-end infinite;
@@ -298,7 +355,6 @@
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.8); position: relative; border-radius: 4px;
         }
 
-        /* ✅ ЖИДКИЙ МЕТАЛЛ НА ПРОГРЕСС-БАРЕ */
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #ff003c 0%, #ffffff 50%, #ff003c 100%);
@@ -524,14 +580,14 @@
                 <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
                 <button class="chrome-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
-                <div class="cover-container">
+                <!-- ✅ ГОЛОГРАФИЧЕСКИЙ КОНТЕЙНЕР -->
+                <div class="cover-container" id="coverContainer">
                     <div class="cover" id="cover">
                         <span class="default-icon" id="defaultIcon">☠️</span>
                         <img id="coverImage" src="" alt="Cover" style="display: none;">
                     </div>
                 </div>
                 
-                <!-- ✅ ДОБАВЛЕНЫ КЛАССЫ ДЛЯ ПЕЧАТНОЙ МАШИНКИ -->
                 <div class="track-title typing-cursor" id="title">Chrome Reaper</div>
                 <div class="track-artist typing-cursor" id="artist">Insert link or search above</div>
                 
@@ -650,6 +706,13 @@
         let artistInterval = null;
         const titleEl = document.getElementById('title');
         const artistEl = document.getElementById('artist');
+
+        // ✅ ПЕРЕМЕННЫЕ ДЛЯ ГОЛОГРАММЫ
+        let gyroEnabled = false;
+        let currentRotateX = 0;
+        let currentRotateY = 0;
+        let targetRotateX = 0;
+        let targetRotateY = 0;
 
         let listeningInterval = null;
         
@@ -811,7 +874,7 @@
                 
                 if (data.success) {
                     audio.src = data.direct_url;
-                    typewriterEffect(data.title, data.artist); // ✅ Используем эффект печати
+                    typewriterEffect(data.title, data.artist);
                     setCover(data.cover_url);
                     
                     await audio.play();
@@ -914,20 +977,16 @@
             defaultIcon.style.display = 'none';
         }
 
-        // ✅ ФУНКЦИЯ ЭФФЕКТА ПЕЧАТНОЙ МАШИНКИ
         function typewriterEffect(titleText, artistText) {
-            // Очищаем предыдущие интервалы
             clearInterval(titleInterval);
             clearInterval(artistInterval);
             
-            // Добавляем класс курсора
             titleEl.classList.add('typing-cursor');
             artistEl.classList.add('typing-cursor');
             
             let titleIndex = 0;
             let artistIndex = 0;
             
-            // Печатаем название
             titleEl.textContent = '';
             titleInterval = setInterval(() => {
                 if (titleIndex < titleText.length) {
@@ -935,10 +994,9 @@
                     titleIndex++;
                 } else {
                     clearInterval(titleInterval);
-                    // После завершения названия начинаем печатать артиста
                     startArtistTyping();
                 }
-            }, 50); // Скорость печати названия
+            }, 50);
             
             function startArtistTyping() {
                 artistEl.textContent = '';
@@ -948,15 +1006,72 @@
                         artistIndex++;
                     } else {
                         clearInterval(artistInterval);
-                        // Убираем курсор после завершения
                         setTimeout(() => {
                             titleEl.classList.remove('typing-cursor');
                             artistEl.classList.remove('typing-cursor');
                         }, 1000);
                     }
-                }, 30); // Скорость печати артиста (чуть быстрее)
+                }, 30);
             }
         }
+
+        // ✅ ФУНКЦИЯ УПРАВЛЕНИЯ ГОЛОГРАММОЙ ЧЕРЕЗ ГИРОСКОП
+        function initHologramGyro() {
+            if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // iOS 13+ требует разрешения
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            enableGyro();
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Android и старые iOS
+                enableGyro();
+            }
+        }
+
+        function enableGyro() {
+            window.addEventListener('deviceorientation', handleOrientation);
+            gyroEnabled = true;
+            cover.classList.add('gyro-active');
+            cover.classList.add('hologram-active');
+            
+            // Запускаем анимационный цикл для плавности
+            requestAnimationFrame(updateHologramTransform);
+        }
+
+        function handleOrientation(event) {
+            // beta: наклон вперед-назад (-180 до 180)
+            // gamma: наклон влево-вправо (-90 до 90)
+            const beta = event.beta || 0;
+            const gamma = event.gamma || 0;
+            
+            // Ограничиваем угол наклона для комфорта
+            targetRotateX = Math.max(-20, Math.min(20, beta * 0.5));
+            targetRotateY = Math.max(-20, Math.min(20, gamma * 0.5));
+        }
+
+        function updateHologramTransform() {
+            // Плавная интерполяция (lerp) для мягкого движения
+            currentRotateX += (targetRotateX - currentRotateX) * 0.1;
+            currentRotateY += (targetRotateY - currentRotateY) * 0.1;
+            
+            if (gyroEnabled) {
+                cover.style.transform = `rotateX(${currentRotateX}deg) rotateY(${currentRotateY}deg)`;
+            }
+            
+            requestAnimationFrame(updateHologramTransform);
+        }
+
+        // Инициализируем гироскоп при первом взаимодействии
+        document.addEventListener('click', function initGyroOnFirstClick() {
+            if (!gyroEnabled) {
+                initHologramGyro();
+            }
+            document.removeEventListener('click', initGyroOnFirstClick);
+        }, { once: true });
 
         async function searchTracks() {
             const query = document.getElementById('searchQuery').value.trim();
@@ -1044,7 +1159,7 @@
                 
                 if (data.success) {
                     audio.src = data.direct_url;
-                    typewriterEffect(track.title, track.artist); // ✅ Используем эффект печати
+                    typewriterEffect(track.title, track.artist);
                     setCover(track.cover_url);
                     
                     updateTrackStats(track.artist);
@@ -1099,7 +1214,7 @@
                     
                     if (data.success) {
                         audio.src = data.direct_url;
-                        typewriterEffect(data.title, data.artist); // ✅ Используем эффект печати
+                        typewriterEffect(data.title, data.artist);
                         setCover(data.cover_url);
                         
                         updateTrackStats(data.artist);
@@ -1115,7 +1230,7 @@
                     }
                 } else {
                     audio.src = url;
-                    typewriterEffect(title || 'Custom Track', artist || 'Unknown Artist'); // ✅ Используем эффект печати
+                    typewriterEffect(title || 'Custom Track', artist || 'Unknown Artist');
                     setCover(null);
                     
                     updateTrackStats(artist || 'Unknown Artist');
@@ -1319,7 +1434,7 @@
                     if (data.success) {
                         audio.src = data.direct_url;
                         audio.volume = 1.0;
-                        typewriterEffect(data.title, data.artist); // ✅ Используем эффект печати
+                        typewriterEffect(data.title, data.artist);
                         setCover(data.cover_url);
                         
                         updateTrackStats(data.artist);
