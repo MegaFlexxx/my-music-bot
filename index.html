@@ -101,7 +101,7 @@
         }
 
         .header h1::after {
-            content: '☠️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+            content: '️'; position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
             font-size: 30px; filter: grayscale(100%) brightness(1.5); opacity: 0.8; animation: skullPulse 2s ease-in-out infinite;
         }
 
@@ -207,12 +207,21 @@
         }
         .result-item .duration { font-size: 11px; color: #666; font-family: 'Share Tech Mono', monospace; }
 
-        /* ✅ ГОЛОГРАФИЧЕСКАЯ ОБЛОЖКА */
+        /* ✅ КОНТЕЙНЕР ДЛЯ ОБЛОЖКИ И ТЯНКИ */
+        .media-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
         .cover-container { 
-            width: 100%; aspect-ratio: 1; margin-bottom: 30px; 
+            width: 65%; aspect-ratio: 1; 
             display: flex; align-items: center; justify-content: center; 
             position: relative;
-            perspective: 1000px; /* Для 3D эффекта */
+            perspective: 1000px;
         }
 
         .cover {
@@ -224,14 +233,11 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             overflow: hidden; position: relative; 
             border-radius: 12px;
-            
-            /* ✅ 3D ТРАНСФОРМАЦИИ ДЛЯ ГОЛОГРАММЫ */
             transform-style: preserve-3d;
-            transition: transform 0.1s ease-out; /* Плавное следование за гироскопом */
+            transition: transform 0.1s ease-out;
             will-change: transform;
         }
 
-        /* Слой для бликов голограммы */
         .cover::before {
             content: '';
             position: absolute;
@@ -250,7 +256,6 @@
             opacity: 0.5;
         }
 
-        /* Слой для хроматической аберрации */
         .cover::after {
             content: '';
             position: absolute;
@@ -277,14 +282,12 @@
 
         @keyframes skullFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        /* НЕОНОВОЕ СВЕЧЕНИЕ ПРИ ВОСПРОИЗВЕДЕНИИ */
         .cover.playing {
             animation: rotateOnly 20s linear infinite; border-radius: 50%; border: 4px solid rgba(255, 0, 60, 0.6);
             box-shadow: 0 0 40px rgba(255, 0, 60, 0.4), inset 0 0 30px rgba(255, 0, 60, 0.2); 
             will-change: transform;
         }
 
-        /* Отключаем вращение при активном гироскопе, чтобы не конфликтовало */
         .cover.playing.gyro-active {
             animation: none;
         }
@@ -296,6 +299,42 @@
             filter: grayscale(100%) contrast(1.3) brightness(0.9); 
             border-radius: inherit; 
             z-index: 3;
+        }
+
+        /* ✅ СЛОТ ПОД ТЯНКУ С АНИМАЦИЕЙ КАЧАНИЯ */
+        .waifu-slot {
+            width: 30%;
+            aspect-ratio: 3/4;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(200, 200, 200, 0.3);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            position: relative;
+            background: #111;
+            
+            /* Анимация качания */
+            animation: gentleBounce 2s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        .waifu-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Плейсхолдер если нет картинки */
+        .waifu-placeholder {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            color: #444; font-size: 10px; text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        @keyframes gentleBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-8px) scale(1.02); }
         }
 
         .track-title { 
@@ -561,7 +600,7 @@
 
         <div class="scrollable-content">
             <div class="player-inner">
-                <div class="chain-decoration">⛓ </div>
+                <div class="chain-decoration"> </div>
                 
                 <div class="header">
                     <h1>Chrome Reaper</h1>
@@ -580,11 +619,21 @@
                 <input type="text" class="player-input" id="trackArtist" placeholder="Artist (optional)">
                 <button class="chrome-btn" id="loadBtn" onclick="loadTrack()"> Load Track</button>
 
-                <!-- ✅ ГОЛОГРАФИЧЕСКИЙ КОНТЕЙНЕР -->
-                <div class="cover-container" id="coverContainer">
-                    <div class="cover" id="cover">
-                        <span class="default-icon" id="defaultIcon">☠️</span>
-                        <img id="coverImage" src="" alt="Cover" style="display: none;">
+                <!-- ✅ НОВЫЙ МАКЕТ: ОБЛОЖКА + ТЯНКА РЯДОМ -->
+                <div class="media-row">
+                    <div class="cover-container" id="coverContainer">
+                        <div class="cover" id="cover">
+                            <span class="default-icon" id="defaultIcon">☠️</span>
+                            <img id="coverImage" src="" alt="Cover" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <!-- ✅ СЛОТ ПОД ТВОЮ КАРТИНКУ -->
+                    <div class="waifu-slot" id="waifuSlot">
+                        <!-- ️ ЗАМЕНИ SRC НИЖЕ НА ССЫЛКУ НА СВОЮ КАРТИНКУ ⚠️ -->
+                        <img src="https://img10.joyreactor.com/pics/post/blueorca-artist-original-8759320.jpeg" alt="Waifu" id="waifuImg">
+                        <!-- Если картинки нет, раскомментируй строку ниже и закомментируй img выше -->
+                        <!-- <div class="waifu-placeholder">ADD YOUR<br>WAIFU HERE</div> -->
                     </div>
                 </div>
                 
@@ -701,13 +750,11 @@
         const loadBtn = document.getElementById('loadBtn');
         let isPlaying = false;
 
-        // ✅ ПЕРЕМЕННЫЕ ДЛЯ ПЕЧАТНОЙ МАШИНКИ
         let titleInterval = null;
         let artistInterval = null;
         const titleEl = document.getElementById('title');
         const artistEl = document.getElementById('artist');
 
-        // ✅ ПЕРЕМЕННЫЕ ДЛЯ ГОЛОГРАММЫ
         let gyroEnabled = false;
         let currentRotateX = 0;
         let currentRotateY = 0;
@@ -1015,10 +1062,8 @@
             }
         }
 
-        // ✅ ФУНКЦИЯ УПРАВЛЕНИЯ ГОЛОГРАММОЙ ЧЕРЕЗ ГИРОСКОП
         function initHologramGyro() {
             if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ требует разрешения
                 DeviceOrientationEvent.requestPermission()
                     .then(response => {
                         if (response === 'granted') {
@@ -1027,7 +1072,6 @@
                     })
                     .catch(console.error);
             } else {
-                // Android и старые iOS
                 enableGyro();
             }
         }
@@ -1037,24 +1081,17 @@
             gyroEnabled = true;
             cover.classList.add('gyro-active');
             cover.classList.add('hologram-active');
-            
-            // Запускаем анимационный цикл для плавности
             requestAnimationFrame(updateHologramTransform);
         }
 
         function handleOrientation(event) {
-            // beta: наклон вперед-назад (-180 до 180)
-            // gamma: наклон влево-вправо (-90 до 90)
             const beta = event.beta || 0;
             const gamma = event.gamma || 0;
-            
-            // Ограничиваем угол наклона для комфорта
             targetRotateX = Math.max(-20, Math.min(20, beta * 0.5));
             targetRotateY = Math.max(-20, Math.min(20, gamma * 0.5));
         }
 
         function updateHologramTransform() {
-            // Плавная интерполяция (lerp) для мягкого движения
             currentRotateX += (targetRotateX - currentRotateX) * 0.1;
             currentRotateY += (targetRotateY - currentRotateY) * 0.1;
             
@@ -1065,7 +1102,6 @@
             requestAnimationFrame(updateHologramTransform);
         }
 
-        // Инициализируем гироскоп при первом взаимодействии
         document.addEventListener('click', function initGyroOnFirstClick() {
             if (!gyroEnabled) {
                 initHologramGyro();
