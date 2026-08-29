@@ -345,6 +345,7 @@
             z-index: 3;
         }
 
+        /* ✅ СЛОТ ПОД ТЯНКУ С АНИМАЦИЕЙ КАЧАНИЯ И ПЛАВНОЙ СМЕНЫ */
         .waifu-slot {
             width: 30%;
             aspect-ratio: 3/4;
@@ -354,6 +355,8 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             position: relative;
             background: #111;
+            
+            /* Базовая анимация качания */
             animation: gentleBounce 2s ease-in-out infinite alternate;
             will-change: transform;
         }
@@ -363,6 +366,9 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            /* Плавный переход для смены картинки */
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
         }
 
         @keyframes gentleBounce {
@@ -679,13 +685,14 @@
                 <div class="media-row">
                     <div class="cover-container" id="coverContainer">
                         <div class="cover" id="cover">
-                            <span class="default-icon" id="defaultIcon">☠️</span>
+                            <span class="default-icon" id="defaultIcon">️</span>
                             <img id="coverImage" src="" alt="Cover" style="display: none;">
                         </div>
                     </div>
                     
+                    <!-- ✅ СЛОТ ПОД ТЯНКУ -->
                     <div class="waifu-slot" id="waifuSlot">
-                        <img src="https://img10.joyreactor.com/pics/post/blueorca-artist-original-8759320.jpeg" alt="Waifu" id="waifuImg">
+                        <img src="https://via.placeholder.com/300x400/111/444?text=REAPER+WAFU" alt="Waifu" id="waifuImg">
                     </div>
                 </div>
                 
@@ -824,6 +831,61 @@
         };
 
         let trackHistory = [];
+
+        // ✅ БАЗА ПРОВЕРЕННЫХ ТЯНОК (ЗАМЕНИ ССЫЛКИ НА СВОИ!)
+        const waifuDatabase = [
+            'https://i.imgur.com/abc123.jpg', // Тянка 1
+            'https://i.imgur.com/def456.jpg', // Тянка 2
+            'https://i.imgur.com/ghi789.jpg', // Тянка 3
+            'https://i.imgur.com/jkl012.jpg', // Тянка 4
+            'https://i.imgur.com/mno345.jpg', // Тянка 5
+            'https://i.imgur.com/pqr678.jpg', // Тянка 6
+            'https://i.imgur.com/stu901.jpg', // Тянка 7
+            'https://i.imgur.com/vwx234.jpg', // Тянка 8
+            'https://i.imgur.com/yza567.jpg', // Тянка 9
+            'https://i.imgur.com/bcd890.jpg'  // Тянка 10
+        ];
+
+        let currentWaifuIndex = -1;
+        const fallbackWaifu = 'https://via.placeholder.com/300x400/111/444?text=REAPER+WAFU';
+
+        function getRandomWaifu() {
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * waifuDatabase.length);
+            } while (newIndex === currentWaifuIndex && waifuDatabase.length > 1);
+            
+            currentWaifuIndex = newIndex;
+            return waifuDatabase[newIndex];
+        }
+
+        function updateWaifuWithAnimation() {
+            const waifuImg = document.getElementById('waifuImg');
+            const waifuSlot = document.getElementById('waifuSlot');
+            
+            // Скрываем текущую
+            waifuImg.style.opacity = '0';
+            waifuSlot.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                // Меняем источник
+                waifuImg.src = getRandomWaifu();
+                
+                // Показываем новую с анимацией
+                waifuImg.onload = () => {
+                    waifuImg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    waifuImg.style.opacity = '1';
+                    waifuSlot.style.transform = 'translateY(0)';
+                };
+                
+                // Фоллбэк если картинка не загрузилась
+                waifuImg.onerror = () => {
+                    waifuImg.src = fallbackWaifu;
+                    waifuImg.style.opacity = '1';
+                    waifuSlot.style.transform = 'translateY(0)';
+                };
+            }, 300);
+        }
 
         function loadStats() {
             const saved = localStorage.getItem('chromeReaperStats');
@@ -1261,7 +1323,7 @@
                     
                     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
                 } else {
-                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ☠️</div>';
+                    resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:#666;">No results found ️</div>';
                     resultsDiv.classList.add('active');
                 }
                 
@@ -1305,6 +1367,9 @@
                     playIcon.style.display = 'none';
                     pauseIcon.style.display = 'block';
                     cover.classList.add('playing');
+                    
+                    // ✅ НОВАЯ ТЯНКА ПРИ КАЖДОМ ТРЕКЕ!
+                    updateWaifuWithAnimation();
                 } else {
                     throw new Error(data.error || 'Failed to load track');
                 }
@@ -1352,6 +1417,9 @@
                             artist: data.artist,
                             cover_url: data.cover_url
                         });
+                        
+                        // ✅ НОВАЯ ТЯНКА ПРИ КАЖДОМ ТРЕКЕ!
+                        updateWaifuWithAnimation();
                     } else {
                         throw new Error(data.error || 'Failed to get track');
                     }
@@ -1368,6 +1436,9 @@
                         artist: artist || 'Unknown Artist',
                         cover_url: null
                     });
+                    
+                    // ✅ НОВАЯ ТЯНКА ПРИ КАЖДОМ ТРЕКЕ!
+                    updateWaifuWithAnimation();
                 }
                 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
